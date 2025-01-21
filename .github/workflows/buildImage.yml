@@ -34,7 +34,7 @@ jobs:
         npm run build
 
     - name: Create backend directory
-      run: mkdir -p ../backend
+      run: mkdir -p ../backend/static
 
     - name: Move dist to backend and rename
       run: |
