@@ -55,7 +55,7 @@ jobs:
         
     - name: Install dependencies in backend
       run: |
-        cd backend
+        cd Dockerfile/backend
         npm install
         
     - name: Log in to the Container registry
