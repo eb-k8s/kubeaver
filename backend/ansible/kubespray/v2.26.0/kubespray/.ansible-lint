@@ -1,0 +1,39 @@
+---
+parseable: true
+skip_list:
+  # see https://docs.ansible.com/ansible-lint/rules/default_rules.html for a list of all default rules
+
+  # DO NOT add any other rules to this skip_list, instead use local `# noqa` with a comment explaining WHY it is necessary
+
+  # These rules are intentionally skipped:
+  #
+  # [role-name] "meta/main.yml" Role name role-name does not match ``^+$`` pattern
+  # Meta roles in Kubespray don't need proper names
+  # (Disabled in June 2021)
+  - 'role-name'
+
+  # [var-naming] "defaults/main.yml" File defines variable 'apiVersion' that violates variable naming standards
+  # In Kubespray we use variables that use camelCase to match their k8s counterparts
+  # (Disabled in June 2021)
+  - 'var-naming'
+
+  # [fqcn-builtins]
+  # Roles in kubespray don't need fully qualified collection names
+  # (Disabled in Feb 2023)
+  - 'fqcn-builtins'
+
+  # We use template in names
+  - 'name[template]'
+
+  # No changed-when on commands
+  # (Disabled in June 2023 after ansible upgrade; FIXME)
+  - 'no-changed-when'
+
+  # Disable run-once check with free strategy
+  # (Disabled in June 2023 after ansible upgrade; FIXME)
+  - 'run-once[task]'
+exclude_paths:
+  # Generated files
+  - tests/files/custom_cni/cilium.yaml
+  - venv
+  - .github

@@ -1,0 +1,28 @@
+{
+  "name": "backend",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node ./bin/www"
+  },
+  "dependencies": {
+    "@kubernetes/client-node": "^0.22.0",
+    "bull": "^4.16.3",
+    "cookie-parser": "~1.4.4",
+    "debug": "~2.6.9",
+    "express": "~4.16.1",
+    "http-errors": "~1.6.3",
+    "jade": "~1.11.0",
+    "koa": "^2.15.3",
+    "koa-bodyparser": "^4.4.1",
+    "koa-router": "^12.0.1",
+    "koa-send": "^5.0.1",
+    "koa-static": "^5.0.0",
+    "koa-websocket": "^7.0.0",
+    "morgan": "~1.9.1",
+    "os": "^0.1.2",
+    "sqlite": "^5.1.1",
+    "sqlite3": "^5.1.7",
+    "yq": "^0.0.1"
+  }
+}

@@ -1,0 +1,7 @@
+---
+- name: force_reset_playbook
+  ansible.builtin.import_playbook: ../reset.yml
+- name: pre_playbook
+  ansible.builtin.import_playbook: ../pre_playbook.yml
+- name: Install Kubernetes
+  ansible.builtin.import_playbook: playbooks/cluster.yml

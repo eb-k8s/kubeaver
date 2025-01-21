@@ -1,0 +1,87 @@
+---
+- name: Update package management cache (zypper) - SUSE
+  command: zypper -n --gpg-auto-import-keys ref
+  register: make_cache_output
+  until: make_cache_output is succeeded
+  retries: 4
+  delay: "{{ retry_stagger | random + 3 }}"
+  when:
+    - ansible_pkg_mgr == 'zypper'
+  tags: bootstrap-os
+
+- name: Add debian 10 required repos
+  when:
+    - ansible_distribution == "Debian"
+    - ansible_distribution_version == "10"
+  tags:
+    - bootstrap-os
+  block:
+    - name: Add Debian Backports apt repo
+      apt_repository:
+        repo: "deb http://deb.debian.org/debian {{ ansible_distribution_release }}-backports main"
+        state: present
+        filename: debian-backports
+
+    - name: Set libseccomp2 pin priority to apt_preferences on Debian buster
+      copy:
+        content: |
+          Package: libseccomp2
+          Pin: release a={{ ansible_distribution_release }}-backports
+          Pin-Priority: 1001
+        dest: "/etc/apt/preferences.d/libseccomp2"
+        owner: "root"
+        mode: "0644"
+
+- name: Update package management cache (APT)
+  apt:
+    update_cache: true
+    cache_valid_time: 3600
+  when: ansible_os_family == "Debian"
+  tags:
+    - bootstrap-os
+
+- name: Remove legacy docker repo file
+  file:
+    path: "{{ yum_repo_dir }}/docker.repo"
+    state: absent
+  when:
+    - ansible_os_family == "RedHat"
+    - not is_fedora_coreos
+
+- name: Install epel-release on RHEL derivatives
+  package:
+    name: epel-release
+    state: present
+  when:
+    - ansible_os_family == "RedHat"
+    - not is_fedora_coreos
+    - epel_enabled | bool
+  tags:
+    - bootstrap-os
+
+- name: Install packages requirements
+  vars:
+    # The json_query for selecting packages name is split for readability
+    # see files/pkgs-schema.json for the structure of `pkgs`
+    # and the matching semantics
+    full_query: "[? value | (enabled == null || enabled) && ( {{ filters_os }} ) && ( {{ filters_groups }} ) ].key"
+    filters_groups: "groups | @ == null || [? contains(`{{ group_names }}`, @)]"
+    filters_os: "os == null || (os | ( {{ filters_family }} ) || ( {{ filters_distro }} ))"
+    dquote: !unsafe '"'
+    # necessary to workaround Ansible escaping
+    filters_distro: "distributions.{{ dquote }}{{ ansible_distribution  }}{{ dquote }} |
+                          @ == `{}` ||
+                          contains(not_null(major_versions, `[]`), '{{ ansible_distribution_major_version }}') ||
+                          contains(not_null(versions, `[]`), '{{ ansible_distribution_version }}') ||
+                          contains(not_null(releases, `[]`), '{{ ansible_distribution_release }}')"
+    filters_family: "families && contains(families, '{{ ansible_os_family }}')"
+  package:
+    name: "{{ pkgs | dict2items | to_json|from_json | community.general.json_query(full_query) }}"
+    state: present
+  register: pkgs_task_result
+  until: pkgs_task_result is succeeded
+  retries: "{{ pkg_install_retries }}"
+  delay: "{{ retry_stagger | random + 3 }}"
+  when: not (ansible_os_family in ["Flatcar", "Flatcar Container Linux by Kinvolk"] or is_fedora_coreos)
+  tags:
+    - bootstrap-os

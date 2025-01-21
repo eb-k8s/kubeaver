@@ -1,0 +1,26 @@
+aliases:
+  kubespray-approvers:
+    - cristicalin
+    - floryut
+    - liupeng0518
+    - mzaian
+    - oomichi
+    - yankay
+    - ant31
+    - vannten
+  kubespray-reviewers:
+    - cyclinder
+    - erikjiang
+    - mrfreezeex
+    - mzaian
+    - tico88612
+    - vannten
+    - yankay
+  kubespray-emeritus_approvers:
+    - atoms
+    - chadswen
+    - luckysb
+    - mattymo
+    - miouge1
+    - riverzhang
+    - woopstar

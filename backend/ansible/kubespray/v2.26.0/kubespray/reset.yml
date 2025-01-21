@@ -1,0 +1,5 @@
+---
+- name: pre_playbook
+  ansible.builtin.import_playbook: ../pre_playbook.yml
+- name: Reset the cluster
+  ansible.builtin.import_playbook: playbooks/reset.yml

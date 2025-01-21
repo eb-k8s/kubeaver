@@ -1,0 +1,9 @@
+node_modules.tar
+node_modules.tgz
+node_modules
+resources
+static
+offline
+data
+ansible/kubespray/v2.26.0/kubespray/callback_plugins/__pycache__
+ansible/kubespray/v2.26.0/callback_plugins/__pycache__

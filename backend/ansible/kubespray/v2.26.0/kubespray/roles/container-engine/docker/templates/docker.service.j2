@@ -1,0 +1,41 @@
+[Unit]
+Description=Docker Application Container Engine
+Documentation=http://docs.docker.com
+After=network.target docker.socket containerd.service lvm2-monitor.service SuSEfirewall2.service
+{% if ansible_os_family != "Suse" %}
+BindsTo=containerd.service
+{% endif %}
+Wants=docker.socket
+
+[Service]
+Type=notify
+{% if docker_storage_options is defined %}
+Environment="DOCKER_STORAGE_OPTIONS={{ docker_storage_options }}"
+{% endif %}
+Environment=GOTRACEBACK=crash
+ExecReload=/bin/kill -s HUP $MAINPID
+Delegate=yes
+KillMode=process
+ExecStart={{ docker_bin_dir }}/dockerd \
+{% if ansible_os_family == "Suse" %}
+          --add-runtime oci=/usr/sbin/docker-runc \
+{% endif %}
+          $DOCKER_OPTS \
+          $DOCKER_STORAGE_OPTIONS \
+          $DOCKER_DNS_OPTIONS
+TasksMax=infinity
+LimitNOFILE=1048576
+LimitNPROC=1048576
+LimitCORE=infinity
+TimeoutStartSec=1min
+# restart the docker process if it exits prematurely
+Restart=on-failure
+StartLimitBurst=3
+StartLimitInterval=60s
+# Set the cgroup slice of the service so that kube reserved takes effect
+{% if kube_reserved is defined and kube_reserved|bool %}
+Slice={{ kube_reserved_cgroups_for_service_slice }}
+{% endif %}
+
+[Install]
+WantedBy=multi-user.target

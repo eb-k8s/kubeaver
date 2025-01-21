@@ -1,0 +1,13 @@
+---
+crio_conmon: "{{ bin_dir }}/crio-conmon"
+
+# cri-o binary files
+crio_bin_files:
+  - crio-conmon
+  - crio-conmonrs
+  - crio-crun
+  - crio-runc
+  - crio
+  - pinns
+
+crio_status_command: crio status

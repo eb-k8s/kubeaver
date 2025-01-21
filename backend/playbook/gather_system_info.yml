@@ -1,0 +1,36 @@
+
+---
+- name: Gather specific system information and save as JSON
+  hosts: all
+  gather_facts: no  
+  tasks:
+    - name: Gather CPU information
+      ansible.builtin.shell: "lscpu | grep '^CPU(s):'"
+      register: cpu_info
+      changed_when: false
+
+    - name: Gather Memory information
+      ansible.builtin.shell: "free -m | grep 'Mem:'"
+      register: memory_info
+      changed_when: false
+
+    - name: Gather Hostname
+      ansible.builtin.command: hostname
+      register: hostname_info
+      changed_when: false
+
+    - name: Gather OS information
+      ansible.builtin.shell: "cat /etc/os-release | grep -E '^(NAME|VERSION_ID)='"
+      register: os_info
+      changed_when: false
+
+    - name: Save gathered information to a JSON file
+      copy:
+        content: |
+          {
+            "cpu": "{{ cpu_info.stdout.split(':')[1].strip() }}",
+            "memory": "{{ (memory_info.stdout.split()[1] | float / 1024) | round(2) }}",
+            "hostname": "{{ hostname_info.stdout.strip() }}",
+            "os": "{{ os_info.stdout_lines[0].split('=')[1].strip('\"').split()[0] }} {{ os_info.stdout_lines[1].split('=')[1].strip('\"') }}"
+          }
+        dest: "/tmp/system_info_{{ inventory_hostname }}.json"

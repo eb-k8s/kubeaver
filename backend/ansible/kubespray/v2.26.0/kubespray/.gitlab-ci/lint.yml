@@ -1,0 +1,35 @@
+---
+pre-commit:
+  stage: test
+  tags:
+  - ffci
+  image: 'ghcr.io/pre-commit-ci/runner-image@sha256:aaf2c7b38b22286f2d381c11673bec571c28f61dd086d11b43a1c9444a813cef'
+  variables:
+    PRE_COMMIT_HOME: /pre-commit-cache
+  script:
+  - pre-commit run --all-files
+  cache:
+    key: pre-commit-all
+    paths:
+    - /pre-commit-cache
+  needs: []
+
+vagrant-validate:
+  extends: .job
+  stage: test
+  tags: [ffci]
+  variables:
+    VAGRANT_VERSION: 2.3.7
+  script:
+  - ./tests/scripts/vagrant-validate.sh
+  except: ['triggers', 'master']
+
+
+# TODO: convert to pre-commit hook
+check-galaxy-version:
+  needs: []
+  stage: test
+  tags: [ffci]
+  image: python:3
+  script:
+  - tests/scripts/check_galaxy_version.sh

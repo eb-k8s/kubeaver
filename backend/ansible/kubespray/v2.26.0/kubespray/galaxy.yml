@@ -1,0 +1,24 @@
+---
+namespace: kubernetes_sigs
+description: Deploy a production ready Kubernetes cluster
+name: kubespray
+version: 2.26.0
+readme: README.md
+authors:
+  - The Kubespray maintainers (https://kubernetes.slack.com/channels/kubespray)
+tags:
+  - infrastructure
+repository: https://github.com/kubernetes-sigs/kubespray
+issues: https://github.com/kubernetes-sigs/kubespray/issues
+documentation: https://kubespray.io
+license_file: LICENSE
+dependencies:
+  ansible.utils: '>=2.5.0'
+  community.general: '>=3.0.0'
+  ansible.netcommon: '>=5.3.0'
+  ansible.posix: '>=1.5.4'
+  community.docker: '>=3.11.0'
+  kubernetes.core: '>=2.4.2'
+manifest:
+  directives:
+    - recursive-exclude tests **

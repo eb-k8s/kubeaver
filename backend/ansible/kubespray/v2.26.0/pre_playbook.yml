@@ -1,0 +1,162 @@
+---
+- name: prepare for using kubespray playbook
+  hosts: all
+  become: true
+  tasks:
+    # 看是否已经存在域名映射
+    - name: Ensure the /etc/hosts file contains the required entry
+      lineinfile:
+        path: /etc/hosts
+        line: "{{registry_host_ip}} {{registry_host}}"
+        state: present
+        backup: yes
+      tags:
+        - hosts_update
+    # 确保resolv.conf文件存在
+    - name: Ensure /etc/resolv.conf exists
+      file:
+        path: /etc/resolv.conf
+        state: touch
+    # 检查操作系统
+    - name: Check the OS
+      command: grep '^NAME=' /etc/os-release
+      register: os_name_output
+    # 设置变量
+    - name: Set var if the OS is openEuler
+      set_fact:
+        is_openeuler: "{{ os_name_output.stdout | regex_search('openEuler', ignorecase=True) }}"
+        is_rocky: "{{ os_name_output.stdout | regex_search('Rocky', ignorecase=True) }}"
+        is_centos: "{{ os_name_output.stdout | regex_search('CentOS', ignorecase=True) }}"
+    - name: Check if the file exists
+      ansible.builtin.stat:
+        path: "{{ node_repo_path }}"
+      register: node_repo_stat
+    - name: Remove the file if it exists
+      ansible.builtin.file:
+        path: "{{ node_repo_path }}"
+        state: absent
+      when: node_repo_stat.stat.exists and node_repo_stat.stat.isreg
+    - name: Ensure the directory exists
+      ansible.builtin.file:
+        path: "{{ node_repo_path }}"
+        state: directory
+    - name: Check if tar command is available
+      ansible.builtin.command:
+        cmd: tar --version
+      register: tar_version
+      ignore_errors: true
+    # 传递tar rpm包
+    - name: Copy tar rpm file from localhost to nodes (openEuler)
+      ansible.builtin.copy:
+        src: "{{ localhost_repo_path }}/tar-1.34-5.oe2203sp4.x86_64.rpm"
+        dest: "{{ node_repo_path }}"
+      when: is_openeuler and tar_version.rc != 0
+    # 安装tar 
+    - name: install tar using tar rpm
+      command: rpm -ivh {{ node_repo_path }}/tar-1.34-5.oe2203sp4.x86_64.rpm
+      when: is_openeuler and tar_version.rc != 0
+    # 对于openEuler传递文件tar-1.34-5.oe2203sp4.x86_64.rpm
+    # 规避使用rsync，因为目标主机上可能没有
+    # rocky
+    - name: Copy file from localhost to nodes (Rocky)
+      ansible.builtin.copy:
+        src: "{{ Rocky_repo_path }}"
+        dest: "{{ node_repo_path }}"
+      when: is_rocky
+    - name: get tar name
+      set_fact:
+        repo_tar_name: "{{ Rocky_repo_path.split('/') | last }}"
+      when: is_rocky
+    # openeuler
+    - name: Copy file from localhost to nodes (openEuler)
+      ansible.builtin.copy:
+        src: "{{ openEuler_repo_path }}"
+        dest: "{{ node_repo_path }}"
+      when: is_openeuler
+    - name: get tar name
+      set_fact:
+        repo_tar_name: "{{ openEuler_repo_path.split('/') | last }}"
+      when: is_openeuler
+      # centos
+    - name: Copy file from localhost to nodes (Centos)
+      ansible.builtin.copy:
+        src: "{{ Centos_repo_path }}"
+        dest: "{{ node_repo_path }}"
+      when: is_centos
+    - name: get tar name
+      set_fact:
+        repo_tar_name: "{{ Centos_repo_path.split('/') | last }}"
+      when: is_centos
+    - name: 解压 tar 文件
+      unarchive:
+        src: "{{ node_repo_path }}/{{repo_tar_name}}"
+        dest: "{{ node_repo_path }}"
+        remote_src: yes 
+    - name: 去掉 .tar 后缀
+      set_fact:
+        repo_name: "{{ repo_tar_name | regex_replace('\\.tar$', '') }}" 
+    # 重命名
+    # - name: Check if the target directory exists
+    #   stat:
+    #     path: "{{ node_repo_path }}/repo"
+    #   register: target_dir
+    # - name: Rename directory
+    #   command: mv {{ node_repo_path }}/{{repo_name}} {{ node_repo_path }}/repo
+    - name: Remove already exist repo files
+      command: rm -rf  {{ node_repo_path }}/repo
+      ignore_errors: true
+    - name: Rename directory
+      command: mv {{ node_repo_path }}/{{repo_name}} {{ node_repo_path }}/repo
+      ignore_errors: true
+    # 找到所有repo文件
+    - name: Find all .repo files
+      find:
+        paths: /etc/yum.repos.d
+        patterns: "*.repo"
+      register: repo_files
+    # 将已经有的repo文件backup
+    - name: backup .repo files(Rename .repo files to .repo.bak)
+      command: mv {{ item.path }} {{ item.path }}.bak
+      with_items: "{{ repo_files.files }}"
+      when: 
+        - repo_files.matched > 0   
+    - name: Create local-repo.repo in /etc/yum.repos.d 
+      copy:
+        dest: /etc/yum.repos.d/local-repo.repo
+        content: |
+          [local-repo]
+          name=Local Repository
+          baseurl=file://{{node_repo_path}}/repo
+          enabled=1
+          gpgcheck=0
+    # gpgkey=/etc/pki/rpm-gpg/RPM-GPG-KEY-openEuler
+    - name: Clean all yum caches
+      ansible.builtin.command:
+        cmd: yum clean all
+      become: yes
+      # when: is_openeuler
+    - name: Rebuild yum cache
+      ansible.builtin.command:
+        cmd: yum makecache
+      become: yes
+      # when: is_openeuler
+    - name: Install libselinux-python3 if OS is openEuler
+      yum:
+        name: libselinux-python3
+        state: present
+      when: is_openeuler
+    - name: Install nfs-utils
+      yum:
+        name: nfs-utils
+        state: present
+        allowerasing: true
+      become: yes
+      when: is_rocky or is_openeuler
+    - name: Stop firewalld
+      ansible.builtin.command:
+        cmd: systemctl stop firewalld
+      become: yes
+
+
+
+
