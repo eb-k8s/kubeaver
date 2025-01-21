@@ -8,11 +8,11 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: node-latest
 
     strategy:
       matrix:
-        node-version: [18.x]
+        node-version: [18.19.1]
 
     steps:
     - name: Checkout code
@@ -23,13 +23,19 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
 
-    - name: Install dependencies
-      run: npm install
+    - name: Install dependencies in frontend
+      run: |
+        cd frontend
+        npm install
 
     - name: Build frontend
-      run: npm run build
+      run: |
+        cd frontend
+        npm run build
+
+    - name: Create backend directory
+      run: mkdir -p ../backend
 
     - name: Move dist to backend and rename
       run: |
-        mv dist ../backend/static
-
+        mv frontend/dist ../backend/static
