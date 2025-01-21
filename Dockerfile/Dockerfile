@@ -1,4 +1,4 @@
-FROM core.harbor.k8s.ebupt.com/ccapp-os/rockylinux:9.3 AS builder
+FROM rockylinux:9.3 AS builder
 ##安装所需的工具和依赖
 RUN yum -y install openssh-clients binutils findutils rsync
 # 设置工作目录
@@ -45,7 +45,7 @@ RUN find ./lib -name "*.so" -exec strip {} \; && rm -rf ./lib/python3.10/test &&
 RUN find /root/python_env/kubespray-2.26 -name "*.pyc" -delete && find /root/python_env/kubespray-2.26 -name "__pycache__" -type d -exec rm -r {} +
 
 # 第二阶段：运行阶段
-FROM core.harbor.k8s.ebupt.com/ccapp-os/rockylinux:9.3
+FROM rockylinux:9.3
 # 设置工作目录
 WORKDIR /root
 RUN yum -y install openssh-clients rsync
