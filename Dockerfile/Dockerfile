@@ -13,7 +13,7 @@ RUN curl -O https://nodejs.org/dist/v$NODE_VERSION/node-v$NODE_VERSION-linux-x64
     rm node-v$NODE_VERSION-linux-x64.tar.gz
 ##安装pyenv和python环境
 # 更换rocky仓库源
-RUN mv Rocky.repo /etc/yum.repos.d/Rocky.repo && yum clean all && yum makecache && rm Dockerfile
+#RUN mv Rocky.repo /etc/yum.repos.d/Rocky.repo && yum clean all && yum makecache && rm Dockerfile
 
 # 安装pyenv
 RUN tar -xzf pyenv.tgz && mv pyenv ~/.pyenv && rm pyenv.tgz 
@@ -35,12 +35,7 @@ RUN curl -O https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_
     tar -xf Python-${PYTHON_VERSION}.tgz -C /tmp && rm Python-${PYTHON_VERSION}.tgz && mkdir -p ~/.pyenv/versions 
 RUN cd /tmp/Python-${PYTHON_VERSION} && ./configure --prefix=/root/.Python-3.10.12 && make && make install
 
-# 验证安装
-RUN /root/.Python-3.10.12/bin/python3 --version
-
-
 RUN mkdir python_env && /root/.Python-3.10.12/bin/python3 -m venv /root/python_env/kubespray-2.26
-#RUN mkdir python_env && $HOME/.pyenv/versions/${PYTHON_VERSION}/bin/python3 -m venv /root/python_env/kubespray-2.26
 # 移动requirements.txt
 RUN mv requirements-2.26.txt /root/python_env/kubespray-2.26/bin/requirements.txt 
 
@@ -63,7 +58,7 @@ RUN find /root/python_env/kubespray-2.26 -name "*.pyc" -delete && find /root/pyt
 FROM rockylinux:9.3
 # 设置工作目录
 WORKDIR /root
-RUN yum -y install openssh-clients rsync
+RUN yum -y install openssh-clients rsync iputils
 # 从构建阶段复制所需文件
 COPY --from=builder /root/ /root/
 #COPY --from=builder /root/.pyenv /root/.pyenv
@@ -95,7 +90,7 @@ RUN source ~/.bashrc && pyenv rehash && pyenv global kubespray-2.26
 
 # 设置回工作目录
 WORKDIR /root
-
+RUN chmod 600 /root/backend/ssh/id_rsa
 COPY start.sh /root/start.sh
 
 RUN chmod +x /root/start.sh
