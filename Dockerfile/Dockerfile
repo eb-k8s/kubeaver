@@ -79,7 +79,7 @@ RUN source ~/.bashrc && pyenv rehash && pyenv global kubespray-2.26
 
 # 设置回工作目录
 WORKDIR /root
-
+COPY start.sh /root/start.sh
 RUN chmod +x /root/start.sh
 
 CMD ["/root/start.sh"]
