@@ -5,7 +5,7 @@ RUN yum -y install openssh-clients binutils findutils rsync
 WORKDIR /root
 # 拷贝文件
 COPY . /root
-RUN ls -l /root
+
 # 下载node包
 ENV NODE_VERSION=18.17.0
 RUN curl -O https://nodejs.org/dist/v$NODE_VERSION/node-v$NODE_VERSION-linux-x64.tar.gz && \
@@ -13,8 +13,7 @@ RUN curl -O https://nodejs.org/dist/v$NODE_VERSION/node-v$NODE_VERSION-linux-x64
     rm node-v$NODE_VERSION-linux-x64.tar.gz
 ##安装pyenv和python环境
 # 更换rocky仓库源
-COPY Rocky.repo /etc/yum.repos.d/Rocky.repo
-RUN  yum clean all && yum makecache && rm Dockerfile
+RUN mv Rocky.repo /etc/yum.repos.d/Rocky.repo && yum clean all && yum makecache && rm Dockerfile
 
 # 安装pyenv
 RUN tar -xzf pyenv.tgz && mv pyenv ~/.pyenv && rm pyenv.tgz 
@@ -25,8 +24,23 @@ ENV PATH=${PATH}:/root/.pyenv/bin:/root/.pyenv/shims
 RUN echo 'eval "$(pyenv init --path)"' >> /root/.bashrc \
     && echo 'eval "$(pyenv init -)"' >> /root/.bashrc
 # 创建虚拟环境
-RUN mkdir python_env && /root/.Python-3.10.12/bin/python3 -m venv /root/python_env/kubespray-2.26
 
+ARG PYTHON_VERSION=3.10.12
+# 安装编译python所需依赖
+RUN yum groupinstall "Development tools" -y
+RUN dnf install -y gcc zlib-devel bzip2 bzip2-devel readline-devel sqlite sqlite-devel openssl-devel tk-devel libffi-devel xz-devel git
+
+# 安装对应版本python
+RUN wget https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tgz && \
+RUN tar -xf Python-${PYTHON_VERSION}.tgz -C /tmp && rm Python-${PYTHON_VERSION}.tgz && mkdir -p ~/.pyenv/versions 
+RUN cd /tmp/Python-${PYTHON_VERSION} && ./configure --prefix=$HOME/.pyenv/versions/${PYTHON_VERSION} && make && make install
+
+# 验证安装
+RUN $HOME/.pyenv/versions/${PYTHON_VERSION}/bin/python3 --version
+
+
+#RUN mkdir python_env && /root/.Python-3.10.12/bin/python3 -m venv /root/python_env/kubespray-2.26
+RUN mkdir python_env && $HOME/.pyenv/versions/${PYTHON_VERSION}/bin/python3 -m venv /root/python_env/kubespray-2.26
 # 移动requirements.txt
 RUN mv requirements-2.26.txt /root/python_env/kubespray-2.26/bin/requirements.txt 
 
@@ -35,7 +49,7 @@ RUN cd /root/python_env/kubespray-2.26/bin && ./pip3 config set global.index-url
 
 # 开始裁剪
 # 设置工作目录，裁剪Python包本体
-WORKDIR /root/.Python-3.10.12
+WORKDIR $HOME/.pyenv/versions/${PYTHON_VERSION}
 
 # 清除编译过程中产生的文件
 RUN cd bin && strip python3.10
@@ -76,10 +90,14 @@ RUN source ~/.bashrc && \
 #执行kubespray 
 RUN cd /root/backend/ansible/kubespray/v2.26.0 && \
     source ~/.bashrc && pyenv local kubespray-2.26
+
 RUN source ~/.bashrc && pyenv rehash && pyenv global kubespray-2.26
 
 # 设置回工作目录
 WORKDIR /root
+
+COPY start.sh /root/start.sh
+
 RUN chmod +x /root/start.sh
 
 CMD ["/root/start.sh"]
