@@ -80,7 +80,7 @@ jobs:
         push: true
         pull: true
         platforms: linux/amd64
-        tags: dbsave/kubeaver:v2.0.0
+        tags: ghcr.io/dbsave/kubeaver:v2.0.0
         provenance: true
         cache-from: type=gha
         cache-to: type=gha,mode=max
