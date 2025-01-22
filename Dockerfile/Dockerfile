@@ -13,7 +13,8 @@ RUN curl -O https://nodejs.org/dist/v$NODE_VERSION/node-v$NODE_VERSION-linux-x64
     rm node-v$NODE_VERSION-linux-x64.tar.gz
 ##安装pyenv和python环境
 # 更换rocky仓库源
-RUN mv Rocky.repo /etc/yum.repos.d/Rocky.repo && yum clean all && yum makecache && rm Dockerfile
+COPY Rocky.repo /etc/yum.repos.d/Rocky.repo
+RUN  yum clean all && yum makecache && rm Dockerfile
 
 # 安装pyenv
 RUN tar -xzf pyenv.tgz && mv pyenv ~/.pyenv && rm pyenv.tgz 
