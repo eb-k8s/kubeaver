@@ -32,15 +32,15 @@ RUN dnf install -y gcc zlib-devel bzip2 bzip2-devel readline-devel sqlite sqlite
 
 # 安装对应版本python
 RUN curl -O https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tgz && \
-RUN tar -xf Python-${PYTHON_VERSION}.tgz -C /tmp && rm Python-${PYTHON_VERSION}.tgz && mkdir -p ~/.pyenv/versions 
-RUN cd /tmp/Python-${PYTHON_VERSION} && ./configure --prefix=$HOME/.pyenv/versions/${PYTHON_VERSION} && make && make install
+    tar -xf Python-${PYTHON_VERSION}.tgz -C /tmp && rm Python-${PYTHON_VERSION}.tgz && mkdir -p ~/.pyenv/versions 
+RUN cd /tmp/Python-${PYTHON_VERSION} && ./configure --prefix=/root/.Python-3.10.12 && make && make install
 
 # 验证安装
-RUN $HOME/.pyenv/versions/${PYTHON_VERSION}/bin/python3 --version
+RUN /root/.Python-3.10.12/bin/python3 --version
 
 
-#RUN mkdir python_env && /root/.Python-3.10.12/bin/python3 -m venv /root/python_env/kubespray-2.26
-RUN mkdir python_env && $HOME/.pyenv/versions/${PYTHON_VERSION}/bin/python3 -m venv /root/python_env/kubespray-2.26
+RUN mkdir python_env && /root/.Python-3.10.12/bin/python3 -m venv /root/python_env/kubespray-2.26
+#RUN mkdir python_env && $HOME/.pyenv/versions/${PYTHON_VERSION}/bin/python3 -m venv /root/python_env/kubespray-2.26
 # 移动requirements.txt
 RUN mv requirements-2.26.txt /root/python_env/kubespray-2.26/bin/requirements.txt 
 
@@ -49,7 +49,7 @@ RUN cd /root/python_env/kubespray-2.26/bin && ./pip3 config set global.index-url
 
 # 开始裁剪
 # 设置工作目录，裁剪Python包本体
-WORKDIR $HOME/.pyenv/versions/${PYTHON_VERSION}
+WORKDIR /root/.Python-3.10.12
 
 # 清除编译过程中产生的文件
 RUN cd bin && strip python3.10
