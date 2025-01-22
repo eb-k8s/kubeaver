@@ -59,10 +59,10 @@ jobs:
         npm install
         
     - name: Log in to the Container registry
-      uses: docker/login-action@465a07811f14bebb1938fbed4728c6a1ff8901fc # v2.2.0
+      uses: docker/login-action@v2
       with:
         registry: ${{ env.REGISTRY }}
-        username: ${{ github.actor }}
+        username: ${{ github.action }}
         password: ${{ github.token }}
         
     - name: Set up Docker Buildx
@@ -80,7 +80,7 @@ jobs:
         push: true
         pull: true
         platforms: linux/amd64
-        tags: ghcr.io/dbsave/kubeaver:v2.0.0
+        tags: dbsave/kubeaver:v2.0.0
         provenance: true
         cache-from: type=gha
         cache-to: type=gha,mode=max
