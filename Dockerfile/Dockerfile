@@ -31,7 +31,7 @@ RUN yum groupinstall "Development tools" -y
 RUN dnf install -y gcc zlib-devel bzip2 bzip2-devel readline-devel sqlite sqlite-devel openssl-devel tk-devel libffi-devel xz-devel git
 
 # 安装对应版本python
-RUN wget https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tgz && \
+RUN curl -O https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tgz && \
 RUN tar -xf Python-${PYTHON_VERSION}.tgz -C /tmp && rm Python-${PYTHON_VERSION}.tgz && mkdir -p ~/.pyenv/versions 
 RUN cd /tmp/Python-${PYTHON_VERSION} && ./configure --prefix=$HOME/.pyenv/versions/${PYTHON_VERSION} && make && make install
 
