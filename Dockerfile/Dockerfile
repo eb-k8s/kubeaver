@@ -5,7 +5,7 @@ RUN yum -y install openssh-clients binutils findutils rsync
 WORKDIR /root
 # 拷贝文件
 COPY . /root
-
+RUN ls -l /root
 # 下载node包
 ENV NODE_VERSION=18.17.0
 RUN curl -O https://nodejs.org/dist/v$NODE_VERSION/node-v$NODE_VERSION-linux-x64.tar.gz && \
