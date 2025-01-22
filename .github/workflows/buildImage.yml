@@ -75,7 +75,7 @@ jobs:
     - name: Build and push Docker image
       uses: docker/build-push-action@v6
       with:
-        context: .
+        context: Dockerfile
         file: Dockerfile/Dockerfile
         push: true
         pull: true
