@@ -16,7 +16,8 @@ RUN curl -O https://nodejs.org/dist/v$NODE_VERSION/node-v$NODE_VERSION-linux-x64
 #RUN mv Rocky.repo /etc/yum.repos.d/Rocky.repo && yum clean all && yum makecache && rm Dockerfile
 
 # 安装pyenv
-RUN tar -xzf pyenv.tgz && mv pyenv ~/.pyenv && rm pyenv.tgz 
+RUN curl https://pyenv.run | bash
+#RUN tar -xzf pyenv.tgz && mv pyenv ~/.pyenv && rm pyenv.tgz 
 # 设置环境变量
 ENV PATH=${PATH}:/root/.pyenv/bin:/root/.pyenv/shims
 
