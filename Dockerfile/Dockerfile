@@ -1,6 +1,6 @@
 FROM rockylinux:9.3 AS builder
 ##安装所需的工具和依赖
-RUN yum -y install openssh-clients binutils findutils rsync
+RUN yum -y install openssh-clients binutils findutils rsync git
 # 设置工作目录
 WORKDIR /root
 # 拷贝文件
