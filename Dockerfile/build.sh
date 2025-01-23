@@ -1,1 +1,0 @@
-docker build . -t kubeaver:v0.1.1
