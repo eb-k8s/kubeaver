@@ -134,13 +134,20 @@
             </a-card>
         </div>
         <a-modal v-model:visible="deployVisible" @ok="handleDeployOk" @cancel="handleDeployCancel">
-           确定部署{{version}}版本的集群吗？
+           确定部署<span style="color: red; font-weight: bold;">{{ version }}</span>版本的集群吗？
         </a-modal>
+        <!-- <a-modal v-model:visible="resetVisible" @ok="handleResetOk" @cancel="handleResetCancel">
+           确定重置{{name}}集群吗？
+        </a-modal> -->
         <a-modal v-model:visible="resetVisible" @ok="handleResetOk" @cancel="handleResetCancel">
-           确定重置此集群吗？
+            <template #title>
+                <span>重置确认</span>
+            </template>
+            <p>确定重置 <span style="color: red; font-weight: bold;">{{ name }}</span> 集群吗？</p>
+            <p style="color: red; font-weight: bold;">警告：重置操作不可恢复，请谨慎操作！</p>
         </a-modal>
         <a-modal v-model:visible="deleteVisible" @ok="handleDeleteOk" @cancel="handleDeleteCancel">
-            确定删除已经创建的集群吗？
+            确定删除 <span style="color: red; font-weight: bold;">{{ name }}</span> 的集群吗？
         </a-modal>
         <a-modal v-model:visible="upgradeVisible" @ok="handleUpgradeOk" @cancel="handleUpgradeCancel">
             <a-form :model="cluster" style="margin-top: 20px;">
@@ -202,6 +209,7 @@
         offlinePackage: '',
         version: '',
     });
+    const name = ref();
 
     const getVersion = (version) => {
         if (typeof version !== 'string' || !version.includes('.')) {
@@ -293,6 +301,7 @@
     const onClickReset = async (record: any) => {
         resetVisible.value = true;
         id.value = record.id;
+        name.value = record.clusterName;
     }
 
     const onClickUpgrade = async (record: any) => {
@@ -379,7 +388,7 @@
 
     // 安装部署集群
     const onClickDeploy = async (record: any) => {
-        version.value = record.k8sVersion;
+        version.value = record.version;
         id.value = record.id;
         deployVisible.value = true;
     }
@@ -389,6 +398,7 @@
         deleteVisible.value = true;
         id.value = record.id;
         clusterStatus.value = record.status;
+        name.value = record.clusterName
     }
 
     // 下载证书

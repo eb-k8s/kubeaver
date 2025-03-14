@@ -203,10 +203,10 @@
 
     const openWebSocketModal = async (task) => {
     webSocketVisible.value = true;
-    //const socketUrl = `ws://10.1.35.91:8000/websocket/${id.value}/${task.ip}/${task.timestamp}`;
+    const socketUrl = `ws://10.1.35.91:8000/websocket/${id.value}/${task.ip}/${task.timestamp}`;
     
-    const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-    const socketUrl = `${protocol}${window.location.host}/websocket/${id.value}/${task.ip}/${task.timestamp}`;
+    // const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+    // const socketUrl = `${protocol}${window.location.host}/websocket/${id.value}/${task.ip}/${task.timestamp}`;
 
     socket1.value = createWebSocket(socketUrl, (event) => {
         if (webSocketContent.value) {
@@ -253,13 +253,13 @@
     };
 
     const connectWebSocket = (id) => {
-        //socket2.value = createWebSocket(`ws://10.1.35.91:8000/activeTasks/${id}`, (event) => {
-        //    handleTaskListMessage(event.data);
-        //});
-        const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-        socket2.value = createWebSocket(`${protocol}${window.location.host}/activeTasks/${id}`, (event) => {
-          handleTaskListMessage(event.data);
+        socket2.value = createWebSocket(`ws://10.1.35.91:8000/activeTasks/${id}`, (event) => {
+           handleTaskListMessage(event.data);
         });
+        // const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+        // socket2.value = createWebSocket(`${protocol}${window.location.host}/activeTasks/${id}`, (event) => {
+        //   handleTaskListMessage(event.data);
+        // });
     };
 
     const handleTaskListMessage = (data) => {

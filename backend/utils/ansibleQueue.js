@@ -80,10 +80,10 @@ const queues = {};
 
 async function createAnsibleQueue(baseQueueId, concurrency) {
   const queueConfigs = [
-    { name: 'initCluster', processFunction: processInitCluster, taskNum: 1 },
+    { name: 'initCluster', processFunction: processInitCluster, taskNum: 5 },
     { name: 'addNode', processFunction: processAddNode, taskNum: concurrency },
     { name: 'resetCluster', processFunction: processResetCluster, taskNum: concurrency },
-    { name: 'upgradeCluster', processFunction: processUpgradeCluster, taskNum: concurrency },
+    { name: 'upgradeCluster', processFunction: processUpgradeCluster, taskNum: 1 },
     { name: 'resetNode', processFunction: processResetNode, taskNum: concurrency }
   ];
 
@@ -168,7 +168,7 @@ async function createAnsibleQueue(baseQueueId, concurrency) {
         //     let task = `${resultPackageData.kubesprayPath}/kubespray/scale.yml`
         //     let workDir = `${resultPackageData.kubesprayPath}/kubespray`
         //     let configFile = `@${resultPackageData.kubesprayPath}/config.yml`
-        //     let downloadCacheDir = `${resultPackageData.offlinePackagePath}/kubespray_cache`
+        //     let downloadCacheDir = `${resultPackageData.offlinePackagePath}/all_files`
         //     let localhostRepoPath = `${resultPackageData.offlinePackagePath}/repo_files`
         //     const playbook = {
         //       //ansible-playbook scale.yml -b -i inventory/mycluster/hosts.yaml -e kube_version=v1.30.3 --limit node2
@@ -259,7 +259,6 @@ async function createAnsibleQueue(baseQueueId, concurrency) {
           await redis.hset(baseHashKey,
             'clusterName', job.data.playbook.clusterName,
             'version', job.data.playbook.version,
-            'offlinePackage', job.data.playbook.offlinePackage,
             'status', masterStatusData.status,
             'updateTime', updateTime
           );
@@ -275,30 +274,29 @@ async function createAnsibleQueue(baseQueueId, concurrency) {
           resultData.hosts = resultData.hosts.filter(node =>
             !(node.status === "Unknown")
           );
-          let hostsPath = await getHostsYamlFile(resultData)
+          let hostsPath = await getHostsYamlFile(resultData, job.data.playbook.id)
           const nodeJobs = resultData.hosts
           for (const node of nodeJobs) {
             if (node.role === "node") {
               let taskName = `upgradeCluster`
               let taskId = `${job.data.playbook.id}_${taskName}`
-              const resultPackageData = await offlinePackagesPath(resultData.offlinePackage)
+              const resultPackageData = await offlinePackagesPath()
               let task = `${resultPackageData.kubesprayPath}/kubespray/upgrade-cluster.yml`
               let workDir = `${resultPackageData.kubesprayPath}/kubespray`
               let configFile = `@${resultPackageData.kubesprayPath}/config.yml`
-              let downloadCacheDir = `${resultPackageData.offlinePackagePath}/kubespray_cache`
+              let downloadCacheDir = `${resultPackageData.offlinePackagePath}/all_files`
               let localhostRepoPath = `${resultPackageData.offlinePackagePath}/repo_files`
               const playbook = {
                 task: task,
                 taskId: taskId,
                 id: job.data.playbook.id,
                 version: resultData.version,
-                offlinePackage: resultData.offlinePackage,
                 clusterName: resultData.clusterName,
                 taskName: taskName,
                 hostName: node.hostName,
                 downloadCacheDir: downloadCacheDir,
                 localhostRepoPath: localhostRepoPath,
-                kubeVersion: resultPackageData.kubeVersion,
+                kubeVersion: resultData.k8sVersion,
                 imageArch: resultPackageData.imageArch,
                 networkPlugin: resultData.networkPlugin,
                 role: node.role,
@@ -865,6 +863,7 @@ async function getWaitingJobs(queueId) {
       taskName: job.data.playbook.taskName,
       taskId: job.data.playbook.taskId,
       ip: job.data.playbook.ip,
+      role: job.data.playbook.role,
       hostName: job.data.playbook.hostName,
       timestamp: job.timestamp,
     }));
@@ -886,6 +885,7 @@ async function getActiveJobs(queueId) {
       taskName: job.data.playbook.taskName,
       taskId: job.data.playbook.taskId,
       ip: job.data.playbook.ip,
+      role: job.data.playbook.role,
       hostName: job.data.playbook.hostName,
       timestamp: job.timestamp,
     }));

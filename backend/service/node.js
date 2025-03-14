@@ -6,11 +6,38 @@ const redis = new Redis({
   host: "127.0.0.1",
 });
 
+async function getAllNodeList() {
+  try {
+    const nodeKeys = await redis.keys(`k8s_cluster:*:hosts:*`);
+    const nodes = [];
+    for (const nodeKey of nodeKeys) {
+      const nodeIP = nodeKey.split(':')[3];
+      nodes.push({
+        ip: nodeIP,
+      });
+    }
+    // 返回成功结果
+    return {
+      code: 20000,
+      data: nodes,
+      msg: "节点列表获取成功",
+      status: "ok"
+    };
+
+  } catch (error) {
+    console.error('Error retrieving node list from Redis:', error.message);
+    return {
+      code: 50000,
+      data: "",
+      msg: error.message,
+      status: "error"
+    };
+  }
+}
 
 async function getNodeList(id) {
   try {
     const nodeKeys = await redis.keys(`k8s_cluster:${id}:hosts:*`);
-    //console.log(nodeKeys)
     const nodes = [];
     for (const nodeKey of nodeKeys) {
       const nodeIP = nodeKey.split(':')[3];
@@ -101,8 +128,12 @@ async function addK8sClusterNode(clusterInfo) {
       // 如果都不存在，添加新节点到 Redis
       const nodeKey = `k8s_cluster:${clusterInfo.id}:hosts:${newNode.ip}`;
       const createTime = Date.now();
+      //查询用户名
+      let hostKey = `host:${newNode.ip}`
+      const hostInfo = await redis.hgetall(hostKey);
       await redis.hset(nodeKey,
         'ip', newNode.ip,
+        'user', hostInfo.user,
         'hostName', newNode.hostName,
         'role', newNode.role,
         'k8sVersion', 'Unknown',
@@ -155,4 +186,5 @@ module.exports = {
   getNodeList,
   addK8sClusterNode,
   deleteK8sClusterNode,
+  getAllNodeList,
 }

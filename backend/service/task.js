@@ -17,7 +17,9 @@ const redis = new Redis({
 });
 
 // 添加master1任务到队列的函数,master1执行完之后开始并行执行所有node节点
-async function addK8sMasterJob(id) {
+//async function addK8sMasterJob(id) {
+async function addK8sMasterJob(clusterInfo) {
+  const id = clusterInfo.id
   //先通过集群名称查询redis表
   let resultData
   try {
@@ -32,7 +34,7 @@ async function addK8sMasterJob(id) {
   }
   //生成相应的host.yaml文件
   try {
-    hostsPath = await getHostsYamlFile(resultData)
+    hostsPath = await getHostsYamlFile(resultData, id)
   } catch (error) {
     console.error('生成hosts.yaml文件错误:', error.message || error);
     return {
@@ -44,22 +46,23 @@ async function addK8sMasterJob(id) {
 
   try {
     //添加master和etc 任务
-    for (const node of resultData.hosts) {
+    //调整是为了满足用户可以单独添加其它master任务
+    for (const node of clusterInfo.hosts) {
+      //for (const node of resultData.hosts) {
       if (node.role === "master") {
         let taskName = 'initCluster'
         let taskId = `${id}_${taskName}`
-        const resultPackageData = await offlinePackagesPath(resultData.offlinePackage)
+        const resultPackageData = await offlinePackagesPath()
         let task = `${resultPackageData.kubesprayPath}/kubespray/cluster.yml`
         let workDir = `${resultPackageData.kubesprayPath}/kubespray`
         let configFile = `@${resultPackageData.kubesprayPath}/config.yml`
-        let downloadCacheDir = `${resultPackageData.offlinePackagePath}/kubespray_cache`
+        let downloadCacheDir = `${resultPackageData.offlinePackagePath}/all_files`
         let localhostRepoPath = `${resultPackageData.offlinePackagePath}/repo_files`
         const playbook = {
           id: id,
           taskId: taskId,
           task: task,
           clusterName: resultData.clusterName,
-          offlinePackage: resultData.offlinePackage,
           taskName: taskName,
           hostName: node.hostName,
           role: node.role,
@@ -67,7 +70,7 @@ async function addK8sMasterJob(id) {
           hostsPath: hostsPath,
           downloadCacheDir: downloadCacheDir,
           localhostRepoPath: localhostRepoPath,
-          kubeVersion: resultPackageData.kubeVersion,
+          kubeVersion: resultData.k8sVersion,
           imageArch: resultPackageData.imageArch,
           networkPlugin: resultData.networkPlugin,
           workDir: workDir,
@@ -78,11 +81,11 @@ async function addK8sMasterJob(id) {
       if (node.role === "node") {
         let taskName = `addNode`
         let taskId = `${id}_${taskName}`
-        const resultPackageData = await offlinePackagesPath(resultData.offlinePackage)
+        const resultPackageData = await offlinePackagesPath()
         let task = `${resultPackageData.kubesprayPath}/kubespray/scale.yml`
         let workDir = `${resultPackageData.kubesprayPath}/kubespray`
         let configFile = `@${resultPackageData.kubesprayPath}/config.yml`
-        let downloadCacheDir = `${resultPackageData.offlinePackagePath}/kubespray_cache`
+        let downloadCacheDir = `${resultPackageData.offlinePackagePath}/all_files`
         let localhostRepoPath = `${resultPackageData.offlinePackagePath}/repo_files`
         const playbook = {
           //ansible-playbook scale.yml -b -i inventory/mycluster/hosts.yaml -e kube_version=v1.30.3 --limit node2
@@ -97,7 +100,7 @@ async function addK8sMasterJob(id) {
           hostsPath: hostsPath,
           downloadCacheDir: downloadCacheDir,
           localhostRepoPath: localhostRepoPath,
-          kubeVersion: resultPackageData.kubeVersion,
+          kubeVersion: resultData.k8sVersion,
           imageArch: resultPackageData.imageArch,
           networkPlugin: resultData.networkPlugin,
           workDir: workDir,
@@ -140,7 +143,7 @@ async function addK8sNodeJob(clusterInfo) {
 
   //生成相应的host.yaml文件
   try {
-    hostsPath = await getHostsYamlFile(resultData)
+    hostsPath = await getHostsYamlFile(resultData, id)
     console.log("node 的hostspath" + hostsPath)
   } catch (error) {
     console.error('生成hosts.yaml文件错误:', error.message || error);
@@ -157,11 +160,11 @@ async function addK8sNodeJob(clusterInfo) {
       if (node.role === "node") {
         let taskName = `addNode`
         let taskId = `${id}_${taskName}`
-        const resultPackageData = await offlinePackagesPath(resultData.offlinePackage)
+        const resultPackageData = await offlinePackagesPath()
         let task = `${resultPackageData.kubesprayPath}/kubespray/scale.yml`
         let workDir = `${resultPackageData.kubesprayPath}/kubespray`
         let configFile = `@${resultPackageData.kubesprayPath}/config.yml`
-        let downloadCacheDir = `${resultPackageData.offlinePackagePath}/kubespray_cache`
+        let downloadCacheDir = `${resultPackageData.offlinePackagePath}/all_files`
         let localhostRepoPath = `${resultPackageData.offlinePackagePath}/repo_files`
         const playbook = {
           task: task,
@@ -175,7 +178,7 @@ async function addK8sNodeJob(clusterInfo) {
           hostsPath: hostsPath,
           downloadCacheDir: downloadCacheDir,
           localhostRepoPath: localhostRepoPath,
-          kubeVersion: resultPackageData.kubeVersion,
+          kubeVersion: resultData.k8sVersion,
           imageArch: resultPackageData.imageArch,
           networkPlugin: resultData.networkPlugin,
           workDir: workDir,
@@ -215,20 +218,20 @@ async function removeK8sNodeJob(id, ip) {
     };
   }
 
-  const filteredHosts = resultData.hosts.filter(host =>
-    host.ip === ip || host.role === 'master'
-  );
+  // const filteredHosts = resultData.hosts.filter(host =>
+  //   host.ip === ip || host.role === 'master'
+  // );
 
-  // 创建新的 resultData 对象
-  const curObjData = {
-    clusterName: resultData.clusterName,
-    offlinePackage: resultData.offlinePackage,
-    hosts: filteredHosts
-  };
+  // // 创建新的 resultData 对象
+  // const curObjData = {
+  //   clusterName: resultData.clusterName,
+  //   offlinePackage: resultData.offlinePackage,
+  //   hosts: filteredHosts
+  // };
 
   //生成相应的host.yaml文件
   try {
-    hostsPath = await getHostsYamlFile(curObjData)
+    hostsPath = await getHostsYamlFile(resultData, id)
   } catch (error) {
     console.error('生成hosts.yaml文件错误:', error.message || error);
     return {
@@ -238,11 +241,11 @@ async function removeK8sNodeJob(id, ip) {
     };
   }
   try {
-    for (const node of curObjData.hosts) {
-      if (node.role === "node") {
+    for (const node of resultData.hosts) {
+      if (node.ip == ip) {
         let taskName = `resetNode`
         let taskId = `${id}_${taskName}`
-        const resultPackageData = await offlinePackagesPath(resultData.offlinePackage)
+        const resultPackageData = await offlinePackagesPath()
         let task = `${resultPackageData.kubesprayPath}/reset.yml`
         let workDir = `${resultPackageData.kubesprayPath}/kubespray`
         const playbook = {
@@ -317,7 +320,7 @@ async function resetK8sClusterJob(id) {
   }
   //生成相应的host.yaml文件
   try {
-    hostsPath = await getHostsYamlFile(resultData)
+    hostsPath = await getHostsYamlFile(resultData, id)
   } catch (error) {
     console.error('生成hosts.yaml文件错误:', error.message || error);
     return {
@@ -331,7 +334,7 @@ async function resetK8sClusterJob(id) {
     //if (node.role === "master") {
     let taskName = 'resetCluster'
     let taskId = `${id}_${taskName}`
-    const resultPackageData = await offlinePackagesPath(resultData.offlinePackage)
+    const resultPackageData = await offlinePackagesPath()
     let task = `${resultPackageData.kubesprayPath}/reset.yml`
     let workDir = `${resultPackageData.kubesprayPath}/kubespray`
     const playbook = {
@@ -440,7 +443,7 @@ async function upgradeK8sClusterJob(newClusterInfo) {
   }
   //生成相应的host.yaml文件
   try {
-    hostsPath = await getHostsYamlFile(resultData)
+    hostsPath = await getHostsYamlFile(resultData, newClusterInfo.id)
   } catch (error) {
     console.error('生成hosts.yaml文件错误:', error.message || error);
     return {
@@ -455,18 +458,17 @@ async function upgradeK8sClusterJob(newClusterInfo) {
       if (node.role === "master") {
         let taskName = 'upgradeCluster'
         let taskId = `${newClusterInfo.id}_${taskName}`
-        const resultPackageData = await offlinePackagesPath(newClusterInfo.offlinePackage)
+        const resultPackageData = await offlinePackagesPath()
         let task = `${resultPackageData.kubesprayPath}/kubespray/upgrade-cluster.yml`
         let workDir = `${resultPackageData.kubesprayPath}/kubespray`
         let configFile = `@${resultPackageData.kubesprayPath}/config.yml`
-        let downloadCacheDir = `${resultPackageData.offlinePackagePath}/kubespray_cache`
+        let downloadCacheDir = `${resultPackageData.offlinePackagePath}/all_files`
         let localhostRepoPath = `${resultPackageData.offlinePackagePath}/repo_files`
         const playbook = {
           id: newClusterInfo.id,
           task: task,
           taskId: taskId,
           version: newClusterInfo.version,
-          offlinePackage: newClusterInfo.offlinePackage,
           clusterName: resultData.clusterName,
           taskName: taskName,
           hostName: node.hostName,
@@ -475,7 +477,7 @@ async function upgradeK8sClusterJob(newClusterInfo) {
           hostsPath: hostsPath,
           downloadCacheDir: downloadCacheDir,
           localhostRepoPath: localhostRepoPath,
-          kubeVersion: resultPackageData.kubeVersion,
+          kubeVersion: newClusterInfo.version,
           imageArch: resultPackageData.imageArch,
           networkPlugin: resultData.networkPlugin,
           workDir: workDir,

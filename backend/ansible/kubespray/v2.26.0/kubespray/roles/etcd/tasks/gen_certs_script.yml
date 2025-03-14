@@ -38,25 +38,25 @@
     - gen_certs | default(false)
     - inventory_hostname == groups['etcd'][0]
 
-- name: Run etcdctl member list command and check if output contains "started"
-  block:
-    - name: Run etcdctl member list command and check if output contains "started"
-      command: >
-        /usr/local/bin/etcdctl member list --cacert=/etc/ssl/etcd/ssl/ca.pem
-                            --cert=/etc/ssl/etcd/ssl/admin-{{ groups['etcd'][0]}}.pem
-                            --key=/etc/ssl/etcd/ssl/admin-{{ groups['etcd'][0]}}-key.pem | grep started
-      register: grep_result
-      until: grep_result.rc == 0
-      failed_when: false  # 不让 grep 失败时中断任务
-      changed_when: false  # 不标记为 changed
-      retries: 180
-      delay: 5
-  always:
-    - name: Output grep_result every time for debugging
-      debug:
-        msg: "grep_result: {{ grep_result }}"
-  delegate_to: "{{ groups['etcd'][0] }}"
-  when: inventory_hostname != groups['etcd'][0]
+# - name: Run etcdctl member list command and check if output contains "started"
+#   block:
+#     - name: Run etcdctl member list command and check if output contains "started"
+#       command: >
+#         /usr/local/bin/etcdctl member list --cacert=/etc/ssl/etcd/ssl/ca.pem
+#                             --cert=/etc/ssl/etcd/ssl/admin-{{ groups['etcd'][0]}}.pem
+#                             --key=/etc/ssl/etcd/ssl/admin-{{ groups['etcd'][0]}}-key.pem | grep started
+#       register: grep_result
+#       until: grep_result.rc == 0
+#       failed_when: false  # 不让 grep 失败时中断任务
+#       changed_when: false  # 不标记为 changed
+#       retries: 180
+#       delay: 5
+#   always:
+#     - name: Output grep_result every time for debugging
+#       debug:
+#         msg: "grep_result: {{ grep_result }}"
+#   delegate_to: "{{ groups['etcd'][0] }}"
+#   when: inventory_hostname != groups['etcd'][0]
 
 - name: Gen_certs | run cert generation script for etcd and kube control plane nodes
   command: "bash -x {{ etcd_script_dir }}/make-ssl-etcd.sh -f {{ etcd_config_dir }}/openssl.conf -d {{ etcd_cert_dir }}"

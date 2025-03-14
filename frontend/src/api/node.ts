@@ -6,6 +6,10 @@ export function getNodeList(id: any) {
   });
 }
 
+export function getAllNodeList() {
+  return axios.get<any>(`/api/k8sNodes`);
+}
+
 export function addNode(data: any) {
   return axios.post<any>('/api/k8sClusterNode', data, {
     headers: {

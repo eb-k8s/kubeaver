@@ -1,7 +1,7 @@
 import axios from 'axios';
 import type { RouteRecordNormalized } from 'vue-router';
 import { UserState } from '@/store/modules/user/types';
-
+//const apiVersion: string = import.meta.env.VITE_API_VERSION
 export interface LoginData {
   username: string;
   password: string;
@@ -24,4 +24,12 @@ export function getUserInfo() {
 
 export function getMenuList() {
   return axios.post<RouteRecordNormalized[]>('/api/user/menu');
+}
+
+export function getVersions() {
+  return axios.get<any>('/api/versions');
+}
+
+export function getTest(api: any) {
+  return axios.get<any>(`/${api}/user/test`);
 }

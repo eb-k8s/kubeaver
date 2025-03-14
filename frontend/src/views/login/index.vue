@@ -15,9 +15,36 @@
 </template>
 
 <script lang="ts" setup>
+  import { ref, onMounted } from 'vue';
   import Footer from '@/components/footer/index.vue';
   import LoginForm from './components/login-form.vue';
   import login from '@/assets/images/login_left4.png';
+  import { getTest, getVersions } from '@/api/user';
+  /*
+  const fetchData = async () => {
+    try {
+      const versions = await getVersions();
+      console.log(versions)
+        // 假设目标 k8s 版本
+        const targetK8sVersion = '1.28';
+        // 查找匹配的 kubeaverVersion
+        const matchedVersion = versions.data.find(item => item.k8sVersions.includes(targetK8sVersion));
+        if (matchedVersion) {
+          console.log(`匹配的 kubeaverVersion: ${matchedVersion.kubeaverVersion}`);
+        const response = await getTest(matchedVersion.kubeaverVersion);
+        console.log(response)
+        } else {
+          console.log('未找到匹配的 kubeaverVersion');
+        }
+    } catch (err) {
+        console.log('获取版本信息时出错:', err);
+    }
+  };
+  
+  onMounted(() => {
+    fetchData();
+  });
+  */
 </script>
 
 <style lang="less" scoped>
