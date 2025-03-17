@@ -99,9 +99,11 @@
         dest: "{{ image_path_final }}"
         use_ssh_args: true
         mode: push
+        rsync_opts:
+          - "--copy-links"  # 关键参数：跟随软链接并复制目标文件
       delegate_facts: false
       register: upload_image
-      failed_when: not upload_image
+      # failed_when: not upload_image
       until: upload_image is succeeded
       retries: "{{ download_retries }}"
       delay: "{{ retry_stagger | random + 3 }}"

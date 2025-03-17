@@ -19,6 +19,7 @@ router.use('/api', require('./router/resources').routes())
 router.use('/api', require('./router/cluster').routes())
 router.use('/api', require('./router/node').routes())
 router.use('/api', require('./router/task').routes())
+router.use('/api', require('./router/common').routes())
 router.use('/api', require('./router/login').routes())
 app.ws.use(require('./router/websocket').routes())
 

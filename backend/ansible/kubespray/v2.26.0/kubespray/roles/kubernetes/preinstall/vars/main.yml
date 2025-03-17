@@ -75,6 +75,7 @@ pkgs:
     os:
       distributions:
         Amazon: {}
+        CentOS: {}
   libselinux-python3:
     os:
       distributions:
@@ -94,7 +95,6 @@ pkgs:
     os:
       distributions:
         RedHat: {}
-        CentOS: {}
   rsync: {}
   socat: {}
   software-properties-common: *debian_family_base

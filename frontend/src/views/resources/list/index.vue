@@ -114,7 +114,7 @@
             }),
         },
         {
-            title: '离线包大小',
+            title: '离线包大小（解压前）',
             dataIndex: 'packageSize',
         },
         {

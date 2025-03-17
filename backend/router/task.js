@@ -3,11 +3,28 @@ const router = new KoaRouter();
 const serviceHost = require('../service/task')
 
 //初始化任务
+// router.post('/k8sClusterMasterJob', async (ctx) => {
+//   //curl -X POST -H "Content-Type: application/json" http://10.1.70.162:8000/api/k8sClusterMasterJob -d '{"id": "ckudflei"}'
+//   const { id } = ctx.request.body;
+//   try {
+//     const result = await serviceHost.addK8sMasterJob(id);
+//     ctx.body = result;
+//   } catch (error) {
+//     console.error('添加任务时发生错误:', error.message || error);
+//     ctx.body = {
+//       code: 50000,
+//       data: "",
+//       msg: error.message,
+//       status: "error"
+//     };
+//   }
+// });
+
 router.post('/k8sClusterMasterJob', async (ctx) => {
-  //curl -X POST -H "Content-Type: application/json" http://10.1.35.91:8000/k8sClusterMasterJob -d '{"id": "2bboadxz"}'
-  const { id } = ctx.request.body;
+  //curl -X POST -H "Content-Type: application/json" http://10.1.70.162:8000/api/k8sClusterMasterJob -d '{"id": "p1smtk0h","hosts":[{"ip": "10.1.69.236","hostName": "eb236master","role": "master"},{"ip": "10.1.69.235","hostName": "eb235node","role": "node"}]}'
+  const clusterInfo = ctx.request.body;
   try {
-    const result = await serviceHost.addK8sMasterJob(id);
+    const result = await serviceHost.addK8sMasterJob(clusterInfo);
     ctx.body = result;
   } catch (error) {
     console.error('添加任务时发生错误:', error.message || error);
@@ -22,7 +39,7 @@ router.post('/k8sClusterMasterJob', async (ctx) => {
 
 //添加node节点任务
 router.post('/k8sClusterNodeJob', async (ctx) => {
-  //curl -X POST -H "Content-Type: application/json" http://10.1.35.91:8000/k8sClusterNodeJob -d '{"id": "vn24ubxe","hosts":[{"ip": "10.1.69.232","hostName": "node1","role": "node"}]}'
+  //curl -X POST -H "Content-Type: application/json" http://10.1.70.162:8000/api/k8sClusterNodeJob -d '{"id": "n9l3a9c8","hosts":[{"ip": "10.1.69.238","hostName": "node2","role": "node"}]}'
   const clusterInfo = ctx.request.body;
   try {
     const result = await serviceHost.addK8sNodeJob(clusterInfo);
@@ -63,7 +80,7 @@ router.post('/stopJob', async (ctx) => {
   }
 })
 
-//将node节点移出集群
+//将node节点移出集群或者将master移除集群
 router.delete('/k8sClusterNodeJob', async (ctx) => {
   //curl -X DELETE "http://10.1.35.91:8000/k8sClusterNodeJob?id=vn24ubxe&nodeIP=10.1.69.232"
   const { id, nodeIP } = ctx.request.query;
@@ -120,7 +137,7 @@ router.delete('/resetK8sClusterJob', async (ctx) => {
 
 //集群升级
 router.put('/upgradeK8sClusterJob', async (ctx) => {
-  //curl -X PUT -H "Content-Type: application/json" http://10.1.35.91:8000/upgradeK8sClusterJob -d '{"id": "4rfnnosz","clusterName": "test3","version": "1.28.2","curOfflinePackage": "k8s-v1.27.10_flannel_amd64","upgradeOfflinePackage": "k8s-v1.28.12_flannel_amd64"}'
+  //curl -X PUT -H "Content-Type: application/json" http://10.1.70.162:8000/api/upgradeK8sClusterJob -d '{"id": "p1smtk0h","clusterName": "test","version": "v1.29.7"}'
   const newClusterInfo = ctx.request.body;
   try {
     const result = await serviceHost.upgradeK8sClusterJob(newClusterInfo);

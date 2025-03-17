@@ -1,0 +1,42 @@
+---
+- name: get registry config
+  hosts: k8s_cluster
+  become: true
+  gather_facts: false
+  vars: 
+    containerd_cfg_dir: /etc/containerd
+    # server: https://core.harbor.k8s.ebupt.com
+    # admin_passwd: YWRtaW46SGFyYm9yMTIzNDU=
+    # registry_host_ip: 10.1.69.253
+  tasks:
+    - name: Extract the path after ://
+      set_fact:
+        registry_host: "{{ server | regex_replace('^[^:/]+://', '') }}"
+
+    - name: delete /etc/hosts entry
+      ansible.builtin.lineinfile:
+        path: /etc/hosts  
+        regexp: '^.*{{ registry_host }}.*$'
+        state: absent
+
+    - name: Remove specified directory from containerd_cfg_dir
+      file:
+        path: "{{ containerd_cfg_dir }}/certs.d/{{ registry_host }}"
+        state: absent
+        
+    - name: Ensure the /etc/hosts file contains the required entry
+      lineinfile:
+        path: /etc/hosts
+        line: "{{registry_host_ip}} {{registry_host}}"
+        state: present
+        backup: yes
+
+    - name: Create registry directories
+      file:
+        path: "{{ containerd_cfg_dir }}/certs.d/{{ registry_host }}"
+        state: directory
+
+    - name: Write hosts.toml file
+      template:
+        src: hosts.toml.j2
+        dest: "{{ containerd_cfg_dir }}/certs.d/{{ registry_host }}/hosts.toml"

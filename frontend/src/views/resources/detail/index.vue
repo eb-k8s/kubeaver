@@ -18,7 +18,7 @@
           <a-descriptions-item label="仓库">{{ imageRegistry }}</a-descriptions-item>
           <a-descriptions-item label="版本">{{ kubeVersion }}</a-descriptions-item>
           <a-descriptions-item label="容器引擎">{{ containerEngine }}</a-descriptions-item>
-          <a-descriptions-item label="解压后大小">{{ offlineSizeTar }}</a-descriptions-item>
+          <a-descriptions-item label="离线包大小(解压后)">{{ offlineSizeTar }}</a-descriptions-item>
           <a-descriptions-item label="发布日期">{{ importTime }}</a-descriptions-item>
         </a-descriptions>
       </a-card>
@@ -103,6 +103,18 @@
     { name: "OS", keys: ["os_repo_size"] }
   ];
 
+  function formatTimestamp(isoString) {
+    const date = new Date(isoString);
+    const year = date.getUTCFullYear();
+    const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(date.getUTCDate()).padStart(2, '0');
+    const hours = String(date.getUTCHours()).padStart(2, '0');
+    const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+    const seconds = String(date.getUTCSeconds()).padStart(2, '0');
+
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+  }
+
   const fetchResourcesDetail = async () => {
     try {
       setLoading(true);
@@ -120,7 +132,7 @@
   };
 
   const kubesprayVersion = computed(() => resourceDetail.value.config?.kubespray?.kubespray_version || 'N/A');
-  const importTime = computed(() => resourceDetail.value.import_time || 'N/A');
+  const importTime = computed(() => formatTimestamp(resourceDetail.value.import_time) || 'N/A');
   const supportedOs = computed(() => resourceDetail.value.config?.supported_os || []);
   const imageArch = computed(() => resourceDetail.value.config?.kubespray?.image_arch || 'N/A');
   const imageRegistry = computed(() => resourceDetail.value.config?.image_registry || 'N/A');

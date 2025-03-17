@@ -56,13 +56,12 @@ async function addHost(hostIP, hostPort, user, password) {
     }
 
     const addtime = new Date().toLocaleString();
-    const hostDetails = { hostIP, hostPort, user, addtime };
-
+    const hostDetails = { hostIP, hostPort, user, password, addtime };
     // 将主机信息存储到 Redis
     await redis.hmset(`${HOSTS_PREFIX}${hostIP}`, hostDetails);
 
     // 异步获取详细信息
-    fetchAndSaveHostDetails(hostIP);
+    fetchAndSaveHostDetails(hostIP, user);
 
     return {
       code: 20000,
@@ -82,14 +81,14 @@ async function addHost(hostIP, hostPort, user, password) {
 }
 
 // 异步获取并保存主机详细信息
-async function fetchAndSaveHostDetails(hostIP) {
+async function fetchAndSaveHostDetails(hostIP, user) {
   const playbookPath = path.join(__dirname, '../playbook/gather_system_info.yml');
   const remoteFilePath = `/tmp/system_info_${hostIP}.json`;
   const localFilePath = path.join(__dirname, `system_info_${hostIP}.json`);
 
   try {
-    await runAnsiblePlaybook(hostIP, playbookPath);
-    await fetchFileFromRemote(hostIP, remoteFilePath, localFilePath);
+    await runAnsiblePlaybook(hostIP, playbookPath, user);
+    await fetchFileFromRemote(hostIP, remoteFilePath, localFilePath, user);
 
     if (!fs.existsSync(localFilePath)) {
       throw new Error(`文件没有发现: ${localFilePath}`);
@@ -114,10 +113,10 @@ async function fetchAndSaveHostDetails(hostIP) {
 }
 
 // 运行 Ansible Playbook
-async function runAnsiblePlaybook(hostIP, playbookPath) {
+async function runAnsiblePlaybook(hostIP, playbookPath, user) {
   const privateKeyPath = path.join(__dirname, '../ssh', 'id_rsa');
   return new Promise((resolve, reject) => {
-    exec(`ansible-playbook --private-key ${privateKeyPath} -i ${hostIP}, ${playbookPath}`, (error, stdout, stderr) => {
+    exec(`ansible-playbook --private-key ${privateKeyPath} -e ansible_user=${user} -i ${hostIP}, ${playbookPath}`, (error, stdout, stderr) => {
       if (error) {
         console.error(`Playbook execution failed: ${error}`);
         reject(new Error(`Playbook 执行失败: ${error}`));
@@ -130,10 +129,10 @@ async function runAnsiblePlaybook(hostIP, playbookPath) {
 }
 
 // 从远程获取文件
-function fetchFileFromRemote(hostIP, remoteFilePath, localFilePath) {
+function fetchFileFromRemote(hostIP, remoteFilePath, localFilePath, user) {
   const privateKeyPath = path.join(__dirname, '../ssh', 'id_rsa');
   return new Promise((resolve, reject) => {
-    exec(`scp -i ${privateKeyPath} ${hostIP}:${remoteFilePath} ${localFilePath}`, (error, stdout, stderr) => {
+    exec(`scp -i ${privateKeyPath} ${user}@${hostIP}:${remoteFilePath} ${localFilePath}`, (error, stdout, stderr) => {
       if (error) reject(new Error(`从远程主机获取文件失败: ${stderr}`));
       else resolve(stdout);
     });
@@ -182,43 +181,15 @@ async function getAvailableHosts() {
 }
 
 // 获取主机列表，并异步获取主机详细信息
-async function getHosts() {
-  try {
-    const keys = await redis.keys(`${HOSTS_PREFIX}*`);
-    const hosts = await Promise.all(keys.map(async key => {
-      const hostData = await redis.hgetall(key); // 获取哈希数据
-
-      // 异步获取主机详细信息
-      fetchAndSaveHostDetails(hostData.hostIP);
-
-      return hostData;
-    }));
-
-    return {
-      code: 20000,
-      data: hosts,
-      msg: "",
-      status: "ok"
-    };
-  } catch (error) {
-    console.error('Error:', error.message);
-    return {
-      code: 50000,
-      data: "",
-      msg: error.message || 'Failed to retrieve hosts',
-      status: "error"
-    };
-  }
-}
-
-
-
-// 获取主机列表
 // async function getHosts() {
 //   try {
 //     const keys = await redis.keys(`${HOSTS_PREFIX}*`);
 //     const hosts = await Promise.all(keys.map(async key => {
 //       const hostData = await redis.hgetall(key); // 获取哈希数据
+
+//       // 异步获取主机详细信息
+//       fetchAndSaveHostDetails(hostData.hostIP);
+
 //       return hostData;
 //     }));
 
@@ -238,6 +209,34 @@ async function getHosts() {
 //     };
 //   }
 // }
+
+
+
+// 获取主机列表
+async function getHosts() {
+  try {
+    const keys = await redis.keys(`${HOSTS_PREFIX}*`);
+    const hosts = await Promise.all(keys.map(async key => {
+      const hostData = await redis.hgetall(key); // 获取哈希数据
+      return hostData;
+    }));
+
+    return {
+      code: 20000,
+      data: hosts,
+      msg: "",
+      status: "ok"
+    };
+  } catch (error) {
+    console.error('Error:', error.message);
+    return {
+      code: 50000,
+      data: "",
+      msg: error.message || 'Failed to retrieve hosts',
+      status: "error"
+    };
+  }
+}
 
 // 查询指定 hostID 的内容
 async function getHostById(hostIP) {

@@ -81,6 +81,41 @@
       set_fact:
         kubeadm_certificate_key: "{{ kubeadm_upload_cert.stdout_lines[-1] | trim }}"
       when: kubeadm_certificate_key is not defined
+- name: Upload control plane certs and retrieve encryption key(new)
+  hosts: kube_node
+  environment: "{{ proxy_disable_env }}"
+  gather_facts: false
+  tags: kubeadm
+  roles:
+    - { role: kubespray-defaults }
+  tasks:
+    # 等待master节点完成安装
+    - name: Wait for master node to be ready
+      shell: |
+        {{ kubectl }}  get nodes
+      args:
+        executable: /bin/bash
+      register: wait_for_master
+      until: wait_for_master.rc == 0
+      retries: 180
+      delay: 5
+      failed_when: false
+      changed_when: false
+      delegate_to: "{{ groups['kube_control_plane'][0] }}"
+      when: inventory_hostname != groups['etcd'][0]
+    - name: Upload control plane certificates
+      command: >-
+        {{ bin_dir }}/kubeadm init phase
+        --config {{ kube_config_dir }}/kubeadm-config.yaml
+        upload-certs
+        --upload-certs
+      environment: "{{ proxy_disable_env }}"
+      delegate_to: "{{ groups['kube_control_plane'][0] }}"
+      register: kubeadm_upload_cert
+      changed_when: false
+    - name: Set fact 'kubeadm_certificate_key' for later use
+      set_fact:
+        kubeadm_certificate_key: "{{ kubeadm_upload_cert.stdout_lines[-1] | trim }}"
 
 - name: Target only workers to get kubelet installed and checking in on any new nodes(network)
   hosts: kube_node

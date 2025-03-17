@@ -88,7 +88,7 @@
         </div>
     </div>
     <a-modal v-model:visible="joinVisible" @ok="handleJoinOk" @cancel="handleJoinCancel">
-       确定将此节点加入到集群吗？
+        <p>确定将 <span style="color: red; font-weight: bold;">{{ name }}</span> 节点加入到集群吗？</p>
     </a-modal>
     <a-modal v-model:visible="addNodeVisible" @ok="handleAddNodeOk" @cancel="handleAddNodeCancel">
         <a-card title="主机" style="margin-top: 20px;">
@@ -135,10 +135,11 @@
         </a-card>
     </a-modal>
     <a-modal v-model:visible="deleteVisible" @ok="handleDeleteOk" @cancel="handleDeleteCancel">
-       确定删除此节点的信息吗？
+       <p>确定删除 <span style="color: red; font-weight: bold;">{{ name }}</span> 节点吗？</p>
     </a-modal>
     <a-modal v-model:visible="removeVisible" @ok="handleRemoveOk" @cancel="handleRemoveCancel">
-       确定从集群中移除此节点吗？
+       <p>确定将 <span style="color: red; font-weight: bold;">{{ name }}</span> 节点从集群中移除吗？</p>
+       <p style="color: red; font-weight: bold;">警告：移除操作不可恢复，请谨慎操作！</p>
     </a-modal>
 </template>
 <script lang="ts" setup>
@@ -174,6 +175,7 @@
         id: '',
         workerHosts: [] as Array<{ ip: string; hostName: string; role: string }>
     });
+    const name = ref();
 
     id.value = route.query.id;
     offlinePackage.value = route.query.offlinePackage;
@@ -318,6 +320,8 @@
         }
         joinVisible.value = true;
         node.value = record;
+        name.value = record.hostName;
+        // console.log(node.value);
     }
 
     const onClickJoinMaster = async (record: any) => {
@@ -334,11 +338,13 @@
         deleteVisible.value = true;
         nodeip.value = record.ip;
         nodeRole.value = record.role;
+        name.value = record.hostName;
     }
 
     const onClickRemove = async (record: any) => {
         removeVisible.value = true;
         nodeip.value = record.ip
+        name.value = record.hostName;
     }
 
     const handleDeleteOk = async () => {

@@ -1,17 +1,17 @@
+---
 - name: force delete node
-  hosts: "{{ node | default('all') }}"
+  hosts: "{{ node | default('k8s_cluster') }}"
   become: true
+  gather_facts: true
   vars:
     bin_dir: /usr/local/bin
     cri_stop_containers_grace_period: 0
     kube_config_dir: /etc/kubernetes
     containerd_storage_dir: "/var/lib/containerd"
-
     etcd_config_dir: /etc/ssl/etcd
     etcd_events_data_dir: "/var/lib/etcd-events"
     etcd_data_dir: /var/lib/etcd
     nginx_config_dir: "/etc/nginx"
-
     krew_root_dir: "/usr/local/krew"
     sysctl_file_path: "/etc/sysctl.d/99-sysctl.conf"
     containerd_bin_dir: "{{ bin_dir }}"
@@ -24,13 +24,88 @@
     kubectl: "{{ bin_dir }}/kubectl"
     delete_node_retries: 2
     delete_node_delay_seconds: 1
-  # roles:
-  #   - { role: reset, tags: reset }
+    etcd_deployment_type: kubeadm
+    kube_cert_dir: "{{ kube_config_dir }}/ssl"
+    reset_restart_network_service_name: >-
+      {% if ansible_os_family == "RedHat" -%}
+      {%-
+        if ansible_distribution_major_version | int >= 8
+        or is_fedora_coreos or ansible_distribution in ["Fedora", "Kylin Linux Advanced Server", "TencentOS"] -%}
+      NetworkManager
+      {%- else -%}
+      network
+      {%- endif -%}
+      {%- elif ansible_distribution == "Ubuntu"
+        or (ansible_distribution == "Debian" and ansible_distribution_major_version | int == 12 ) -%}
+      systemd-networkd
+      {%- elif ansible_os_family == "Debian" -%}
+      networking
+      {%- endif %}
   tasks:
-    # 删除域名映射
+    - name: Lookup node IP in kubernetes
+      command: >
+        {{ kubectl }} get nodes {{ node }}
+        -o jsonpath='{range .status.addresses[?(@.type=="InternalIP")]}{@.address}{"\n"}{end}'
+      register: remove_node_ip
+      when:
+        - groups['kube_control_plane'] | length > 0
+        - inventory_hostname in groups['etcd']
+        - ip is not defined
+        - access_ip is not defined
+      delegate_to: "{{ groups['etcd'] | first }}"
+      failed_when: false
+      ignore_errors: true 
+
+    - name: Set node IP
+      set_fact:
+        node_ip: "{{ ip | default(access_ip | default(remove_node_ip.stdout)) | trim }}"
+      when:
+        - inventory_hostname in groups['etcd']
+      ignore_errors: true 
+
+    - name: Make sure node_ip is set
+      assert:
+        that: node_ip is defined and node_ip | length > 0
+        msg: "Etcd node ip is not set !"
+      when:
+        - inventory_hostname in groups['etcd']
+
+    - name: Lookup etcd member id
+      shell: "set -o pipefail && {{ bin_dir }}/etcdctl member list | grep -w {{ node_ip }} | cut -d, -f1"
+      args:
+        executable: /bin/bash
+      register: etcd_member_id
+      ignore_errors: true  # noqa ignore-errors
+      changed_when: false
+      check_mode: false
+      tags:
+        - facts
+      environment:
+        ETCDCTL_API: "3"
+        ETCDCTL_CERT: "{{ kube_cert_dir + '/etcd/server.crt' if etcd_deployment_type == 'kubeadm' else etcd_cert_dir + '/admin-' + groups['etcd'] | first + '.pem' }}"
+        ETCDCTL_KEY: "{{ kube_cert_dir + '/etcd/server.key' if etcd_deployment_type == 'kubeadm' else etcd_cert_dir + '/admin-' + groups['etcd'] | first + '-key.pem' }}"
+        ETCDCTL_CACERT: "{{ kube_cert_dir + '/etcd/ca.crt' if etcd_deployment_type == 'kubeadm' else etcd_cert_dir + '/ca.pem' }}"
+        ETCDCTL_ENDPOINTS: "https://127.0.0.1:2379"
+      delegate_to: "{{ groups['etcd'] | first }}"
+      when: inventory_hostname in groups['etcd']
+
+    - name: Remove etcd member from cluster
+      command: "{{ bin_dir }}/etcdctl member remove {{ etcd_member_id.stdout }}"
+      environment:
+        ETCDCTL_API: "3"
+        ETCDCTL_CERT: "{{ kube_cert_dir + '/etcd/server.crt' if etcd_deployment_type == 'kubeadm' else etcd_cert_dir + '/admin-' + groups['etcd'] | first + '.pem' }}"
+        ETCDCTL_KEY: "{{ kube_cert_dir + '/etcd/server.key' if etcd_deployment_type == 'kubeadm' else etcd_cert_dir + '/admin-' + groups['etcd'] | first + '-key.pem' }}"
+        ETCDCTL_CACERT: "{{ kube_cert_dir + '/etcd/ca.crt' if etcd_deployment_type == 'kubeadm' else etcd_cert_dir + '/ca.pem' }}"
+        ETCDCTL_ENDPOINTS: "https://127.0.0.1:2379"
+      delegate_to: "{{ groups['etcd'] | first }}"
+      ignore_errors: true 
+      when:
+        - inventory_hostname in groups['etcd']
+        - etcd_member_id.stdout | length > 0
+
     - name: 删除 /etc/hosts 中 store.e-byte.cn 的域名映射
       ansible.builtin.lineinfile:
-        path: /etc/hosts
+        path: /etc/hosts  
         regexp: '^.*store\.e-byte\.cn.*$'
         state: absent
 
@@ -440,7 +515,7 @@
     - name: Kill process occupying port 6443
       command: kill -9 $(lsof -t -i :6443)
       ignore_errors: true
-    
+    # 移除网络插件建立的网桥，否则会导致coredns无法启动
     - name: Reset | check cni network device
       stat:
         path: /sys/class/net/cni0
@@ -465,9 +540,39 @@
       command: ip link del flannel.1
       when: flannel.stat.exists
 
+    - name: Reset | check vxlan.calico network device
+      stat:
+        path: /sys/class/net/vxlan.calico
+        get_attributes: no
+        get_checksum: no
+        get_mime: no
+      register: vxlan
+
+    - name: Reset | remove the network vxlan.calico device created by calico
+      command: ip link del vxlan.calico
+      when: vxlan.stat.exists
+
+    - name: Reset | check dummy0 network device
+      stat:
+        path: /sys/class/net/dummy0
+        get_attributes: no
+        get_checksum: no
+        get_mime: no
+      register: dummy0
+
+    - name: Reset | remove the network device created by calico
+      command: ip link del dummy0
+      when: dummy0.stat.exists
+
+    - name: Reset | get and remove remaining routes set by bird
+      shell: set -o pipefail && ip route show proto bird | xargs -i bash -c "ip route del {} proto bird "
+      args:
+        executable: /bin/bash
+      changed_when: false
+
     - name: Reset | Restart network
       service:
-        name: NetworkManager
+        name: "{{ reset_restart_network_service_name }}"
         state: restarted
       when:
         # - ansible_os_family not in ["Flatcar", "Flatcar Container Linux by Kinvolk"]
@@ -476,22 +581,9 @@
         - services
         - network
 
-- name: Confirm node removal
-  hosts: "{{ groups['kube_control_plane'] | first }}"
-  gather_facts: false
-  vars:
-    bin_dir: /usr/local/bin
-    kubectl: "{{ bin_dir }}/kubectl"
-    delete_node_retries: 3
-    delete_node_delay_seconds: 2
-  tasks:
-    # - name: Check if kubectl directory exists
-    #   stat:
-    #     path: "{{ kubectl }}"
-    #   register: kubectl_stat
-      
-    - name: Remove-node | Delete node
+    - name: Remove-node | Delete node, kubectl delete
       command: "{{ kubectl }} delete node {{ node }}"
+      delegate_to: "{{ groups['kube_control_plane'] | first }}"
       when:
         - node is defined
         - groups['kube_control_plane'] | length > 0
@@ -503,4 +595,5 @@
       register: result
       until: result is not failed
       ignore_errors: true 
+
 

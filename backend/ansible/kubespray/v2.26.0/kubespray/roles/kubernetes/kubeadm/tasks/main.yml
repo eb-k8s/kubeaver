@@ -18,20 +18,6 @@
     get_checksum: false
     get_mime: false
   register: kubelet_conf
-# 等待master节点完成安装
-- name: Wait for master node to be ready
-  shell: |
-    {{ kubectl }}  get nodes
-  args:
-    executable: /bin/bash
-  register: wait_for_master
-  until: wait_for_master.rc == 0
-  retries: 180
-  delay: 5
-  failed_when: false
-  changed_when: false
-  delegate_to: "{{ groups['kube_control_plane'][0] }}"
-  when: inventory_hostname != groups['etcd'][0]
 
 - name: Check if kubeadm CA cert is accessible
   stat:
@@ -180,6 +166,7 @@
   delegate_facts: false
   when:
     - kube_proxy_deployed
+    - inventory_hostname == groups['kube_control_plane'][0]
   tags:
     - kube-proxy
 
@@ -200,6 +187,7 @@
     - kubeadm_discovery_address != kube_apiserver_endpoint | replace("https://", "")
     - kube_proxy_deployed
     - loadbalancer_apiserver_localhost
+    - inventory_hostname == groups['kube_control_plane'][0]
   tags:
     - kube-proxy
 
@@ -216,6 +204,7 @@
   when:
     - kube_proxy_deployed
     - loadbalancer_apiserver is defined
+    - inventory_hostname == groups['kube_control_plane'][0]
   tags:
     - kube-proxy
 
@@ -227,6 +216,7 @@
   delegate_facts: false
   when:
     - kube_proxy_deployed
+    - inventory_hostname == groups['kube_control_plane'][0]
   tags:
     - kube-proxy
 
@@ -243,10 +233,11 @@
   delegate_to: "{{ groups['kube_control_plane'] | first }}"
   delegate_facts: false
   when:
+    - inventory_hostname == groups['kube_control_plane'][0]
     - kubeadm_config_api_fqdn is not defined or loadbalancer_apiserver is defined
     - kubeadm_discovery_address != kube_apiserver_endpoint | replace("https://", "") or loadbalancer_apiserver is defined
     - kube_proxy_deployed
-    - original_configmap_resource_version.stdout != new_configmap_resource_version.stdout
+    - original_configmap_resource_version.stdout != new_configmap_resource_version.stdout  
   tags:
     - kube-proxy
 

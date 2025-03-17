@@ -2,10 +2,9 @@ const KoaRouter = require('koa-router');
 const router = new KoaRouter();
 const serviceHost = require('../service/cluster')
 
-// 创建集群
+// 创建集群,用户选择k8s版本，网络插件。
 router.post('/k8sCluster', async (ctx) => {
-  //curl -X POST -H "Content-Type: application/json" http://10.1.35.91:8000/k8sCluster -d '{"clusterName": "cccc","version": "1.28.2","offlinePackage": "spray-2.25.0-k8s-1.28.2_amd"}'
-  //curl -X POST -H "Content-Type: application/json" http://10.1.35.91:8000/k8sCluster -d '{"clusterName": "test","version": "1.28.2","offlinePackage": "spray-2.25.0-k8s-1.28.2_amd","hosts":[{"ip": "10.1.69.228","hostName": "master1","role": "master"},{"ip": "10.1.69.159","hostName": "node1","role": "node"}]}'
+  //curl -X POST -H "Content-Type: application/json" http://10.1.70.162:8000/api/k8sCluster -d '{"clusterName": "ubuntu","version": "v1.28.12","networkPlugin": "flannel","taskNum": 5,"hosts":[{"ip": "10.1.69.95","hostName": "eb95master","role": "master"}]}'
   const clusterInfo = ctx.request.body;
   try {
     const result = await serviceHost.createK8sCluster(clusterInfo)

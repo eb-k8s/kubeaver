@@ -6,21 +6,27 @@ registry_host: "store.e-byte.cn"
 #registry_host_ip: "10.1.69.240"
 # kube_network_plugin: flannel
 metrics_server_enabled: true
-enable_nodelocaldns: false  
 # image_arch: amd64
+enable_nodelocaldns: false
 download_force_cache: true
 download_localhost: true
 download_run_once: true
+containerd_use_config_path: true
+auto_renew_certificates: true
 # download_cache_dir: /root/data/offline/spray-2.23.3-k8s-1.27.10_amd/kubespray_cache
 # 本地存放repo文件路径
 # localhost_repo_path: /root/data/offline/spray-2.23.3-k8s-1.27.10_amd/repo_files
 # 存放Euler软件源路径
 openEuler_repo_path: "{{localhost_repo_path}}/openEuler_22.03_LTS-SP4.tar"
+openEuler_tar_name: tar-1.34-5.oe2203sp4.x86_64.rpm
 Rocky_repo_path: "{{localhost_repo_path}}/Rocky-Linux_9.1_Blue-Onyx.tar"
 Centos_repo_path: "{{localhost_repo_path}}/CentOS-Linux_7_Core.tar"
+Ubuntu_repo_path: "{{localhost_repo_path}}/Ubuntu_22.04.5_LTS.tar"
 # Ansible受控节点repo文件路径
 node_repo_path: /tmp/releases
-
+# etcd部署方式
+etcd_deployment_type: kubeadm
+etcd_image_repo: "{{registry_host}}/k8s/etcd"
 
 files_repo: "http://{{registry_host}}/file"
 # set registry host as registry mirror
@@ -67,10 +73,7 @@ quay_image_repo: "{{registry_host}}/sysapp/network"
 # flannel images
 flannel_image_repo: "{{registry_host}}/sysapp/network/flannel/flannel"
 flannel_init_image_repo: "{{registry_host}}/sysapp/network/flannel/flannel-cni-plugin"
-## Kubernetes files 
-# kubeadm_download_url: "{{ files_repo }}/k8s/{{ kubeadm_version }}/{{ image_arch }}/kubeadm"
-# kubectl_download_url: "{{ files_repo }}/k8s/{{ kube_version }}/{{ image_arch }}/kubectl"
-# kubelet_download_url: "{{ files_repo }}/k8s/{{ kube_version }}/{{ image_arch }}/kubelet"
+
 # Images
 # coredns
 coredns_image_repo: "{{registry_host}}/k8s/coredns"
@@ -97,3 +100,7 @@ metrics_server_image_repo: "{{ registry_host }}/sysapp/metrics-server/metrics-se
 # # Calico: If using Calico network plugin
 # calicoctl_download_url: "{{ files_repo }}/sysapp/network/calico/{{ calico_ctl_version }}/calicoctl-linux-{{ image_arch }}"
 # calico_crds_download_url: "{{ files_repo }}/sysapp/network/calico/{{ calico_version }}/calico.tar.gz"
+## Kubernetes files 
+# kubeadm_download_url: "{{ files_repo }}/k8s/{{ kubeadm_version }}/{{ image_arch }}/kubeadm"
+# kubectl_download_url: "{{ files_repo }}/k8s/{{ kube_version }}/{{ image_arch }}/kubectl"
+# kubelet_download_url: "{{ files_repo }}/k8s/{{ kube_version }}/{{ image_arch }}/kubelet"

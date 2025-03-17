@@ -6,7 +6,7 @@ WORKDIR /root
 # 拷贝文件
 COPY . /root
 
-# 下载node包
+#下载node包
 ENV NODE_VERSION=18.17.0
 RUN curl -O https://nodejs.org/dist/v$NODE_VERSION/node-v$NODE_VERSION-linux-x64.tar.gz && \
     tar xfvz node-v$NODE_VERSION-linux-x64.tar.gz -C /usr/local --strip-components=1 && \
