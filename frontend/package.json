@@ -12,7 +12,7 @@
     "preview": "npm run build && vite preview --host",
     "type:check": "vue-tsc --noEmit --skipLibCheck",
     "lint-staged": "npx lint-staged",
-    "prepare": "HUSKY_GIT_DIR=../.git husky install"
+    "prepare": "cd .. && husky install frontend/.husky"
   },
   "lint-staged": {
     "*.{js,ts,jsx,tsx}": [
