@@ -22,6 +22,8 @@ jobs:
     strategy:
       matrix:
         node-version: [18.19.1]
+    env:
+      HUSKY_GIT_DIR: ../.git 
 
     steps:
     - name: Checkout code
