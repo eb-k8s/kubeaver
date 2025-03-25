@@ -1,3 +1,0 @@
----
-snapshot_controller_replicas: 1
-snapshot_controller_namespace: kube-system

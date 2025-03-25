@@ -1,0 +1,9 @@
+server = "{{ server }}"
+
+[host."{{ server }}"]
+  capabilities = ["pull", "resolve", "push"]
+  skip_verify = true
+{% if admin_passwd is defined %}
+[host."{{ server }}".header]
+  authorization = "Basic {{ admin_passwd }}"
+{% endif %}

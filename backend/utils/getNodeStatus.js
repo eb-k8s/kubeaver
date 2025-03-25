@@ -21,19 +21,25 @@ async function getRedis(id) {
   }
   const formattedInfo = {
     clusterName: clusterInfo.clusterName,
-    offlinePackage: clusterInfo.offlinePackage,
+    k8sVersion: clusterInfo.version,
     networkPlugin: clusterInfo.networkPlugin,
     clusterId: clusterInfo.clusterId || '',
     hosts: []
   };
   // 查询所有节点信息
   let nodehash = `k8s_cluster:${id}:hosts:*`
+
   const nodeKeys = await redis.keys(nodehash);
   for (const nodeKey of nodeKeys) {
     const nodeInfo = await redis.hgetall(nodeKey);
+    //增加根据ip，用户名，查询主机密码，然后设置进去
+    let hosthash = `host:${nodeInfo.ip}`
+    const hostInfo = await redis.hgetall(hosthash);
     formattedInfo.hosts.push({
       ip: nodeInfo.ip,
+      user: nodeInfo.user,
       hostName: nodeInfo.hostName,
+      password: hostInfo.password,
       role: nodeInfo.role,
       status: nodeInfo.status
     });
@@ -42,12 +48,15 @@ async function getRedis(id) {
 }
 
 async function getConfigFile(id, hostPath, masterIP) {
+  //查询密码
+  let hosthash = `host:${masterIP}`
+  const hostInfo = await redis.hgetall(hosthash);
   let parsedData
   // 如果 hostPath 为空，调用 getHostsYamlFile 获取
   if (!hostPath) {
     try {
       const resultData = await getRedis(id); // 假设 getRedis 函数可以返回必要的信息
-      hostPath = await getHostsYamlFile(resultData);
+      hostPath = await getHostsYamlFile(resultData, id);
     } catch (error) {
       console.error(`获取 hostPath 时出错: ${error.message}`);
       return; // 如果获取 hostPath 失败，退出函数
@@ -76,7 +85,7 @@ async function getConfigFile(id, hostPath, masterIP) {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'config-'));
   const outputPath = path.join(tmpDir, 'config');
   const privateKeyPath = path.join(__dirname, '../ssh', 'id_rsa');
-  const ansibleCommand = `ansible kube_control_plane[0] --private-key ${privateKeyPath} -i ${hostPath} -m fetch -a "src=/etc/kubernetes/admin.conf dest=${outputPath} flat=yes"`;
+  const ansibleCommand = `ansible kube_control_plane[0] --private-key ${privateKeyPath} -i ${hostPath} -m fetch -a "src=/etc/kubernetes/admin.conf dest=${outputPath} flat=yes" -b`;
   //console.log(outputPath)
   await new Promise((resolve, reject) => {
     exec(ansibleCommand, (error, stdout, stderr) => {

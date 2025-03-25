@@ -1,0 +1,29 @@
+---
+- name: get registry config
+  hosts: k8s_cluster
+  become: true
+  gather_facts: false
+  vars: 
+    containerd_cfg_dir: /etc/containerd
+    save_dir: /tmp/registry_config
+  tasks:
+    - name: Create a directory for each host IP under save_dir
+      delegate_to: localhost
+      file:
+        path: "{{ save_dir }}/{{ ansible_host }}"
+        state: directory
+
+    - name: Find all hosts.toml files in the specified directory on the remote host
+      find:
+        paths: "{{ containerd_cfg_dir }}/certs.d"
+        patterns: "hosts.toml"
+        recurse: yes
+      register: found_files
+
+    - name: Copy and rename each hosts.toml file to the local directory with modified name
+      fetch:
+        src: "{{ item.path }}"
+        dest: "{{ save_dir }}/{{ ansible_host }}/{{ item.path | dirname | basename }}.toml"
+        flat: yes
+        validate_md5: no
+      loop: "{{ found_files.files }}"

@@ -1,0 +1,134 @@
+---
+- name: get registry config
+  hosts: k8s_cluster
+  become: true
+  gather_facts: false
+  vars: 
+    containerd_cfg_dir: /etc/containerd
+    # server: http://store.e-byte.cn
+    # admin_passwd: YWRtaW46SGFyYm9yMTIzNDU=
+    # registry_host_ip: 10.1.70.162
+  tasks:
+    - name: Extract the path after ://
+      set_fact:
+        registry_host: "{{ server | regex_replace('^[^:/]+://', '') }}"
+
+    - name: Define test registry interface var
+      set_fact:
+        registry_server: "{{ server }}/v2/_catalog"
+
+    - name:  Comment out lines containing {{ registry_host }} in /etc/hosts
+      ansible.builtin.replace:
+        path: /etc/hosts
+        regexp: '^([^#].*{{ registry_host }}.*)$'  # 匹配未注释且包含变量的行
+        replace: '#\1'  # 在行首添加注释符号
+        backup: yes      # 修改前自动备份原文件
+      become: yes        # 需要 root 权限
+
+    - name: Ensure the /etc/hosts file contains the required entry
+      lineinfile:
+        path: /etc/hosts
+        line: "{{registry_host_ip}} {{registry_host}}"
+        state: present
+        backup: yes
+
+    - name: Perform a GET request to retrieve catalog information
+      uri:
+        url: "{{ registry_server }}"
+        method: GET
+        headers:
+          Authorization: "Bearer {{ admin_passwd }}"
+        validate_certs: no
+      register: response
+      ignore_errors: true
+      when: admin_passwd is defined
+      # failed_when: response.status not in range(200, 300)
+
+    # - name: output response
+    #   debug:
+    #     var: response
+    
+    - name: Remove lines containing {{ registry_host_ip }} {{ registry_host }} from /etc/hosts
+      lineinfile:
+        path: /etc/hosts
+        regexp: '^{{ registry_host_ip }}\s+{{ registry_host }}$'
+        state: absent
+      when: 
+        - response.skipped is not defined
+        - response.json.repositories is not defined
+
+    - name: Uncomment lines containing {{ registry_host }} in /etc/hosts
+      ansible.builtin.replace:
+        path: /etc/hosts
+        regexp: '^#\s*([^#].*{{ registry_host }}.*)$'  # 匹配以 # 开头且包含变量的行
+        replace: '\1'  # 移除注释符号
+        backup: yes     # 修改前自动备份原文件
+      become: yes       # 需要 root 权限
+      when: 
+        - response.skipped is not defined
+        - response.json.repositories is not defined
+
+    - name: Stop the task if configure is not right
+      fail:
+        msg: "The registy is not configured"
+      when: 
+        - response.skipped is not defined
+        - response.json.repositories is not defined
+
+    - name: Perform a GET request to retrieve catalog information
+      uri:
+        url: "{{ registry_server }}"
+        method: GET
+        validate_certs: no
+      register: response
+      ignore_errors: true
+      when: admin_passwd is not defined
+      # failed_when: response.status not in range(200, 300)
+
+    # - name: output response
+    #   debug:
+    #     var: response
+
+    - name: Remove lines containing {{ registry_host_ip }} {{ registry_host }} from /etc/hosts
+      lineinfile:
+        path: /etc/hosts
+        regexp: '^{{ registry_host_ip }}\s+{{ registry_host }}$'
+        state: absent
+      when: 
+        - response.skipped is not defined
+        - response.json.repositories is not defined
+
+    - name: Uncomment lines containing {{ registry_host }} in /etc/hosts
+      ansible.builtin.replace:
+        path: /etc/hosts
+        regexp: '^#\s*([^#].*{{ registry_host }}.*)$'  # 匹配以 # 开头且包含变量的行
+        replace: '\1'  # 移除注释符号
+        backup: yes     # 修改前自动备份原文件
+      become: yes       # 需要 root 权限
+      when: 
+        - response.skipped is not defined
+        - response.json.repositories is not defined
+    
+    - name: Stop the task if configure is not right
+      fail:
+        msg: "The registy is not configured"
+      when: 
+        - response.skipped is not defined
+        - response.json.repositories is not defined
+
+    - name: Create registry directories
+      file:
+        path: "{{ containerd_cfg_dir }}/certs.d/{{ registry_host }}"
+        state: directory
+
+    - name: Write hosts.toml file
+      template:
+        src: hosts.toml.j2
+        dest: "{{ containerd_cfg_dir }}/certs.d/{{ registry_host }}/hosts.toml"
+
+    - name: Restart containerd service
+      systemd:
+        name: containerd
+        state: restarted
+
+

@@ -1,1 +1,0 @@
-../plugins/modules/kube.py

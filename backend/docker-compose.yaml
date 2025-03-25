@@ -1,0 +1,39 @@
+# 定义 compose 文件的版本号，这里使用的是版本3
+#version: '3'
+#  
+#  # services 部分定义了要启动的服务
+services:
+  registry:
+    image: registry:2
+    container_name: registry
+    restart: always
+    ports:
+      - 80:5000
+    environment:
+      REGISTRY_HTTP_HEADERS_Access-Control-Allow-Origin: '[http://store.e-byte.cn]'
+      REGISTRY_HTTP_HEADERS_Access-Control-Allow-Methods: '[HEAD,GET,OPTIONS,DELETE]'
+      REGISTRY_HTTP_HEADERS_Access-Control-Allow-Credentials: '[true]'
+      REGISTRY_HTTP_HEADERS_Access-Control-Allow-Headers: '[Authorization,Accept,Cache-Control]'
+      REGISTRY_HTTP_HEADERS_Access-Control-Expose-Headers: '[Docker-Content-Digest]'
+      REGISTRY_STORAGE_DELETE_ENABLED: 'true'
+     # REGISTRY_AUTH: htpasswd
+     # REGISTRY_AUTH_HTPASSWD_REALM: Registry Realm
+     # REGISTRY_AUTH_HTPASSWD_PATH: /etc/docker/registry/registry.password
+    volumes:
+      - ./data/registry:/var/lib/registry
+     # - ./registry.password:/etc/docker/registry/registry.password
+    
+  apploader:
+    image: apploader:v1.0.0
+    container_name: apploader
+    user: root
+    restart: always
+    ports:
+      - 8081:8081
+    volumes:
+      - ./data/apps:/srv/apps
+      - ./data/offline:/srv/offline  
+      - /var/run/docker.sock:/var/run/docker.sock
+    extra_hosts:
+      - "store.e-byte.cn:${HOST_IP}"
+

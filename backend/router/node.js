@@ -2,6 +2,21 @@ const KoaRouter = require('koa-router');
 const router = new KoaRouter();
 const serviceHost = require('../service/node')
 
+//获取所有节点列表
+router.get('/k8sNodes', async (ctx, next) => {
+  try {
+    const data = await serviceHost.getAllNodeList();
+    ctx.body = data;
+  } catch (error) {
+    ctx.body = {
+      code: 50000,
+      data: "",
+      msg: error.message,
+      status: "error"
+    };
+  }
+})
+
 //获取集群节点列表
 router.get('/k8sClusterNodes', async (ctx, next) => {
   const id = ctx.query.id;
@@ -20,8 +35,8 @@ router.get('/k8sClusterNodes', async (ctx, next) => {
 
 //添加集群节点
 router.post('/k8sClusterNode', async (ctx) => {
-  //默认etcd与master在同一个节点，目前只支持一个master
-  //curl -X POST -H "Content-Type: application/json" http://10.1.35.91:8000/k8sClusterNode -d '{"id": "vn24ubxe","hosts":[{"ip": "10.1.69.235","hostName": "master1","role": "master","status": ""}]}'
+  //curl -X POST -H "Content-Type: application/json" http://10.1.70.162:8000/api/k8sClusterNode -d '{"id": "n9l3a9c8","hosts":[{"ip": "10.1.69.238","hostName": "node2","role": "node"}]}'
+  console.log(ctx.request.body)
   const clusterInfo = ctx.request.body;
   try {
     const result = await serviceHost.addK8sClusterNode(clusterInfo)
