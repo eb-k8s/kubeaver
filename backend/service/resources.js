@@ -141,7 +141,12 @@ async function getOfflineContents() {
 
   const treeStructure = readDirRecursive(offlineDir);
   //console.log(JSON.stringify(treeStructure, null, 2));
-  return treeStructure;
+  return {
+    code: 20000,
+    data: treeStructure,
+    msg: "获取离线包信息成功",
+    status: "ok"
+  };
 }
 
 

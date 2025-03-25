@@ -1,3 +1,0 @@
----
-- name: Recover control plane
-  ansible.builtin.import_playbook: playbooks/recover_control_plane.yml

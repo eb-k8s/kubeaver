@@ -3,6 +3,7 @@ import sys
 import zipfile
 import os
 import argparse
+import tempfile
 
 def read_yaml_file(file_path):
     """Read the content of a YAML file."""
@@ -103,35 +104,69 @@ def remove_lines_after_pattern(lines, pattern, num_lines_to_remove=2):
     
     return new_lines
 
+def process_files(files, insert_content):
+    for file in files:
+        if not os.path.isfile(file):
+            print(f"File {file} does not exist.")
+            continue
+
+        with open(file, 'r') as f:
+            content = f.readlines()
+
+        if any(insert_content in line for line in content):
+            print(f"The content is already present in {file}.")
+            continue
+
+        temp_file = tempfile.NamedTemporaryFile(delete=False, mode='w', newline='')
+        
+        try:
+            first_line = content.pop(0)
+            temp_file.write(first_line)
+            temp_file.write(f"- name: {insert_content.split(':')[0]}\n")
+            temp_file.write(f"  ansible.builtin.import_playbook: {insert_content.split(':')[1]}\n")
+            temp_file.writelines(content)
+        finally:
+            temp_file.close()
+
+        os.replace(temp_file.name, file)
+        print(f"Added new content to {file}.")
 def main():
+    # 解决python_load.sh问题
+    FILES1 = ["kubespray/cluster.yml", "kubespray/scale.yml", "kubespray/reset.yml"]
+    FILES2 = ["kubespray/cluster.yml", "kubespray/scale.yml"]
+    process_files(FILES1, "pre_playbook: ../pre_playbook.yml")
+    process_files(FILES2, "force_reset_playbook: ../reset.yml")
+
     parser = argparse.ArgumentParser(description="Process some parameters.")
-    parser.add_argument('--zip_filename', type=str, default='kubespray-2.26.0.zip',
-                        help='The default zip file to use if not provided.')
+    parser.add_argument('--kubespray_version', type=str, default='v2.26.0',
+                        help='The kubespray version.')
 
     args = parser.parse_args()
-    # Default zip file name
-    default_zip_file = args.zip_filename
+    # # Default zip file name
+    # zip_file_name = args.zip_filename
     
-    # Get the zip file name from command line argument if provided
-    zip_file_name = sys.argv[1] if len(sys.argv) > 1 else default_zip_file
+    # # Get the zip file name from command line argument if provided
+    # # zip_file_name = sys.argv[1] if len(sys.argv) > 1 else default_zip_file
     
-    # Check if the zip file exists
-    if not os.path.isfile(zip_file_name):
-        print(f"Error: The file {zip_file_name} does not exist.")
-        return
+    # # Check if the zip file exists
+    # if not os.path.isfile(zip_file_name):
+    #     print(f"Error: The file {zip_file_name} does not exist.")
+    #     return
     
-    # Define the extraction directory
-    extract_directory = f"./"
+    # # Define the extraction directory
+    # extract_directory = f"./"
     
-    # Unzip the file
-    unzip_file(zip_file_name, extract_directory)
+    # # Unzip the file
+    # unzip_file(zip_file_name, extract_directory)
 
     # 获取kubespray版本
-    kubespray_version = os.path.splitext(os.path.basename(zip_file_name))[0].split('-')[1]
+    # kubespray_version = os.path.splitext(os.path.basename(zip_file_name))[0].split('-')[1]
+    kubespray_version = args.kubespray_version[1:]
     print(f"kubespray version: {kubespray_version}")
 
     # 开始修改kubespray代码部分
-    kubespray_path = os.path.splitext(os.path.basename(zip_file_name))[0]
+    # kubespray_path = os.path.splitext(os.path.basename(zip_file_name))[0]
+    kubespray_path = "./kubespray"
     # 在kubespray_path下创建callback_plugins目录
     os.makedirs(f"{kubespray_path}/callback_plugins", exist_ok=True)
     # 复制callback_plugins目录下的文件到kubespray_path下
@@ -149,10 +184,19 @@ def main():
     # 在  - name: Download_file | Download item新增when: false
     modified_lines = insert_line_after_pattern(modified_lines, "- name: Download_file | Download item", "    when: false")
     # 将传输方式从rsync修改为copy
-    modified_lines = replace_line_with_pattern(modified_lines, "    ansible.posix.synchronize:", "    ansible.builtin.copy:")
+    # modified_lines = replace_line_with_pattern(modified_lines, "    ansible.posix.synchronize:", "    ansible.builtin.copy:")
     # 注释掉copy模块没有的参数
-    modified_lines = replace_line_with_pattern(modified_lines, "use_ssh_args: true", "#use_ssh_args: true")
-    modified_lines = replace_line_with_pattern(modified_lines, "mode: push", "#mode: push")
+    # modified_lines = replace_line_with_pattern(modified_lines, "use_ssh_args: true", "#use_ssh_args: true")
+    # modified_lines = replace_line_with_pattern(modified_lines, "mode: push", "#mode: push")
+    new_string = """      rsync_opts:
+        - "--no-perms"
+        - "--no-owner"    
+        - "--no-group"
+        - "--copy-links" """
+    modified_lines = insert_line_after_pattern(modified_lines, "mode: push", new_string)    
+    # 将文件夹权限修改为777
+    modified_lines = replace_line_with_pattern(modified_lines, "      mode: \"0755\"", "      mode: \"0777\"")
+    modified_lines = replace_line_with_pattern(modified_lines, "      mode: 0755", "      mode: 0777")
     # 将更改写入文件
     write_yaml_file(f"{kubespray_path}/roles/download/tasks/download_file.yml", modified_lines)
 
@@ -160,10 +204,16 @@ def main():
     # 读入该yml文件
     lines = read_yaml_file(f"{kubespray_path}/roles/download/tasks/download_container.yml")
     # 将传输方式从rsync修改为copy
-    modified_lines = replace_line_with_pattern(modified_lines, "    ansible.posix.synchronize:", "    ansible.builtin.copy:")
-    # 注释掉copy模块没有的参数
-    modified_lines = replace_line_with_pattern(modified_lines, "use_ssh_args: true", "#use_ssh_args: true")
-    modified_lines = replace_line_with_pattern(modified_lines, "mode: push", "#mode: push")
+    # modified_lines = replace_line_with_pattern(modified_lines, "    ansible.posix.synchronize:", "    ansible.builtin.copy:")
+    # # 注释掉copy模块没有的参数
+    # modified_lines = replace_line_with_pattern(modified_lines, "use_ssh_args: true", "#use_ssh_args: true")
+    # modified_lines = replace_line_with_pattern(modified_lines, "mode: push", "#mode: push")
+    # 注释掉failed when 
+    modified_lines = replace_line_with_pattern(lines, "      failed_when: not upload_image", "      #failed_when: not upload_image")
+
+    new_string = """        rsync_opts:
+          - "--copy-links" """
+    modified_lines = insert_line_after_pattern(modified_lines, "mode: push", new_string)    
     # 将更改写入文件
     write_yaml_file(f"{kubespray_path}/roles/download/tasks/download_container.yml", modified_lines)
 
@@ -190,6 +240,15 @@ def main():
     modified_lines = replace_line_with_pattern(lines, "    when: kube_network_plugin_multus", "    when: false")
     # 将更改写入文件
     write_yaml_file(f"{kubespray_path}/roles/network_plugin/meta/main.yml", modified_lines)
+
+    # 修改roles/kubernetes-apps/network_plugin/multus/tasks/main.yml
+    # 读入该文件
+    lines = read_yaml_file(f"{kubespray_path}/roles/kubernetes-apps/network_plugin/multus/tasks/main.yml")
+    # 将    when: kube_network_plugin_multus中新增- false
+    modified_lines = replace_line_with_pattern(lines, "    - not item is skipped", "    - false")
+    modified_lines = insert_line_after_pattern(lines, "  run_once: true", "  ignore_errors: true")
+    # 将更改写入文件
+    write_yaml_file(f"{kubespray_path}/roles/kubernetes-apps/network_plugin/multus/tasks/main.yml", modified_lines)
 
     # 根据kubespray的版本来修复metrics_server的镜像拉取问题
     if kubespray_version == "2.23.3":
@@ -280,7 +339,7 @@ def main():
     # - name: Restart all kube-proxy pods to ensure that they load the new configmap后面
     modified_lines = insert_line_after_pattern(modified_lines, "- name: Restart all kube-proxy pods to ensure that they load the new configmap", "    - inventory_hostname == groups['kube_control_plane'][0]", 5)
     # - name: Get current resourceVersion of kube-proxy configmap后面10行新增
-    modified_lines = insert_line_after_pattern(lines, "- name: Get current resourceVersion of kube-proxy configmap", "    - inventory_hostname == groups['kube_control_plane'][0]", 6)
+    modified_lines = insert_line_after_pattern(modified_lines, "- name: Get current resourceVersion of kube-proxy configmap", "    - inventory_hostname == groups['kube_control_plane'][0]", 6)
     # - name: Get new resourceVersion of kube-proxy configmap后面
     modified_lines = insert_line_after_pattern(modified_lines, "- name: Get new resourceVersion of kube-proxy configmap", "    - inventory_hostname == groups['kube_control_plane'][0]", 6)
     # 将更改写入文件

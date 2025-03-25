@@ -156,42 +156,6 @@ async function createAnsibleQueue(baseQueueId, concurrency) {
           'clusterId', clusterId,//用于sql数据库
           'updateTime', updateTime
         )
-        // //所有node都加入job,包括新加入的。
-        // resultData = await getRedis(job.data.playbook.id)
-        // const nodeJobs = resultData.hosts
-        // hostsPath = await getHostsYamlFile(resultData)
-        // for (const node of nodeJobs) {
-        //   if (node.role === "node") {
-        //     let taskName = `addNode`
-        //     let taskId = `${job.data.playbook.id}_${taskName}`
-        //     const resultPackageData = await offlinePackagesPath(job.data.playbook.offlinePackage)
-        //     let task = `${resultPackageData.kubesprayPath}/kubespray/scale.yml`
-        //     let workDir = `${resultPackageData.kubesprayPath}/kubespray`
-        //     let configFile = `@${resultPackageData.kubesprayPath}/config.yml`
-        //     let downloadCacheDir = `${resultPackageData.offlinePackagePath}/all_files`
-        //     let localhostRepoPath = `${resultPackageData.offlinePackagePath}/repo_files`
-        //     const playbook = {
-        //       //ansible-playbook scale.yml -b -i inventory/mycluster/hosts.yaml -e kube_version=v1.30.3 --limit node2
-        //       task: task,
-        //       taskId: taskId,
-        //       id: job.data.playbook.id,
-        //       clusterName: resultData.clusterName,
-        //       taskName: taskName,
-        //       role: node.role,
-        //       hostName: node.hostName,
-        //       ip: node.ip,
-        //       hostsPath: hostsPath,
-        //       downloadCacheDir: downloadCacheDir,
-        //       localhostRepoPath: localhostRepoPath,
-        //       kubeVersion: resultPackageData.kubeVersion,
-        //       imageArch: resultPackageData.imageArch,
-        //       networkPlugin: resultData.networkPlugin,
-        //       workDir: workDir,
-        //       configFile: configFile,
-        //     }
-        //     await addTaskToQueue(job.data.playbook.id, 'addNode', playbook);
-        //   }
-        // }
       }
       if (job.name == 'addNode' && job.data.playbook.role === 'node') {
         //设置节点状态
@@ -271,43 +235,41 @@ async function createAnsibleQueue(baseQueueId, concurrency) {
             `UPDATE clusters SET config = ? WHERE id = ?`,
             [configContent, resultData.clusterId])
           //升级node节点
-          resultData.hosts = resultData.hosts.filter(node =>
-            !(node.status === "Unknown")
-          );
-          let hostsPath = await getHostsYamlFile(resultData, job.data.playbook.id)
-          const nodeJobs = resultData.hosts
-          for (const node of nodeJobs) {
-            if (node.role === "node") {
-              let taskName = `upgradeCluster`
-              let taskId = `${job.data.playbook.id}_${taskName}`
-              const resultPackageData = await offlinePackagesPath()
-              let task = `${resultPackageData.kubesprayPath}/kubespray/upgrade-cluster.yml`
-              let workDir = `${resultPackageData.kubesprayPath}/kubespray`
-              let configFile = `@${resultPackageData.kubesprayPath}/config.yml`
-              let downloadCacheDir = `${resultPackageData.offlinePackagePath}/all_files`
-              let localhostRepoPath = `${resultPackageData.offlinePackagePath}/repo_files`
-              const playbook = {
-                task: task,
-                taskId: taskId,
-                id: job.data.playbook.id,
-                version: resultData.version,
-                clusterName: resultData.clusterName,
-                taskName: taskName,
-                hostName: node.hostName,
-                downloadCacheDir: downloadCacheDir,
-                localhostRepoPath: localhostRepoPath,
-                kubeVersion: resultData.k8sVersion,
-                imageArch: resultPackageData.imageArch,
-                networkPlugin: resultData.networkPlugin,
-                role: node.role,
-                ip: node.ip,
-                hostsPath: hostsPath,
-                workDir: workDir,
-                configFile: configFile,
-              }
-              await addTaskToQueue(job.data.playbook.id, 'upgradeCluster', playbook);
-            }
-          }
+          // resultData.hosts = resultData.hosts.filter(node =>
+          //   !(node.status === "Unknown")
+          // );
+          // let hostsPath = await getHostsYamlFile(resultData, job.data.playbook.id)
+          // const nodeJobs = resultData.hosts
+          // for (const node of nodeJobs) {
+          //   if (node.role === "node") {
+          //     let taskName = `upgradeCluster`
+          //     let taskId = `${job.data.playbook.id}_${taskName}`
+          //     const resultPackageData = await offlinePackagesPath()
+          //     let task = `${resultPackageData.kubesprayPath}/kubespray/upgrade-cluster.yml`
+          //     let workDir = `${resultPackageData.kubesprayPath}/kubespray`
+          //     let configFile = `@${resultPackageData.kubesprayPath}/config.yml`
+          //     let offlineCacheDir = `${resultPackageData.offlinePackagePath}`
+          //     const playbook = {
+          //       task: task,
+          //       taskId: taskId,
+          //       id: job.data.playbook.id,
+          //       version: resultData.version,
+          //       clusterName: resultData.clusterName,
+          //       taskName: taskName,
+          //       hostName: node.hostName,
+          //       offlineCacheDir: offlineCacheDir,
+          //       kubeVersion: resultData.k8sVersion,
+          //       imageArch: resultPackageData.imageArch,
+          //       networkPlugin: resultData.networkPlugin,
+          //       role: node.role,
+          //       ip: node.ip,
+          //       hostsPath: hostsPath,
+          //       workDir: workDir,
+          //       configFile: configFile,
+          //     }
+          //     await addTaskToQueue(job.data.playbook.id, 'upgradeCluster', playbook);
+          //   }
+          // }
         }
         const nodeKey = `k8s_cluster:${job.data.playbook.id}:hosts:${job.data.playbook.ip}`;
         const nodeStatusData = await getNodeStatus(job.data.playbook.id, job.data.playbook.hostName, job.data.playbook.hostsPath, '');
@@ -432,8 +394,7 @@ async function processInitCluster(job) {
       '--extra-vars', `kube_network_plugin=${job.data.playbook.networkPlugin}`,
       '--extra-vars', `kube_version=${job.data.playbook.kubeVersion}`,
       '--extra-vars', `image_arch=${job.data.playbook.imageArch}`,
-      '--extra-vars', `download_cache_dir=${job.data.playbook.downloadCacheDir}`,
-      '--extra-vars', `localhost_repo_path=${job.data.playbook.localhostRepoPath}`,
+      '--extra-vars', `offline_cache_dir=${job.data.playbook.offlineCacheDir}`,
       '--extra-vars', job.data.playbook.configFile,
       '--extra-vars', `registry_host_ip=${hostIp}`,
       '--limit', job.data.playbook.hostName
@@ -524,8 +485,7 @@ async function processAddNode(job) {
       '--extra-vars', `kube_network_plugin=${job.data.playbook.networkPlugin}`,
       '--extra-vars', `kube_version=${job.data.playbook.kubeVersion}`,
       '--extra-vars', `image_arch=${job.data.playbook.imageArch}`,
-      '--extra-vars', `download_cache_dir=${job.data.playbook.downloadCacheDir}`,
-      '--extra-vars', `localhost_repo_path=${job.data.playbook.localhostRepoPath}`,
+      '--extra-vars', `offline_cache_dir=${job.data.playbook.offlineCacheDir}`,
       '--extra-vars', job.data.playbook.configFile,
       '--extra-vars', `registry_host_ip=${hostIp}`,
       '--limit', job.data.playbook.hostName
@@ -605,8 +565,7 @@ async function processUpgradeCluster(job) {
       '--extra-vars', `kube_network_plugin=${job.data.playbook.networkPlugin}`,
       '--extra-vars', `kube_version=${job.data.playbook.kubeVersion}`,
       '--extra-vars', `image_arch=${job.data.playbook.imageArch}`,
-      '--extra-vars', `download_cache_dir=${job.data.playbook.downloadCacheDir}`,
-      '--extra-vars', `localhost_repo_path=${job.data.playbook.localhostRepoPath}`,
+      '--extra-vars', `offline_cache_dir=${job.data.playbook.offlineCacheDir}`,
       '--extra-vars', job.data.playbook.configFile,
       '--limit', job.data.playbook.hostName,
     ], {

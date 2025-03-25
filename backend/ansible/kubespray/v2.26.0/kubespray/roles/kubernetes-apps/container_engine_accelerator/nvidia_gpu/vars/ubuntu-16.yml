@@ -1,3 +1,0 @@
----
-nvidia_driver_install_container: "{{ nvidia_driver_install_ubuntu_container }}"
-nvidia_driver_install_supported: true

@@ -5,5 +5,7 @@ resources
 static
 offline
 data
-ansible/kubespray/v2.26.0/kubespray/callback_plugins/__pycache__
-ansible/kubespray/v2.26.0/callback_plugins/__pycache__
+ansible/bak
+ansible/kubespray
+ansible/v2.23.3.zip
+ansible/v2.26.0.zip
