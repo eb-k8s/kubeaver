@@ -1,6 +1,0 @@
----
-docker_package_info:
-  state: latest
-  pkgs:
-    - docker
-    - containerd

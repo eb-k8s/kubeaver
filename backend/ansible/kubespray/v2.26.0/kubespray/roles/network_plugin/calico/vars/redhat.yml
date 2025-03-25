@@ -1,4 +1,0 @@
----
-calico_wireguard_packages:
-  - wireguard-dkms
-  - wireguard-tools

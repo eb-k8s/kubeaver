@@ -32,7 +32,7 @@ app.use(async (ctx, next) => {
   }
 });
 initOffline();
-startFileWatcher();
+//startFileWatcher();
 initQueue();
 startScheduler();
 
