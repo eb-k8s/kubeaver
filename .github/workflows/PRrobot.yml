@@ -23,8 +23,8 @@ jobs:
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
         with:
-          # # 使用更高权限的Token
-          # github-token: ${{ secrets.PR_ROBOT }}
+          # 使用更高权限的Token
+          github-token: ${{ secrets.PR_ROBOT }}
           script: |
             const { data: pr } = await github.rest.pulls.get({
               owner: context.repo.owner,
@@ -44,3 +44,4 @@ jobs:
             } else {
               console.log('PR not ready for merging');
             }
+            
