@@ -2,9 +2,9 @@ name: Build Docker Image
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "release" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "release" ]
   workflow_dispatch:
     inputs:
       tag:
@@ -22,8 +22,6 @@ jobs:
     strategy:
       matrix:
         node-version: [18.19.1]
-    env:
-      HUSKY_GIT_DIR: ../.git 
 
     steps:
     - name: Checkout code
