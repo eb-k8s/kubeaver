@@ -42,5 +42,5 @@ jobs:
             } else {
               console.log('PR not ready for merging');
             }
-          # 使用更高权限的Token
-          github_token: ${{ secrets.ACTION_WXL }}
+          # # 使用更高权限的Token
+          # github-token: ${{ secrets.ACTION_WXL }}
