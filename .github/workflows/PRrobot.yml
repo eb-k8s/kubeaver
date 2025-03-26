@@ -23,6 +23,8 @@ jobs:
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
         with:
+          # 使用更高权限的Token
+          github-token: ${{ secrets.ACTION_WXL }}
           script: |
             const { data: pr } = await github.rest.pulls.get({
               owner: context.repo.owner,
@@ -36,11 +38,9 @@ jobs:
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 pull_number: process.env.PR_NUMBER,
-                merge_method: 'merge'  # 可选 squash/rebase
+                merge_method: 'squash'  # 可选 squash/rebase
               });
               console.log('PR merged successfully');
             } else {
               console.log('PR not ready for merging');
             }
-          # # 使用更高权限的Token
-          # github-token: ${{ secrets.ACTION_WXL }}
