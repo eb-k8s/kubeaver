@@ -22,10 +22,9 @@ jobs:
         uses: actions/github-script@v6
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
-          GITHUB_TOKEN: ${{ secrets.ACTION_WXL }}
         with:
-          # 使用更高权限的Token
-          github-token: ${{ secrets.PR_ROBOT }}
+          # # 使用更高权限的Token
+          # github-token: ${{ secrets.PR_ROBOT }}
           script: |
             const { data: pr } = await github.rest.pulls.get({
               owner: context.repo.owner,
