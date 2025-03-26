@@ -207,11 +207,17 @@ def main():
     # # 将更改写入文件
     # write_yaml_file(f"{kubespray_path}/roles/kubernetes/preinstall/tasks/0020-set_facts.yml", modified_lines)
 
-    # 修改/roles/kubernetes-apps/network_plugin/meta/main.yml中multus相关配置   
-    # 读入该yml文件
+    # # 修改/roles/kubernetes-apps/network_plugin/meta/main.yml中multus相关配置   
+    # # 读入该yml文件
+    # lines = read_yaml_file(f"{kubespray_path}/roles/kubernetes-apps/network_plugin/meta/main.yml")
+    # # 将    when: kube_network_plugin_multus替换为 false
+    # modified_lines = replace_line_with_pattern(lines, "    when: kube_network_plugin_multus", "    when: false")
+    # # 将更改写入文件
+    # write_yaml_file(f"{kubespray_path}/roles/kubernetes-apps/network_plugin/meta/main.yml", modified_lines)
+    #修改roles/download/defaults/main/main.yml
     lines = read_yaml_file(f"{kubespray_path}/roles/kubernetes-apps/network_plugin/meta/main.yml")
-    # 将    when: kube_network_plugin_multus替换为 false
-    modified_lines = replace_line_with_pattern(lines, "    when: kube_network_plugin_multus", "    when: false")
+    # 删除sha256: "{{ metrics_server_digest_checksum | default(None) }}"的后面两行内容
+    modified_lines = remove_lines_after_pattern(lines, "      - kube-router", 5)
     # 将更改写入文件
     write_yaml_file(f"{kubespray_path}/roles/kubernetes-apps/network_plugin/meta/main.yml", modified_lines)
 
