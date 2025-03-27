@@ -43,24 +43,6 @@
       networking
       {%- endif %}
   tasks:
-    - name: Check which kube-control nodes are already members of the cluster
-      command: "{{ bin_dir }}/kubectl get nodes --selector=node-role.kubernetes.io/control-plane -o json"
-      delegate_to: "{{ groups['kube_control_plane'] | first }}"
-      register: kube_control_planes_raw
-      ignore_errors: true
-      changed_when: false
-
-    - name: Set fact joined_control_planes
-      set_fact:
-        joined_control_planes: "{{ ((kube_control_planes_raw.stdout | from_json)['items']) | default([]) | map(attribute='metadata') | map(attribute='name') | list }}"
-      delegate_to: "{{ item }}"
-      loop: "{{ groups['kube_control_plane'] }}"
-      when: kube_control_planes_raw is succeeded
-      run_once: true
-
-    - name: Set fact first_kube_control_plane
-      set_fact:
-        first_kube_control_plane: "{{(joined_control_planes | default([]) | reject('search', inventory_hostname)) | first | default(inventory_hostname)}}"
 
     - name: Check the OS
       command: grep '^NAME=' /etc/os-release
@@ -107,7 +89,6 @@
         executable: /bin/bash
       register: etcd_member_id
       ignore_errors: true  # noqa ignore-errors
-      failed_when: false
       changed_when: false
       check_mode: false
       tags:
@@ -131,7 +112,6 @@
         ETCDCTL_ENDPOINTS: "https://127.0.0.1:2379"
       delegate_to: "{{ groups['etcd'] | first }}"
       ignore_errors: true 
-      failed_when: false
       when:
         - inventory_hostname in groups['etcd']
         - etcd_member_id.stdout | length > 0
@@ -617,7 +597,7 @@
 
     - name: Remove-node | Delete node, kubectl delete
       command: "{{ kubectl }} delete node {{ node }}"
-      delegate_to: "{{ first_kube_control_plane }}"
+      delegate_to: "{{ groups['kube_control_plane'] | first }}"
       when:
         - node is defined
         - groups['kube_control_plane'] | length > 0
@@ -629,6 +609,5 @@
       register: result
       until: result is not failed
       ignore_errors: true 
-      failed_when: false
 
 

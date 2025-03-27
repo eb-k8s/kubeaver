@@ -19,14 +19,29 @@ const redis = new Redis({
   host: "127.0.0.1",
 });
 
+//ansible做任务之前删除同名hostname，路径/tmp/hostname
+function deleteTmpHostnameSync(hostname) {
+  const filePath = `/tmp/${hostname}`;
+  try {
+    fs.unlinkSync(filePath);
+    console.log(`文件 ${filePath} 已成功删除。`);
+  } catch (err) {
+    if (err.code === 'ENOENT') {
+      console.log(`文件 ${filePath} 不存在，无需删除。`);
+    } else {
+      console.error(`删除文件 ${filePath} 时出错:`, err.message);
+    }
+  }
+}
+
 // 添加master1任务到队列的函数,master1执行完之后开始并行执行所有node节点
-//async function addK8sMasterJob(id) {
 async function addK8sMasterJob(clusterInfo) {
   const id = clusterInfo.id
   //先通过集群名称查询redis表
   let resultData
   try {
     resultData = await getRedis(id)
+    console.log(resultData)
   } catch (error) {
     console.error('从 Redis 获取数据时发生错误:', error.message || error);
     return {
@@ -35,7 +50,7 @@ async function addK8sMasterJob(clusterInfo) {
       status: "error"
     };
   }
-  //生成相应的host.yaml文件
+  //生成相应的inventory host.yaml文件
   try {
     hostsPath = await getHostsYamlFile(resultData, id)
   } catch (error) {
@@ -97,6 +112,7 @@ async function addK8sMasterJob(clusterInfo) {
         let workDir = `${resultPackageData.kubesprayPath}/kubespray`
         let configFile = `@${resultPackageData.kubesprayPath}/config.yml`
         let offlineCacheDir = `${resultPackageData.offlinePackagePath}`
+        deleteTmpHostnameSync(node.hostName);
         const playbook = {
           id: id,
           taskId: taskId,
@@ -124,6 +140,7 @@ async function addK8sMasterJob(clusterInfo) {
         let workDir = `${resultPackageData.kubesprayPath}/kubespray`
         let configFile = `@${resultPackageData.kubesprayPath}/config.yml`
         let offlineCacheDir = `${resultPackageData.offlinePackagePath}`
+        deleteTmpHostnameSync(node.hostName);
         const playbook = {
           //ansible-playbook scale.yml -b -i inventory/mycluster/hosts.yaml -e kube_version=v1.30.3 --limit node2
           task: task,
@@ -463,7 +480,7 @@ async function getK8sClusterTaskList(id) {
 }
 
 //升级集群任务
-async function upgradeK8sClusterJob(newClusterInfo) {
+async function upgradeK8sClusterJob(newClusterInfo, targetIP = null) {
   let resultData
   try {
     resultData = await getRedis(newClusterInfo.id)
@@ -490,6 +507,10 @@ async function upgradeK8sClusterJob(newClusterInfo) {
   try {
     for (const node of resultData.hosts) {
       //if (node.role === "master") {
+      // 如果传入了 targetIP，则只处理与 targetIP 匹配的节点
+      if (targetIP && node.ip !== targetIP) {
+        continue;
+      }
       let taskName = 'upgradeCluster'
       let taskId = `${newClusterInfo.id}_${taskName}`
       const resultPackageData = await offlinePackagesPath()
