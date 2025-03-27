@@ -1,0 +1,74 @@
+---
+name: Bug Report
+description: Report a bug encountered while using Kubeaver
+labels: kind/bug
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+      description: |
+        Please provide as much info as possible. Not doing so may result in your bug not being addressed in a timely manner.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: How can we reproduce it ?
+    validations:
+      required: true
+
+  - type: markdown
+    attributes:
+      value: '### Environment'
+
+  - type: textarea
+    id: os
+    attributes:
+      label: OS
+      placeholder: 'printf "$(uname -srm)\n$(cat /etc/os-release)\n"'
+    validations:
+      required: true
+
+  - type: textarea
+    id: frontend_version
+    attributes:
+      label: Version of Kubeaver frontend
+    validations:
+      required: true
+
+  - type: input
+    id: backend_version
+    attributes:
+      label: Version of Kubeaver backend
+    validations:
+      required: true
+
+  - type: dropdown
+    id: network_plugin
+    attributes:
+      label: Network plugin used
+      options:
+        - calico
+        - flannel
+    validations:
+      required: true
+
+  - type: textarea
+    id: frontend_output
+    attributes:
+      label: Output of Kubeaver run
+    validations:
+      required: true
+
+  - type: textarea
+    id: anything_else
+    attributes:
+      label: Anything else we need to know
