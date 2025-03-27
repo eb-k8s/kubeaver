@@ -39,7 +39,7 @@ jobs:
     - name: Download and Kubespray
       run: |
         cd backend/ansible
-        wget wget https://github.com/kubernetes-sigs/kubespray/archive/refs/tags/${{ github.event.inputs.kubespray_version }}.zip
+        wget https://github.com/kubernetes-sigs/kubespray/archive/refs/tags/${{ github.event.inputs.kubespray_version }}.zip
         unzip ${{ github.event.inputs.kubespray_version }}.zip
         version_without_v=${{ github.event.inputs.kubespray_version }}:1
         mv kubespray-${version_without_v} kubespray
