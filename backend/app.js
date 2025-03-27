@@ -12,7 +12,7 @@ const send = require('koa-send');
 
 app.use(bodyParser());
 
-app.use(serve(path.join(__dirname, './static')));
+// app.use(serve(path.join(__dirname, './static')));
 const router = new Router();
 router.use('/api', require('./router/host').routes())
 router.use('/api', require('./router/resources').routes())
@@ -24,13 +24,13 @@ router.use('/api', require('./router/login').routes())
 app.ws.use(require('./router/websocket').routes())
 
 app.use(router.routes()).use(router.allowedMethods());
-app.use(async (ctx, next) => {
-  if (ctx.status === 404 && ctx.method === 'GET') {
-    await send(ctx, 'index.html', { root: path.join(__dirname, './static') });
-  } else {
-    await next();
-  }
-});
+// app.use(async (ctx, next) => {
+//   if (ctx.status === 404 && ctx.method === 'GET') {
+//     await send(ctx, 'index.html', { root: path.join(__dirname, './static') });
+//   } else {
+//     await next();
+//   }
+// });
 initOffline();
 //startFileWatcher();
 initQueue();

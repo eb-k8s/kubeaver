@@ -190,7 +190,8 @@ async function createK8sCluster(clusterInfo) {
       'status', 'Unknown',
       'taskNum', clusterInfo.taskNum,
       'createTime', createTime,
-      'updateTime', createTime
+      'updateTime', createTime,
+      'master1', clusterInfo.hosts[0].hostName,
     );
     initQueue(); //初始化操作同步进行
     //目前先增加主机数据
@@ -209,6 +210,19 @@ async function createK8sCluster(clusterInfo) {
         'createTime', createTime,
         'updateTime', createTime
       );
+      // const nodeData = JSON.stringify({
+      //   ip: newNode.ip,
+      //   user: hostInfo.user,
+      //   hostName: newNode.hostName,
+      //   role: newNode.role,
+      //   k8sVersion: 'Unknown',
+      //   status: 'Unknown',
+      //   createTime: createTime,
+      //   updateTime: createTime
+      // });
+
+      // // 使用 rpush 将节点信息存入 Redis 列表
+      // await redis.rpush(`k8s_cluster:${clusterKey}:hosts`, nodeData);
     }
 
     return {
@@ -282,7 +296,8 @@ async function updateK8sCluster(clusterInfo) {
       'networkPlugin', clusterInfo.networkPlugin,
       'taskNum', clusterInfo.taskNum,
       'status', 'Unknown',//集群实际状态
-      'updateTime', updateTime
+      'updateTime', updateTime,
+      'master1', clusterInfo.hosts[0].hostName,
     );
     initQueue();
     //目前先增加主机数据
@@ -313,6 +328,78 @@ async function updateK8sCluster(clusterInfo) {
     }
   }
 }
+// async function updateK8sCluster(clusterInfo) {
+//   // 先清空hosts列表
+//   const listKey = `k8s_cluster:${clusterInfo.id}:hosts`;
+//   try {
+//     await redis.del(listKey); // 删除整个列表
+//   } catch (error) {
+//     console.error('删除列表时发生错误:', error.message || error);
+//     return {
+//       code: 50000,
+//       msg: error.message,
+//       status: "error"
+//     };
+//   }
+
+//   try {
+//     // 更新之前要判断更新的内容里面是否更新集群名称与所有集群内的是否相同(值得注意的是需要去除当前id查询。)
+//     const returnClusterData = await findHashKeys("k8s_cluster:", "baseInfo");
+//     // 去除当前id
+//     const filterHostKey = `k8s_cluster:${clusterInfo.id}:baseInfo`;
+//     const filterClusterData = returnClusterData.filter(item => item !== filterHostKey);
+//     for (const itemCluster of filterClusterData) {
+//       const k8sBaseInfo = await redis.hgetall(itemCluster);
+
+//       if (k8sBaseInfo.clusterName === clusterInfo.clusterName) {
+//         return {
+//           code: 10001,
+//           status: "error",
+//           message: "集群名称已经存在，请重新修改集群名称。"
+//         };
+//       }
+//     }
+
+//     const nodeKey = `k8s_cluster:${clusterInfo.id}:baseInfo`;
+//     const updateTime = Date.now();
+//     await redis.hset(nodeKey,
+//       'clusterName', clusterInfo.clusterName,
+//       'version', clusterInfo.version,
+//       'offlinePackage', clusterInfo.offlinePackage,
+//       'networkPlugin', clusterInfo.networkPlugin,
+//       'taskNum', clusterInfo.taskNum,
+//       'status', 'Unknown', // 集群实际状态
+//       'updateTime', updateTime
+//     );
+//     initQueue();
+
+//     // 重新添加主机数据到列表
+//     for (const newNode of clusterInfo.hosts) {
+//       const nodeData = JSON.stringify({
+//         ip: newNode.ip,
+//         hostName: newNode.hostName,
+//         role: newNode.role,
+//         status: 'Unknown',
+//         createTime: updateTime,
+//         updateTime: updateTime
+//       });
+//       await redis.rpush(listKey, nodeData); // 将节点信息存入 Redis 列表
+//     }
+
+//     return {
+//       code: 20000,
+//       msg: "更新集群成功",
+//       status: "ok"
+//     };
+//   } catch (error) {
+//     console.log(error);
+//     return {
+//       code: 50000,
+//       status: error,
+//       message: error.message
+//     };
+//   }
+// }
 
 async function deleteK8sCluster(id) {
   //先删除inventory-clusterId文件夹

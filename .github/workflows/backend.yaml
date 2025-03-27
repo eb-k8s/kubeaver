@@ -1,0 +1,81 @@
+name: Build Backend Docker Image
+
+on:
+  push:
+    branches: [ "release" ]
+  pull_request:
+    branches: [ "release" ]
+  workflow_dispatch:
+    inputs:
+      kubeaver_tag:
+        description: 'Select a tag to build'
+        required: true
+        default: 'v1.0.0'
+      kubespray_version:
+        description: 'Select a Kubespray version to use'
+        required: true
+        default: 'v2.26.0'
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: dbsave/kubeaver
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.19.1]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+
+    - name: Download and Kubespray
+      run: |
+        cd backend/ansible
+        wget wget https://github.com/kubernetes-sigs/kubespray/archive/refs/tags/${{ github.event.inputs.kubespray_version }}.zip
+        unzip ${{ github.event.inputs.kubespray_version }}.zip
+        mv kubespray-${{ github.event.inputs.kubespray_version#v }} kubespray
+
+    - name: Run Kubespray process script
+      run: |
+        cd backend/ansible
+        python3 kubespray_process.py --kubespray_version=${{ github.event.inputs.kubespray_version }}
+
+    - name: Move backend to Dockerfile
+      run: |
+        mv backend Dockerfile/backend
+        
+    - name: Install dependencies in backend
+      run: |
+        cd Dockerfile/backend
+        npm install
+        
+    - name: Log in to the Container registry
+      uses: docker/login-action@v2
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.action }}
+        
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@988b5a0280414f521da01fcc63a27aeeb4b104db # v3.6.1      
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v6
+      with:
+        context: Dockerfile
+        file: Dockerfile/Dockerfile
+        push: true
+        pull: true
+        platforms: linux/amd64
+        tags: ghcr.io/dbsave/kubeaver:${{ github.event.inputs.kubeaver_tag }}
+        provenance: true
+        cache-from: type=gha
+        cache-to: type=gha,mode=max

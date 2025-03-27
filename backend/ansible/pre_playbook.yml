@@ -25,7 +25,7 @@
 
     - name: Gen the standard repo file name
       set_fact:
-        os_pretty_name: "{{ extracted_os_pretty_name | regex_replace(' ', '_') | regex_replace('[()]', '') }}"
+        os_pretty_name: "{{ extracted_os_pretty_name | regex_replace(' ', '_') | regex_replace('[()]', '') | regex_replace('_(_+)', '-') }}"
 
     # - name: Display the processed variable
     #   debug:
@@ -159,7 +159,7 @@
       ansible.builtin.command:
         cmd: sudo systemctl stop firewalld
       become: yes
-      ignore_errors: true 
+      ignore_errors: true # 对centos用
       when: not is_ubuntu
     
     - name: Stop ufw (Debian OS)

@@ -135,12 +135,32 @@ router.delete('/resetK8sClusterJob', async (ctx) => {
   }
 })
 
+// //集群升级
+// router.put('/upgradeK8sClusterJob', async (ctx) => {
+//   //curl -X PUT -H "Content-Type: application/json" http://10.1.70.162:8000/api/upgradeK8sClusterJob -d '{"id": "p1smtk0h","clusterName": "test","version": "v1.29.7"}'
+//   const newClusterInfo = ctx.request.body;
+//   try {
+//     const result = await serviceHost.upgradeK8sClusterJob(newClusterInfo);
+//     ctx.body = result;
+//   } catch (error) {
+//     console.error('添加升级任务时发生错误:', error.message || error);
+//     ctx.body = {
+//       code: 50000,
+//       data: "",
+//       msg: error.message,
+//       status: "error"
+//     };
+//   }
+
+// })
 //集群升级
 router.put('/upgradeK8sClusterJob', async (ctx) => {
-  //curl -X PUT -H "Content-Type: application/json" http://10.1.70.162:8000/api/upgradeK8sClusterJob -d '{"id": "p1smtk0h","clusterName": "test","version": "v1.29.7"}'
+  //curl -X PUT -H "Content-Type: application/json" http://10.1.70.162:8000/api/upgradeK8sClusterJob -d '{"id": "p1smtk0h","clusterName": "test","version": "v1.29.7", "ip": "10.1.69.236"}'
   const newClusterInfo = ctx.request.body;
+  const targetIP = newClusterInfo.ip || null; // 获取 IP 参数，如果没有则为 null
+
   try {
-    const result = await serviceHost.upgradeK8sClusterJob(newClusterInfo);
+    const result = await serviceHost.upgradeK8sClusterJob(newClusterInfo, targetIP);
     ctx.body = result;
   } catch (error) {
     console.error('添加升级任务时发生错误:', error.message || error);
@@ -151,8 +171,7 @@ router.put('/upgradeK8sClusterJob', async (ctx) => {
       status: "error"
     };
   }
-
-})
+});
 
 /*
 //获取当前活跃任务接口（active,waiting)
