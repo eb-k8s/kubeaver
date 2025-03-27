@@ -15,7 +15,7 @@ jobs:
     steps:
       # 步骤 1：更新 PR 分支（可选，解决冲突）
       - name: Update PR Branch
-        uses: actions/update-pr-branch@v1
+        uses: adRise/update-pr-branch@v0.9.1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: "chore: auto-update branch"
