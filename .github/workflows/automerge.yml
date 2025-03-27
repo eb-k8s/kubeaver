@@ -1,39 +1,34 @@
-name: Auto-Merge Approved PR
+name: Auto Merge Approved PR
+
 on:
   pull_request:
-    types: [opened, reopened, synchronize]
+    types: [opened, reopened, synchronize, ready_for_review]
   check_suite:
     types: [completed]
 
 jobs:
   auto-merge:
     runs-on: ubuntu-latest
+    # 仅当 PR 处于 open 状态时触发
     if: github.event.pull_request.state == 'open'
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Merge PR
-        uses: actions/github-script@v6
-        env:
-          PR_NUMBER: ${{ github.event.pull_request.number }}
+      # 步骤 1：更新 PR 分支（可选，解决冲突）
+      - name: Update PR Branch
+        uses: actions/update-pr-branch@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const { data: pr } = await github.rest.pulls.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: process.env.PR_NUMBER
-            });
+          commit-message: "chore: auto-update branch"
 
-            // 检查条件：所有状态检查通过 + 无冲突 + 可合并
-            if (pr.mergeable && pr.mergeable_state === 'clean') {
-              await github.rest.pulls.merge({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                pull_number: process.env.PR_NUMBER,
-                merge_method: 'squash'  # 可选 squash/rebase
-              });
-              console.log('PR merged successfully');
-            } else {
-              console.log('PR not ready for merging');
-            }
+      # 步骤 2：自动合并操作
+      - name: Auto Merge PR
+        uses: pascalgn/automerge-action@v0.15.6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          # 合并条件配置
+          condition: "check-success && approved && label!='do-not-merge'"
+          # 合并方法（merge/squash/rebase）
+          method: "merge"
+          # 冲突自动解决策略（可选）
+          conflict-resolution: "rebase"
