@@ -14,46 +14,12 @@
               <a-row :gutter="[24, 24]">
                 <a-col :xs="24" :md="12">
                   <a-card title="基础信息" style="position: relative;">
-                    <!-- <a-form-item
-                        label="集群名称："
-                        field="clusterName"
-                        style="display: flex; align-items: center;"
-                    >
-                    <a-input v-model="cluster.clusterName" style="width: 60% !important; color: #000000;" readonly />
-                    </a-form-item>
-              
-                    <a-form-item
-                        label="离线包："
-                        field="offlinePackage"
-                    >
-                        <a-input v-model="cluster.offlinePackage" style="width: 60% !important; color: #000000;" readonly />
-                    </a-form-item>
-                
-                    <a-form-item label="版本：" field="version">
-                        <a-input v-model="cluster.version" style="width: 60% !important; color: #000000;" readonly />
-                    </a-form-item>
-              
-                    <a-form-item
-                        label="网络插件："
-                        field="networkPlugin"
-                    >
-                      <a-input v-model="cluster.networkPlugin" placeholder="网络插件" style="width: 60% !important; color: #000000;" readonly />
-                    </a-form-item>
-             -->
-
                     <a-form-item
                           label="集群名称："
                           field="clusterName"
                           style="display: flex; align-items: center;"
                       >
                           <span style="width: 60%; color: #000000;">{{ cluster.clusterName }}</span>
-                      </a-form-item>
-
-                      <a-form-item
-                          label="离线包："
-                          field="offlinePackage"
-                      >
-                          <span style="width: 60%; color: #000000;">{{ cluster.offlinePackage }}</span>
                       </a-form-item>
 
                       <a-form-item label="版本：" field="version">

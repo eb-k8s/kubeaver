@@ -28,35 +28,25 @@
                                 </a-form-item>
                           
                                 <a-form-item
-                                    label="离线包："
-                                    field="offlinePackage"
-                                    :rules="[{ required: true, message: '请选择离线包' }]"
+                                    label="集群版本："
+                                    field="version"
+                                    :rules="[{ required: true, message: '请选择集群版本' }]"
                                 >
                                     <a-select
-                                        v-model="cluster.offlinePackage"
-                                      
-                                        placeholder="请选择离线包"
+                                        v-model="cluster.version"
+                                        placeholder="请选择集群版本"
                                         style="width: 65%;"
                                     >
                                         <a-option
-                                            v-for="item in filteredResourceList"
-                                            :key="item.id"
-                                            :value="item.package_name"
+                                            v-for="version in k8sCache?.children || []"
+                                            :key="version.name"
+                                            :value="version.name"
                                         >
-                                            {{ item.package_name }}
+                                            {{ version.name }}
                                         </a-option>
                                     </a-select>
                                 </a-form-item>
-                          
-                                <!-- <a-form-item label="版本：" field="version">
-                                    <a-input
-                                        v-model="cluster.version"
-                                        placeholder="集群版本"
-                                        style="width: 40%; color: #000000;"
-                                        readonly
-                                    />
-                                </a-form-item> -->
-
+                         
                                 <a-form-item
                                     label="网络插件："
                                     field="networkPlugin"
@@ -69,11 +59,9 @@
                                         style="width: 50%;"
                                     >
                                         <a-option
-                                            v-for="plugin in networkPlugins"
-                                            :key="plugin"
-                                            :value="plugin"
+                                            v-for="plugin in formattedPlugins" :key="plugin.name + plugin.version"
                                         >
-                                            {{ plugin }}
+                                            {{`${plugin.name} - ${plugin.version}`}}
                                         </a-option>
                                     </a-select>
                                 </a-form-item>
@@ -92,7 +80,6 @@
                                         :max="10"
                                     />
                                 </a-form-item>
-                                
                             </a-card>
                             <a-collapse :default-active-key="[]" style="margin-top: 20px;">
                                 <a-collapse-item header="参数配置" key="1">
@@ -221,10 +208,10 @@
                                                 class="select-input"
                                                 placeholder="请选择控制节点主机"
                                                 style="flex: 1; margin-right: 10px;"
+                                                multiple
                                             >
                                                 <a-option v-for="item in filteredControlPlaneHosts" :key="item.hostId" :value="item.hostIP">
                                                     {{ `${item.hostIP} (${item.os})` }}
-                                                    <!-- {{ item.hostIP }} -->
                                                 </a-option>
                                             </a-select>
                                             <a-button type="primary" size="small" @click="addControlPlaneHost">添加</a-button>
@@ -292,7 +279,7 @@
 
     import { ref, watch, reactive, computed } from 'vue';
     import useLoading from '@/hooks/loading';
-    import { getResourcesList } from '@/api/resources';
+    import { getResources } from '@/api/resources';
     import { getAvailableHostList } from '@/api/hosts';
     import { createCluster, getClusterList } from '@/api/cluster';
     import { Message } from '@arco-design/web-vue';
@@ -301,7 +288,7 @@
     const { loading, setLoading } = useLoading();
     const cluster = reactive({
         clusterName: '',
-        offlinePackage: '',
+        // offlinePackage: '',
         networkPlugin: '',
         version: '',
         taskNum: 5,
@@ -343,11 +330,13 @@
 
     const resourceList = ref();
     const hostList = ref([]);
-    const controlPlaneHost = ref('');
-    const networkPlugins = ref([]);
+    const controlPlaneHost = ref();
+    const networkPlugins = ref<any>();
     const workerHost = ref<string[]>([]);
     const clusterList = ref();
     const supportedOS = ref();
+    const k8sCache = ref();
+    const repoFiles =ref();
     
     const hosts = computed(() => {
         return [
@@ -366,13 +355,10 @@
 
     const filteredControlPlaneHosts = computed(() => {
         return hostList.value.filter((host) => {
-            
             const osName = host.os.split(' ')[0]; 
-
-            const isOSCompatible = supportedOS.value
-                ? osName.includes(supportedOS.value)
+            const isOSCompatible = Array.isArray(supportedOS.value) && supportedOS.value.length 
+                ? supportedOS.value.includes(osName) 
                 : true;
-
             return (
                 isOSCompatible &&
                 !cluster.controlPlaneHosts.some((selectedHost) => selectedHost.ip === host.hostIP) &&
@@ -384,9 +370,8 @@
     const filteredWorkerHosts = computed(() => {
         return hostList.value.filter((host) => {
             const osName = host.os.split(' ')[0];
-
-            const isOSCompatible = supportedOS.value
-                ? osName.includes(supportedOS.value) 
+            const isOSCompatible = Array.isArray(supportedOS.value) && supportedOS.value.length 
+                ? supportedOS.value.includes(osName) 
                 : true;
 
             return (
@@ -396,64 +381,48 @@
             );
         });
     });
-
-    // 计算过滤后的离线包列表
-    const filteredResourceList = computed(() => {
-
-        const selectedHosts = [...cluster.controlPlaneHosts, ...cluster.workerHosts];
-        if (!selectedHosts.length) return resourceList.value;
-
-        const hostOSSet = new Set(selectedHosts.map((host) => host.os.split(' ')[0]));
-        return resourceList.value.filter((resource) => {
-            const osMatch = resource?.package_name?.match(/_(\w+(?:-\w+)*)(_|\s|$)/);
-            const resourceOSName = osMatch ? osMatch[1].replace('-Linux', '') : 'null';
-            return hostOSSet.has(resourceOSName);
-        });
-    });
-
-    // 添加控制节点
+       // 添加控制节点
     const addControlPlaneHost = () => {
-        if (!controlPlaneHost) {
+        if (!controlPlaneHost.value || controlPlaneHost.value.length === 0) {
             Message.error("请选择控制节点主机！");
             return;
         }
 
-        const selectedHost = hostList.value.find(host => host.hostIP === controlPlaneHost.value);
-        if (!selectedHost) {
-            Message.error("选择的主机不存在！");
-            return;
-        }
+        controlPlaneHost.value.forEach(selectedIP => {
+            const selectedHost = hostList.value.find(host => host.hostIP === selectedIP);
+            if (!selectedHost) {
+                Message.error(`选择的主机 ${selectedIP} 不存在！`);
+                return;
+            }
 
-        // 检查主机是否已被添加为工作节点
-        if (cluster.workerHosts.some(host => host.ip === controlPlaneHost.value)) {
-            Message.error("该主机已被添加为工作节点，无法添加为控制节点！");
-            return;
-        }
+            // 检查主机是否已被添加为工作节点
+            if (cluster.workerHosts.some(host => host.ip === selectedIP)) {
+                Message.error(`主机 ${selectedIP} 已被添加为工作节点，无法添加为控制节点！`);
+                return;
+            }
 
-        const selectedHostOS = selectedHost.os.split(' ')[0]; // 获取操作系统名称
+            const selectedHostOS = selectedHost.os.split(' ')[0]; // 获取操作系统名称
+            
+            // 获取所有工作节点的操作系统集合
+            const workerOSSet = new Set(cluster.workerHosts.map(host => host.os.split(' ')[0]));
+            
+            // 如果已经选择了工作节点，检查控制节点的操作系统是否一致
+            if (workerOSSet.size > 0 && !workerOSSet.has(selectedHostOS)) {
+                Message.error(`控制节点 ${selectedIP} 的操作系统必须与工作节点的操作系统一致`);
+                return;
+            }
 
-        // 获取所有工作节点的操作系统集合
-        const workerOSSet = new Set(cluster.workerHosts.map(host => host.os.split(' ')[0]));
-
-        // 如果已经选择了工作节点，检查控制节点的操作系统是否一致
-        if (workerOSSet.size > 0 && !workerOSSet.has(selectedHostOS)) {
-            Message.error('控制节点的操作系统必须与工作节点的操作系统一致');
-            return;
-        }
-
-        const masterExists = cluster.controlPlaneHosts.some(host => host.role === 'master');
-        if (masterExists) {
-            Message.error('已经存在一个 master 节点，无法再添加。');
-            return;
-        }
-
-        if (!cluster.controlPlaneHosts.some(host => host.ip === controlPlaneHost.value)) {
-            const segments = selectedHost.hostIP.split('.');
-            const result = segments[2] + segments[3];
-            const hostName = `master${result}`;
-            cluster.controlPlaneHosts.push({ ip: controlPlaneHost.value, hostName, role: 'master', os: selectedHost.os });
-            controlPlaneHost.value = '';
-        }
+            // 检查是否已经添加过
+            if (!cluster.controlPlaneHosts.some(host => host.ip === selectedIP)) {
+                const segments = selectedHost.hostIP.split('.');
+                const result = segments[2] + segments[3];
+                const hostName = `master${result}`;
+                cluster.controlPlaneHosts.push({ ip: selectedIP, hostName, role: 'master', os: selectedHost.os });
+            }
+        });
+        
+        // 清空选择
+        controlPlaneHost.value = [];
     };
 
     const removeControlPlaneHost = (index) => {
@@ -483,21 +452,21 @@
             return;
         }
 
-        const selectedWorkerOSSet = new Set(selectedWorkerHosts.map(host => host.os.split(' ')[0]));
+        // const selectedWorkerOSSet = new Set(selectedWorkerHosts.map(host => host.os.split(' ')[0]));
 
-        // 如果选择的工作节点的操作系统不一致，提示错误
-        if (selectedWorkerOSSet.size > 1) {
-            Message.error("选中的工作节点的操作系统必须一致！");
-            return;
-        }
+        // // 如果选择的工作节点的操作系统不一致，提示错误
+        // if (selectedWorkerOSSet.size > 1) {
+        //     Message.error("选中的工作节点的操作系统必须一致！");
+        //     return;
+        // }
 
-        const selectedWorkerOS = [...selectedWorkerOSSet][0];
+        // const selectedWorkerOS = [...selectedWorkerOSSet][0];
 
-        // 如果控制节点已经存在，检查工作节点的操作系统是否与控制节点一致
-        if (controlPlaneOSSet.size > 0 && !controlPlaneOSSet.has(selectedWorkerOS)) {
-            Message.error("工作节点的操作系统必须与控制节点的操作系统一致！");
-            return;
-        }
+        // // 如果控制节点已经存在，检查工作节点的操作系统是否与控制节点一致
+        // if (controlPlaneOSSet.size > 0 && !controlPlaneOSSet.has(selectedWorkerOS)) {
+        //     Message.error("工作节点的操作系统必须与控制节点的操作系统一致！");
+        //     return;
+        // }
 
         // 遍历添加工作节点
         workerHost.value.forEach(ip => {
@@ -514,11 +483,6 @@
         });
 
         workerHost.value = [];
-    };
-
-     // 检查是否已经存在该主机
-     const isHostExist = (hostIP) => {
-      return cluster.workerHosts.some(host => host.ip === hostIP);
     };
 
     const removeWorkerHost = (index: any) => {
@@ -546,13 +510,19 @@
             return; 
         }
 
-        if (!cluster.offlinePackage) {
-            Message.error("离线包不能为空！");
+        if (!cluster.version) {
+            Message.error("集群版本不能为空！");
             return; 
         }
 
         if (cluster.controlPlaneHosts.length === 0) {
             Message.error("至少需要一个控制节点！");
+            return;
+        }
+
+        // 校验控制节点个数是否为单数
+        if (cluster.controlPlaneHosts.length % 2 === 0) {
+            Message.error(`当前选择了 ${cluster.controlPlaneHosts.length} 个控制节点，建议保持单数以保证高可用！`);
             return;
         }
 
@@ -572,7 +542,6 @@
 
         const data = {
             clusterName: cluster.clusterName,
-            offlinePackage: cluster.offlinePackage,
             networkPlugin: cluster.networkPlugin,
             version: cluster.version,
             hosts: hosts.value,
@@ -602,14 +571,66 @@
     const fetchResourcesList = async () => {
         try {
             setLoading(true);
-            const result = await getResourcesList();
-            resourceList.value = result.data;
+            const result = await getResources();
+            resourceList.value = result;
+            resourceList.value.forEach(item => {
+                if (item.name === 'k8s_cache') {
+                    k8sCache.value = item;
+                }
+                 else if (item.name === 'network_plugins') {
+                    networkPlugins.value = item
+                }
+                 else if (item.name === 'repo_files') {
+                    repoFiles.value = item;
+                } 
+            })
+            
+            const osList = new Set();
+            repoFiles.value.children.forEach(item => {
+                const osMatch = item?.name.match(/^([a-zA-Z]+)(?:[_\s-]|$)/);
+                const newOS = osMatch ? osMatch[1] : 'null';
+
+                if (newOS) {
+                    osList.add(newOS);
+                }
+            });
+
+            supportedOS.value = Array.from(osList);
+
+             // 设置默认集群版本
+            if (k8sCache.value?.children?.length) {
+                cluster.version = k8sCache.value.children[0].name;
+            }
+
+            // 设置默认网络插件
+            if (formattedPlugins.value.length) {
+                cluster.networkPlugin = `${formattedPlugins.value[0].name} - ${formattedPlugins.value[0].version}`;
+            }
+            
         } catch (err) {
             console.log(err);
         } finally {
             setLoading(false);
         }
     };
+
+    const formattedPlugins = computed(() => {
+        if (!networkPlugins.value || !networkPlugins.value.children) return [];
+
+        return networkPlugins.value.children.map(plugin => {
+            const versionNode = plugin.children?.[0]; 
+            const imagesNode = versionNode?.children?.find(child => child.name === 'images');
+
+            return {
+            name: plugin.name,        
+            version: versionNode?.name,  
+            images: imagesNode?.children || [],
+
+            files: versionNode?.children
+                ?.filter(child => child.name !== 'images' && child.type === 'file') || []
+            };
+        });
+    });
    
     //获取主机列表
     const fetchHostList = async () => {
@@ -627,31 +648,6 @@
     fetchHostList();
     fetchResourcesList();
     fetchClustersList();
-
-    watch(
-        () => cluster.offlinePackage,
-        (newPackage) => {
-            const versionMatch = newPackage?.match(/v\d+\.\d+\.\d+/);
-            cluster.version = versionMatch ? versionMatch[0] : '';
-
-            const selectedPackage = resourceList.value.find(
-                (item) => item.package_name === newPackage
-            );
-
-            networkPlugins.value = selectedPackage?.network_plugin || [];
-            cluster.networkPlugin = networkPlugins.value.length > 0 ? networkPlugins.value[0] : '';
-
-            const osMatch = newPackage?.match(/_(\w+(?:-\w+)*)(_|\s|$)/);
-            const newOS = osMatch ? osMatch[1].replace('-Linux', '') : 'null';
-
-            if (supportedOS.value && newOS && supportedOS.value !== newOS) {
-                cluster.controlPlaneHosts = [];
-                cluster.workerHosts = [];
-            }
-
-            supportedOS.value = newOS;
-        }
-    );
 
 </script> 
  
