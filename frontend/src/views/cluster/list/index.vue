@@ -183,7 +183,7 @@
     import { ref, onMounted, reactive, watch } from 'vue';
     import router from '@/router';
     import useLoading from '@/hooks/loading';
-    import { getResourcesList } from '@/api/resources';
+    import { getResources } from '@/api/resources';
     import { getClusterList, deleteBeforeDeployCluster, deployCluster, resetCluster, downloadConfig } from '@/api/cluster';
     import { upgradeCluster } from '@/api/tasks';
     import { getHostList } from '@/api/hosts';
@@ -247,7 +247,7 @@
      //获取离线包列表
     const fetchResourcesList = async () => {
         try {
-            const result = await getResourcesList();
+            const result = await getResources();
             resourceList.value = result.data;
         } catch (err) {
             console.log(err);
@@ -554,11 +554,7 @@
         dataIndex: 'version',
         slotName: 'version',
     },
-    {
-        title: '离线包',
-        dataIndex: 'offlinePackage',
-        slotName: 'offlinePackage',
-    },
+  
     {
         title: '节点总数(master/node)',
         dataIndex: 'count',
