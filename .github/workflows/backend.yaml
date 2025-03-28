@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       kubeaver_tag:
-        description: 'Select a tag to build'
+        description: 'Select kubeaver a tag to build'
         required: true
         default: 'v1.0.0'
       kubespray_version:
@@ -41,8 +41,15 @@ jobs:
         cd backend/ansible
         wget https://github.com/kubernetes-sigs/kubespray/archive/refs/tags/${{ github.event.inputs.kubespray_version }}.zip
         unzip ${{ github.event.inputs.kubespray_version }}.zip
-        version_without_v=${{ github.event.inputs.kubespray_version }}:1
-        mv kubespray-${version_without_v} kubespray
+        version_without_v=$(echo "${{ github.event.inputs.kubespray_version }}" | sed 's/^v//')
+        # 重命名目录（检查是否存在）
+        if [ -d "kubespray-$version_without_v" ]; then
+          mv "kubespray-$version_without_v" kubespray
+        else
+          echo "Error: Directory kubespray-$version_without_v not found!"
+          ls -l  # 调试：查看当前目录内容
+          exit 1
+        fi
 
     - name: Run Kubespray process script
       run: |

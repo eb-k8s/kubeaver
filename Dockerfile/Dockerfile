@@ -84,7 +84,7 @@ RUN source ~/.bashrc && \
     ln -s /root/python_env/kubespray-2.26 kubespray-2.26
 
 #执行kubespray 
-RUN cd /root/backend/ansible/kubespray/v2.26.0 && \
+RUN cd /root/backend/ansible/kubespray&& \
     source ~/.bashrc && pyenv local kubespray-2.26
 
 RUN source ~/.bashrc && pyenv rehash && pyenv global kubespray-2.26
