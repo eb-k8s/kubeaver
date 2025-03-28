@@ -62,6 +62,9 @@ async function addK8sMasterJob(clusterInfo) {
     };
   }
 
+  let hostsToProcess;
+  hostsToProcess = clusterInfo.hosts || resultData.hosts;
+
   //检查config文件是否存在数据库中，如果存在检查集群状态是否正常，如果不正常要删除
   let configHashKey = `k8s_cluster:${id}:config`
   let masterHostName;
