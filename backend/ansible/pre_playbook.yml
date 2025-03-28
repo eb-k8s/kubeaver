@@ -27,9 +27,13 @@
       set_fact:
         os_pretty_name: "{{ extracted_os_pretty_name | regex_replace(' ', '_') | regex_replace('[()]', '') }}"
 
-    # - name: Display the processed variable
-    #   debug:
-    #     msg: "Processed os_pretty_name: {{ processed_os_pretty_name }}"
+    - name: Clean the variable
+      set_fact:
+        os_pretty_name: "{{ os_pretty_name | replace('_Linux', '') }}"
+
+    - name: Display the processed variable
+      debug:
+        msg: "Processed os_pretty_name: {{ processed_os_pretty_name }}"
 
     - name: Set OS version variable 
       set_fact:
