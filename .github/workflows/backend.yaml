@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       kubeaver_tag:
-        description: 'Select a tag to build'
+        description: 'Select kubeaver a tag to build'
         required: true
         default: 'v1.0.0'
       kubespray_version:
