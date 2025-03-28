@@ -142,30 +142,12 @@ def main():
                         help='The kubespray version.')
 
     args = parser.parse_args()
-    # # Default zip file name
-    # zip_file_name = args.zip_filename
-    
-    # # Get the zip file name from command line argument if provided
-    # # zip_file_name = sys.argv[1] if len(sys.argv) > 1 else default_zip_file
-    
-    # # Check if the zip file exists
-    # if not os.path.isfile(zip_file_name):
-    #     print(f"Error: The file {zip_file_name} does not exist.")
-    #     return
-    
-    # # Define the extraction directory
-    # extract_directory = f"./"
-    
-    # # Unzip the file
-    # unzip_file(zip_file_name, extract_directory)
 
     # 获取kubespray版本
-    # kubespray_version = os.path.splitext(os.path.basename(zip_file_name))[0].split('-')[1]
     kubespray_version = args.kubespray_version[1:]
     print(f"kubespray version: {kubespray_version}")
 
     # 开始修改kubespray代码部分
-    # kubespray_path = os.path.splitext(os.path.basename(zip_file_name))[0]
     kubespray_path = "./kubespray"
     # 在kubespray_path下创建callback_plugins目录
     os.makedirs(f"{kubespray_path}/callback_plugins", exist_ok=True)
@@ -217,19 +199,25 @@ def main():
     # 将更改写入文件
     write_yaml_file(f"{kubespray_path}/roles/download/tasks/download_container.yml", modified_lines)
 
-    # 修改roles\kubernetes\preinstall\tasks\0020-set_facts.yml来禁用nameserver检查
-    # 读入该yml文件
-    lines = read_yaml_file(f"{kubespray_path}/roles/kubernetes/preinstall/tasks/0020-set_facts.yml")
-    # 在    - not (upstream_dns_servers is defined and upstream_dns_servers | length > 0)新增- false
-    modified_lines = insert_line_after_pattern(lines, "    - not (upstream_dns_servers is defined and upstream_dns_servers | length > 0)", "    - false")
-    # 将更改写入文件
-    write_yaml_file(f"{kubespray_path}/roles/kubernetes/preinstall/tasks/0020-set_facts.yml", modified_lines)
+    # # 修改roles\kubernetes\preinstall\tasks\0020-set_facts.yml来禁用nameserver检查
+    # # 读入该yml文件
+    # lines = read_yaml_file(f"{kubespray_path}/roles/kubernetes/preinstall/tasks/0020-set_facts.yml")
+    # # 在    - not (upstream_dns_servers is defined and upstream_dns_servers | length > 0)新增- false
+    # modified_lines = insert_line_after_pattern(lines, "    - not (upstream_dns_servers is defined and upstream_dns_servers | length > 0)", "    - false")
+    # # 将更改写入文件
+    # write_yaml_file(f"{kubespray_path}/roles/kubernetes/preinstall/tasks/0020-set_facts.yml", modified_lines)
 
-    # 修改/roles/kubernetes-apps/network_plugin/meta/main.yml中multus相关配置   
-    # 读入该yml文件
+    # # 修改/roles/kubernetes-apps/network_plugin/meta/main.yml中multus相关配置   
+    # # 读入该yml文件
+    # lines = read_yaml_file(f"{kubespray_path}/roles/kubernetes-apps/network_plugin/meta/main.yml")
+    # # 将    when: kube_network_plugin_multus替换为 false
+    # modified_lines = replace_line_with_pattern(lines, "    when: kube_network_plugin_multus", "    when: false")
+    # # 将更改写入文件
+    # write_yaml_file(f"{kubespray_path}/roles/kubernetes-apps/network_plugin/meta/main.yml", modified_lines)
+    #修改roles/download/defaults/main/main.yml
     lines = read_yaml_file(f"{kubespray_path}/roles/kubernetes-apps/network_plugin/meta/main.yml")
-    # 将    when: kube_network_plugin_multus替换为 false
-    modified_lines = replace_line_with_pattern(lines, "    when: kube_network_plugin_multus", "    when: false")
+    # 删除sha256: "{{ metrics_server_digest_checksum | default(None) }}"的后面两行内容
+    modified_lines = remove_lines_after_pattern(lines, "      - kube-router", 5)
     # 将更改写入文件
     write_yaml_file(f"{kubespray_path}/roles/kubernetes-apps/network_plugin/meta/main.yml", modified_lines)
 
