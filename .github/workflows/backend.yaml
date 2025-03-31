@@ -17,7 +17,7 @@ on:
         default: 'v2.26.0'
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: dbsave/kubeaver
+  IMAGE_NAME: dbsave/kubeaver_backend
 
 jobs:
   build:
@@ -83,7 +83,7 @@ jobs:
         push: true
         pull: true
         platforms: linux/amd64
-        tags: ghcr.io/dbsave/kubeaver:${{ github.event.inputs.kubeaver_tag }}
+        tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME}}:${{ github.event.inputs.kubeaver_tag }}
         provenance: true
         cache-from: type=gha
         cache-to: type=gha,mode=max
