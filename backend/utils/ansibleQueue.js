@@ -147,6 +147,8 @@ async function createAnsibleQueue(baseQueueId, concurrency) {
         await redis.hset(nodeKey,
           'activeJobType', '',
           'activeStatus', '',
+          'lastJobType', job.name,
+          'lastJobStatus', 'worked',
           'k8sVersion', job.data.playbook.kubeVersion,
           'status', result.status,
           'updateTime', updateTime
@@ -168,6 +170,8 @@ async function createAnsibleQueue(baseQueueId, concurrency) {
             'status', result.status,
             'activeJobType', '',
             'activeStatus', '',
+            'lastJobType', job.name,
+            'lastJobStatus', 'worked',
             'k8sVersion', job.data.playbook.kubeVersion,
             'updateTime', updateTime
           )
@@ -181,6 +185,8 @@ async function createAnsibleQueue(baseQueueId, concurrency) {
         await redis.hset(nodeKey,
           'activeJobType', '',
           'activeStatus', '',//部署中状态
+          'lastJobType', job.name,
+          'lastJobStatus', 'worked',
           'status', result.status,//集群实际状态
           'k8sVersion', 'Unknown',
           'updateTime', updateTime
@@ -208,6 +214,8 @@ async function createAnsibleQueue(baseQueueId, concurrency) {
         await redis.hset(nodeKey,
           'activeStatus', '',
           'activeJobType', '',
+          'lastJobType', job.name,
+          'lastJobStatus', 'worked',
           'k8sVersion', 'Unknown',
           'status', nodeResult.status,//集群实际状态
           'updateTime', updateTime
@@ -234,48 +242,14 @@ async function createAnsibleQueue(baseQueueId, concurrency) {
           await db.run(
             `UPDATE clusters SET config = ? WHERE id = ?`,
             [configContent, resultData.clusterId])
-          //升级node节点
-          // resultData.hosts = resultData.hosts.filter(node =>
-          //   !(node.status === "Unknown")
-          // );
-          // let hostsPath = await getHostsYamlFile(resultData, job.data.playbook.id)
-          // const nodeJobs = resultData.hosts
-          // for (const node of nodeJobs) {
-          //   if (node.role === "node") {
-          //     let taskName = `upgradeCluster`
-          //     let taskId = `${job.data.playbook.id}_${taskName}`
-          //     const resultPackageData = await offlinePackagesPath()
-          //     let task = `${resultPackageData.kubesprayPath}/kubespray/upgrade-cluster.yml`
-          //     let workDir = `${resultPackageData.kubesprayPath}/kubespray`
-          //     let configFile = `@${resultPackageData.kubesprayPath}/config.yml`
-          //     let offlineCacheDir = `${resultPackageData.offlinePackagePath}`
-          //     const playbook = {
-          //       task: task,
-          //       taskId: taskId,
-          //       id: job.data.playbook.id,
-          //       version: resultData.version,
-          //       clusterName: resultData.clusterName,
-          //       taskName: taskName,
-          //       hostName: node.hostName,
-          //       offlineCacheDir: offlineCacheDir,
-          //       kubeVersion: resultData.k8sVersion,
-          //       imageArch: resultPackageData.imageArch,
-          //       networkPlugin: resultData.networkPlugin,
-          //       role: node.role,
-          //       ip: node.ip,
-          //       hostsPath: hostsPath,
-          //       workDir: workDir,
-          //       configFile: configFile,
-          //     }
-          //     await addTaskToQueue(job.data.playbook.id, 'upgradeCluster', playbook);
-          //   }
-          // }
         }
         const nodeKey = `k8s_cluster:${job.data.playbook.id}:hosts:${job.data.playbook.ip}`;
         const nodeStatusData = await getNodeStatus(job.data.playbook.id, job.data.playbook.hostName, job.data.playbook.hostsPath, '');
         await redis.hset(nodeKey,
           'activeJobType', '',
           'activeStatus', '',
+          'lastJobType', job.name,
+          'lastJobStatus', 'worked',
           'k8sVersion', job.data.playbook.kubeVersion,
           'status', nodeStatusData.status,
           'updateTime', updateTime
@@ -310,6 +284,8 @@ async function createAnsibleQueue(baseQueueId, concurrency) {
         await redis.hset(nodeKey,
           'activeJobType', '',
           'activeStatus', '',
+          'lastJobType', job.name,
+          'lastJobStatus', 'failed',
           'k8sVersion', k8sInfo.version,
           'status', k8sInfo.status,
           'updateTime', updateTime
@@ -321,6 +297,8 @@ async function createAnsibleQueue(baseQueueId, concurrency) {
         await redis.hset(nodeKey,
           'activeJobType', '',
           'activeStatus', '',
+          'lastJobType', job.name,
+          'lastJobStatus', 'failed',
           'k8sVersion', k8sInfo.version,
           'status', k8sInfo.status,
           'updateTime', updateTime
@@ -333,6 +311,8 @@ async function createAnsibleQueue(baseQueueId, concurrency) {
         await redis.hset(nodeKey,
           'activeJobType', '',
           'activeStatus', '',
+          'lastJobType', job.name,
+          'lastJobStatus', 'failed',
           'k8sVersion', k8sInfo.version,
           'status', k8sInfo.status,
           'updateTime', updateTime
@@ -346,6 +326,8 @@ async function createAnsibleQueue(baseQueueId, concurrency) {
           'status', k8sInfo.status,
           'activeJobType', '',
           'activeStatus', '',
+          'lastJobType', job.name,
+          'lastJobStatus', 'failed',
           'updateTime', updateTime
         );
         const baseHashKey = `k8s_cluster:${job.data.playbook.id}:baseInfo`;
@@ -368,6 +350,8 @@ async function createAnsibleQueue(baseQueueId, concurrency) {
         await redis.hset(nodeKey,
           'activeJobType', '',
           'activeStatus', '',
+          'lastJobType', job.name,
+          'lastJobStatus', 'failed',
           'k8sVersion', k8sInfo.version,
           'status', k8sInfo.status,
           'updateTime', updateTime
