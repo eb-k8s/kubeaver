@@ -5,7 +5,13 @@ const fs = require('fs');
 const k8s = require('@kubernetes/client-node');
 
 async function kubeadminDB() {
-  const dbPath = path.resolve(__dirname, '../data/kubeadmin', 'kubeadmin.db');
+  //const dbPath = path.resolve(__dirname, '../data/kubeadmin', 'kubeadmin.db');
+  const dbDir = path.resolve(__dirname, '../data/kubeadmin');
+  const dbPath = path.join(dbDir, 'kubeadmin.db');
+
+  if (!fs.existsSync(dbDir)) {
+    fs.mkdirSync(dbDir, { recursive: true });
+  }
 
   if (!fs.existsSync(dbPath)) {
     fs.writeFileSync(dbPath, '');

@@ -73,9 +73,10 @@ router.delete('/imagesAddr', async (ctx) => {
 
 //查询镜像仓库地址ansible-playbook -i inventory_path query.yml -e save_dir
 router.get('/imagesAddr', async (ctx) => {
-  //curl -X GET -H "Content-Type: application/json" http://10.1.35.91:8000/k8sCluster
+  //curl -X GET -H "Content-Type: application/json" http://10.1.70.162:8000/api/imagesAddr?id=vn24ubxe
   try {
-    const result = await serviceHost.getK8sCluster();
+    const id = ctx.request.query.id;
+    const result = await serviceHost.getImageAddrJob(id);
     ctx.body = result;
   } catch (error) {
     console.log('获取集群列表时发生错误:', error.message || error);

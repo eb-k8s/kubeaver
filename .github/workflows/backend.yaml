@@ -17,7 +17,7 @@ on:
         default: 'v2.26.0'
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: dbsave/kubeaver
+  IMAGE_NAME: dbsave/kubeaver_backend
 
 jobs:
   build:
@@ -58,11 +58,11 @@ jobs:
 
     - name: Move backend to Dockerfile
       run: |
-        mv backend Dockerfile/backend
+        mv backend backend/Dockerfile/backend
         
     - name: Install dependencies in backend
       run: |
-        cd Dockerfile/backend
+        cd backend/Dockerfile/backend
         npm install
         
     - name: Log in to the Container registry
@@ -79,11 +79,13 @@ jobs:
       uses: docker/build-push-action@v6
       with:
         context: Dockerfile
-        file: Dockerfile/Dockerfile
+        file: backend/Dockerfile/Dockerfile
         push: true
         pull: true
         platforms: linux/amd64
-        tags: ghcr.io/dbsave/kubeaver:${{ github.event.inputs.kubeaver_tag }}
+        tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME}}:${{ github.event.inputs.kubeaver_tag }}
         provenance: true
         cache-from: type=gha
         cache-to: type=gha,mode=max
+        build-args: |
+          APP_VERSION=${{ github.event.inputs.tag }}
