@@ -63,7 +63,13 @@ async function addK8sMasterJob(clusterInfo) {
   }
 
   let hostsToProcess;
+  // if (Array.isArray(clusterInfo.hosts)) {
+  //   hostsToProcess = clusterInfo.hosts;
+  // } else {
+  //   hostsToProcess = resultData.hosts;
+  // }
   hostsToProcess = clusterInfo.hosts || resultData.hosts;
+
 
   //检查config文件是否存在数据库中，如果存在检查集群状态是否正常，如果不正常要删除
   let configHashKey = `k8s_cluster:${id}:config`
@@ -105,7 +111,7 @@ async function addK8sMasterJob(clusterInfo) {
   try {
     //添加master和etc 任务
     //调整是为了满足用户可以单独添加其它master任务
-    for (const node of clusterInfo.hosts) {
+    for (const node of hostsToProcess) {
       //for (const node of resultData.hosts) {
       if (node.role === "master") {
         let taskName = 'initCluster'

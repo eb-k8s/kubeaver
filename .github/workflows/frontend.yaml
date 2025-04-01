@@ -8,12 +8,12 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Select a tag to build'
+        description: 'Select a frontend tag to build'
         required: true
         default: 'v1.0.0'
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: dbsave/kubeaver
+  IMAGE_NAME: dbsave/kubeaver_frontend
 
 jobs:
   build:
@@ -41,7 +41,7 @@ jobs:
       run: |
         cd frontend
         npm run build
-        
+
     - name: Log in to the Container registry
       uses: docker/login-action@v2
       with:
@@ -56,11 +56,11 @@ jobs:
       uses: docker/build-push-action@v6
       with:
         context: Dockerfile
-        file: Dockerfile/Dockerfile
+        file: frontend/Dockerfile
         push: true
         pull: true
         platforms: linux/amd64
-        tags: ghcr.io/dbsave/kubeaver:v2.0.0
+        tags: ${{ env.REGISTRY }}:${{ github.event.inputs.tag }}
         provenance: true
         cache-from: type=gha
         cache-to: type=gha,mode=max

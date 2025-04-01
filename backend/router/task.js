@@ -2,26 +2,10 @@ const KoaRouter = require('koa-router');
 const router = new KoaRouter();
 const serviceHost = require('../service/task')
 
-//初始化任务
-// router.post('/k8sClusterMasterJob', async (ctx) => {
-//   //curl -X POST -H "Content-Type: application/json" http://10.1.70.162:8000/api/k8sClusterMasterJob -d '{"id": "ckudflei"}'
-//   const { id } = ctx.request.body;
-//   try {
-//     const result = await serviceHost.addK8sMasterJob(id);
-//     ctx.body = result;
-//   } catch (error) {
-//     console.error('添加任务时发生错误:', error.message || error);
-//     ctx.body = {
-//       code: 50000,
-//       data: "",
-//       msg: error.message,
-//       status: "error"
-//     };
-//   }
-// });
 
 router.post('/k8sClusterMasterJob', async (ctx) => {
-  //curl -X POST -H "Content-Type: application/json" http://10.1.70.162:8000/api/k8sClusterMasterJob -d '{"id": "p1smtk0h","hosts":[{"ip": "10.1.69.236","hostName": "eb236master","role": "master"},{"ip": "10.1.69.235","hostName": "eb235node","role": "node"}]}'
+  //curl -X POST -H "Content-Type: application/json" http://10.1.70.162:8000/api/k8sClusterMasterJob -d '{"id": "p1smtk0h","hosts":[{"ip": "10.1.69.236","hostName": "eb236master","role": "master"}]}'
+  //curl -X POST -H "Content-Type: application/json" http://10.1.70.162:8000/api/k8sClusterMasterJob -d '{"id": "p1smtk0h","hosts":[{"ip": "10.1.69.236"]}'
   const clusterInfo = ctx.request.body;
   try {
     const result = await serviceHost.addK8sMasterJob(clusterInfo);
