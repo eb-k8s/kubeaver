@@ -247,7 +247,7 @@
      //获取离线包列表
     const fetchResourcesList = async () => {
         try {
-            const result = await getResources();
+            const result: any = await getResources();
             resourceList.value = result.data;
         } catch (err) {
             console.log(err);
@@ -559,6 +559,11 @@
         title: '节点总数(master/node)',
         dataIndex: 'count',
         slotName: 'count',
+    },
+    {
+        title: 'master1',
+        dataIndex: 'master1',
+        slotName: 'master1',
     },
     {
         title: '集群状态',

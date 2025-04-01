@@ -287,6 +287,7 @@
 
     const { loading, setLoading } = useLoading();
     const cluster = reactive({
+        
         clusterName: '',
         // offlinePackage: '',
         networkPlugin: '',
@@ -572,7 +573,7 @@
         try {
             setLoading(true);
             const result = await getResources();
-            resourceList.value = result;
+            resourceList.value = result.data;
             resourceList.value.forEach(item => {
                 if (item.name === 'k8s_cache') {
                     k8sCache.value = item;

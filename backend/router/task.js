@@ -7,6 +7,7 @@ router.post('/k8sClusterMasterJob', async (ctx) => {
   //curl -X POST -H "Content-Type: application/json" http://10.1.70.162:8000/api/k8sClusterMasterJob -d '{"id": "p1smtk0h","hosts":[{"ip": "10.1.69.236","hostName": "eb236master","role": "master"}]}'
   //curl -X POST -H "Content-Type: application/json" http://10.1.70.162:8000/api/k8sClusterMasterJob -d '{"id": "p1smtk0h","hosts":[{"ip": "10.1.69.236"]}'
   const clusterInfo = ctx.request.body;
+  
   try {
     const result = await serviceHost.addK8sMasterJob(clusterInfo);
     ctx.body = result;

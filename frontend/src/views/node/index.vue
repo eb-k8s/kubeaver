@@ -72,7 +72,10 @@
                             </a-button>
                         </template>
                         <template v-else-if="record.role === 'node'">
-                            <a-button v-if="record.status === 'Unknown' && record.activeJobType === '暂无任务' && isMasterNotReadyAndDeploying" type="text" size="small" @click="onClickJoinNode(record)">
+                            <!-- <a-button v-if="record.status === 'Unknown' && record.activeJobType === '暂无任务' && isMasterNotReadyAndDeploying" type="text" size="small" @click="onClickJoinNode(record)">
+                                加入
+                            </a-button> -->
+                            <a-button  type="text" size="small" @click="onClickJoinNode(record)">
                                 加入
                             </a-button>
                             <a-button v-if="record.status === 'Unknown' && record.activeJobType === '暂无任务'" type="text" size="small" @click="onClickDelete(record)">
@@ -281,14 +284,6 @@
         fetchHostList();
     }
 
-    const checkDuplicateHostName = (hostName, index) => {
-      const isDuplicate = cluster.workerHosts.some((host, i) => host.hostName === hostName && i !== index);
-      if (isDuplicate) {
-        Message.error('主机名字重复，请输入唯一的主机名');
-        cluster.workerHosts[index].hostName = ''; 
-      }
-    };
-
     const masterStatus = computed(() => {
         return nodeList.value && nodeList.value.some(node => node.role === 'master' && node.status === 'Unknown' && node.deploymentStatus === 'NotDeploy');
     });
@@ -301,7 +296,7 @@
     const handleAddNodeCancel = async () => {
         addNodeVisible.value = false;
     }
-
+   
     const handleJoinOk = async () => {
         joinVisible.value = true;
         try {
@@ -316,6 +311,7 @@
                     fetchNodeList();
                 }
             }else{
+                console.log(data);
                 const result: any = await joinCluster(data);
                 if(result.status === 'ok'){
                     Message.info("节点正在加入集群中，请稍后......");
@@ -567,7 +563,7 @@
         try {
             setLoading(true);
             const result = await getResources();
-            resourceList.value = result;
+            resourceList.value = result.data;
             resourceList.value.forEach(item => {
                 if (item.name === 'repo_files') {
                     repoFiles.value = item;

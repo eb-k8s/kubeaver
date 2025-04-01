@@ -37,6 +37,7 @@ function deleteTmpHostnameSync(hostname) {
 // 添加master1任务到队列的函数,master1执行完之后开始并行执行所有node节点
 async function addK8sMasterJob(clusterInfo) {
   const id = clusterInfo.id
+  
   //先通过集群名称查询redis表
   let resultData
   try {
@@ -106,7 +107,6 @@ async function addK8sMasterJob(clusterInfo) {
   if (masterResult.status !== "Ready") {
     await redis.del(configHashKey);
   }
-
 
   try {
     //添加master和etc 任务
