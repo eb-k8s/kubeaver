@@ -186,34 +186,21 @@ async function addK8sClusterNode(clusterInfo) {
         };
       }
       // 如果都不存在，添加新节点到 Redis
-      //const nodeKey = `k8s_cluster:${clusterInfo.id}:hosts:${newNode.ip}`;
+      const nodeKey = `k8s_cluster:${clusterInfo.id}:hosts:${newNode.ip}`;
       const createTime = Date.now();
       //查询用户名
       let hostKey = `host:${newNode.ip}`
       const hostInfo = await redis.hgetall(hostKey);
-      // await redis.hset(nodeKey,
-      //   'ip', newNode.ip,
-      //   'user', hostInfo.user,
-      //   'hostName', newNode.hostName,
-      //   'role', newNode.role,
-      //   'k8sVersion', 'Unknown',
-      //   'status', 'Unknown',
-      //   'createTime', createTime,
-      //   'updateTime', createTime
-      // );
-      const nodeData = JSON.stringify({
-        ip: newNode.ip,
-        user: hostInfo.user,
-        hostName: newNode.hostName,
-        role: newNode.role,
-        k8sVersion: 'Unknown',
-        status: 'Unknown',
-        createTime: createTime,
-        updateTime: createTime
-      });
-
-      // 使用 rpush 将节点信息存入 Redis 列表
-      await redis.rpush(`k8s_cluster:${clusterInfo.id}:hosts`, nodeData);
+      await redis.hset(nodeKey,
+        'ip', newNode.ip,
+        'user', hostInfo.user,
+        'hostName', newNode.hostName,
+        'role', newNode.role,
+        'k8sVersion', 'Unknown',
+        'status', 'Unknown',
+        'createTime', createTime,
+        'updateTime', createTime
+      );
     }
     return {
       code: 20000,
