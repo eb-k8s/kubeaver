@@ -67,15 +67,21 @@
                     </template>
                     <template #operations="{ record }">
                         <template v-if="record.role === 'master'">
+                            <a-button v-if="record.status === 'Unknown' && record.activeJobType === '暂无任务'" type="text" size="small" @click="onClickJoinNode(record)">
+                                加入
+                            </a-button>
                             <a-button v-if="record.status === 'Unknown' && record.activeJobType === '暂无任务'" type="text" size="small" @click="onClickDelete(record)">
                                 删除
                             </a-button>
+                            <a-button v-if="record.status !== 'Unknown' && record.activeJobType === '暂无任务'" type="text" size="small" @click="onClickRemove(record)">
+                                移除
+                            </a-button>
+                            <a-button v-if="record.lastJobStatus !== 'worked'" type="text" size="small" @click="onClickRetry(record)">
+                                重试
+                            </a-button>
                         </template>
                         <template v-else-if="record.role === 'node'">
-                            <!-- <a-button v-if="record.status === 'Unknown' && record.activeJobType === '暂无任务' && isMasterNotReadyAndDeploying" type="text" size="small" @click="onClickJoinNode(record)">
-                                加入
-                            </a-button> -->
-                            <a-button  type="text" size="small" @click="onClickJoinNode(record)">
+                            <a-button v-if="record.status === 'Unknown' && record.activeJobType === '暂无任务' && isMasterNotReadyAndDeploying" type="text" size="small" @click="onClickJoinNode(record)">
                                 加入
                             </a-button>
                             <a-button v-if="record.status === 'Unknown' && record.activeJobType === '暂无任务'" type="text" size="small" @click="onClickDelete(record)">
@@ -305,13 +311,12 @@
                 hosts: [node.value],
             };
             if(nodeRole.value === 'master'){
-                const result: any = await deployCluster(id.value);
+                const result: any = await deployCluster(data);
                 if(result.status === 'ok'){
                     Message.info("正在安装master节点,请稍后......");
                     fetchNodeList();
                 }
             }else{
-                console.log(data);
                 const result: any = await joinCluster(data);
                 if(result.status === 'ok'){
                     Message.info("节点正在加入集群中，请稍后......");
@@ -405,23 +410,6 @@
             Message.error("某些选中的主机不存在！");
             return;
         }
-
-        // const selectedWorkerOSSet = new Set(selectedWorkerHosts.map(host => host.os.split(' ')[0]));
-
-        // // 如果选择的工作节点的操作系统不一致，提示错误
-        // if (selectedWorkerOSSet.size > 1) {
-        //     Message.error("选中的工作节点的操作系统必须一致！");
-        //     return;
-        // }
-
-        // const selectedWorkerOS = [...selectedWorkerOSSet][0];
-
-        // // 如果控制节点已经存在，检查工作节点的操作系统是否与控制节点一致
-        // if (controlPlaneOSSet.size > 0 && !controlPlaneOSSet.has(selectedWorkerOS)) {
-        //     Message.error("工作节点的操作系统必须与控制节点的操作系统一致！");
-        //     return;
-        // }
-
         // 遍历添加工作节点
         workerHost.value.forEach(ip => {
             if (!cluster.workerHosts.some(host => host.ip === ip)) {
@@ -475,6 +463,10 @@
         removeVisible.value = true;
         nodeip.value = record.ip
         name.value = record.hostName;
+    }
+
+    const onClickRetry = async (record: any) =>{
+
     }
 
     const handleDeleteOk = async () => {
@@ -678,6 +670,16 @@
         title: '任务状态',
         dataIndex: 'activeStatus',
         slotName: 'activeStatus',
+    },
+    {
+        title: '上次任务类型',
+        dataIndex: 'lastJobType',
+        slotName: 'lastJobType',
+    },
+    {
+        title: '上次任务状态',
+        dataIndex: 'lastJobStatus',
+        slotName: 'lastJobStatus',
     },
     {
         title: '加入时间',

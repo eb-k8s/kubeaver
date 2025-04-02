@@ -567,7 +567,6 @@
         }
     };
 
-
     //获取离线包列表
     const fetchResourcesList = async () => {
         try {
