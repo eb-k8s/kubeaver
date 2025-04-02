@@ -37,6 +37,7 @@ function deleteTmpHostnameSync(hostname) {
 // 添加master1任务到队列的函数,master1执行完之后开始并行执行所有node节点
 async function addK8sMasterJob(clusterInfo) {
   const id = clusterInfo.id
+  
   //先通过集群名称查询redis表
   let resultData
   try {
@@ -63,13 +64,7 @@ async function addK8sMasterJob(clusterInfo) {
   }
 
   let hostsToProcess;
-  // if (Array.isArray(clusterInfo.hosts)) {
-  //   hostsToProcess = clusterInfo.hosts;
-  // } else {
-  //   hostsToProcess = resultData.hosts;
-  // }
   hostsToProcess = clusterInfo.hosts || resultData.hosts;
-
 
   //检查config文件是否存在数据库中，如果存在检查集群状态是否正常，如果不正常要删除
   let configHashKey = `k8s_cluster:${id}:config`
@@ -107,11 +102,10 @@ async function addK8sMasterJob(clusterInfo) {
     await redis.del(configHashKey);
   }
 
-
   try {
     //添加master和etc 任务
     //调整是为了满足用户可以单独添加其它master任务
-    for (const node of hostsToProcess) {
+    for (const node of clusterInfo.hosts) {
       //for (const node of resultData.hosts) {
       if (node.role === "master") {
         let taskName = 'initCluster'

@@ -29,11 +29,11 @@ services:
     user: root
     restart: always
     ports:
-      - 8081:8081
+      - 8082:8082
     volumes:
       - ./data/apps:/srv/apps
       - ./data/offline:/srv/offline  
       - /var/run/docker.sock:/var/run/docker.sock
     extra_hosts:
-      - "store.e-byte.cn:${HOST_IP}"
+      - "store.e-byte.cn:10.1.70.60"
 

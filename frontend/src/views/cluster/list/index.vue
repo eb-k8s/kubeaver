@@ -38,9 +38,9 @@
                             <span>{{ record.version }}</span>
                         </div>
                     </template>
-                    <template #offlinePackage="{ record }"> 
+                    <!-- <template #offlinePackage="{ record }"> 
                         <a-link @click="onClickOfflinePackageView(record)">{{ record.offlinePackage }}</a-link>
-                    </template>
+                    </template> -->
                     <template #status="{ record }">
                         <div class="status-container">
                             <span 
@@ -152,35 +152,31 @@
         <a-modal v-model:visible="upgradeVisible" @ok="handleUpgradeOk" @cancel="handleUpgradeCancel">
             <a-form :model="cluster" style="margin-top: 20px;">
                 <a-form-item
-                    label="离线包："
-                    field="offlinePackage"
-                    :rules="[{ required: true, message: '请选择离线包' }]"
+                    label="版本："
+                    field="version"
+                    :rules="[{ required: true, message: '请选择集群版本' }]"
                     >
                     <a-select
-                        v-model="cluster.offlinePackage"
+                        v-model="cluster.version"
                         class="select-input"
-                        placeholder="请选择离线包"
+                        placeholder="请选择集群版本"
                         style="width: 400px;"
                     >
                         <a-option
-                        v-for="item in resourceList"
-                        :key="item.id"
-                        :value="item.package_name"
+                            v-for="version in k8sCache?.children || []"
+                            :key="version.name"
+                            :value="version.name"
                         >
-                        {{ item.package_name }}
+                            {{ version.name }}
                         </a-option>
                     </a-select>
-                </a-form-item>
-            
-                <a-form-item label="版本：" field="version" style="margin-left: -3px;">
-                    <a-input v-model="cluster.version" placeholder="集群版本" style="width: 250px !important; color: #000000;" readonly />
                 </a-form-item>
             </a-form>
         </a-modal>
     </div>
 </template>
 <script lang="ts" setup>
-    import { ref, onMounted, reactive, watch } from 'vue';
+    import { ref, onMounted, reactive } from 'vue';
     import router from '@/router';
     import useLoading from '@/hooks/loading';
     import { getResources } from '@/api/resources';
@@ -205,8 +201,8 @@
     const hostList = ref();
     const id = ref();
     const k8sLogos = ref({});
+    const k8sCache = ref();
     const cluster = reactive({
-        offlinePackage: '',
         version: '',
     });
     const name = ref();
@@ -244,13 +240,19 @@
         return taskValues.every(value => value === 0);
     };
 
-     //获取离线包列表
     const fetchResourcesList = async () => {
         try {
-            const result = await getResources();
-            resourceList.value = result.data;
+            setLoading(true);
+            const result: any = await getResources();
+            result.data.forEach(item => {
+                if (item.name === 'k8s_cache') {
+                    k8sCache.value = item
+                } 
+            })
         } catch (err) {
             console.log(err);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -268,23 +270,23 @@
     const onClickView = (record: { clusterName: string; id: string; offlinePackage: string }) => {
         router.push({
             path: `/cluster/detail/${record.clusterName}`,
-            query: { id: record.id, offlinePackage: record.offlinePackage, }
+            query: { id: record.id }
         });
     };
 
     // 查看离线包的详情
-    const onClickOfflinePackageView = (record: { offlinePackage: string; id: string }) => {
-        router.push({
-            path: `/resources/detail`,
-            query: { package_name: record.offlinePackage }
-        });
-    };
+    // const onClickOfflinePackageView = (record: { offlinePackage: string; id: string }) => {
+    //     router.push({
+    //         path: `/resources/detail`,
+    //         query: { package_name: record.offlinePackage }
+    //     });
+    // };
 
     // 安装部署之前编辑集群信息
     const onClickEdit = (record: { clusterName: string; id: string; offlinePackage: string; version: string; taskNum: string}) => {
         router.push({
             path: `/cluster/edit/${record.clusterName}`,
-            query: { id: record.id, offlinePackage: record.offlinePackage, version: record.version, taskNum: record.taskNum }
+            query: { id: record.id, version: record.version, taskNum: record.taskNum }
         });
     };
 
@@ -304,62 +306,89 @@
         name.value = record.clusterName;
     }
 
+    // const onClickUpgrade = async (record: any) => {
+    //     upgradeVisible.value = true;
+    //     id.value = record.id;
+    //     clusterName.value = record.clusterName;
+    //     offlinePackage.value = record.offlinePackage;
+
+    //     const currentVersionParts = record.version.replace('v', '').split('.').map(Number);
+
+    //     const currentOS = record.offlinePackage.split('_')[1];
+
+    //     resourceList.value = resourceList.value.filter((item: any) => {
+    //         const match = item.package_name.match(/k8s-v(\d+\.\d+\.\d+)/);
+
+    //         if (match) {
+
+    //             const packageVersionParts = match[1].split('.').map(Number);
+    //             const packageOS = item.package_name.split('_')[1];
+
+    //             return (
+    //                 packageOS === currentOS && 
+    //                 packageVersionParts[0] === currentVersionParts[0] &&
+    //                 (
+    //                     packageVersionParts[1] === currentVersionParts[1] + 1 ||
+    //                     (
+    //                         packageVersionParts[1] === currentVersionParts[1] &&
+    //                         packageVersionParts[2] === currentVersionParts[2] + 1
+    //                     )
+    //                 ) ||
+    //                 (
+    //                     currentVersionParts[1] === 9 && packageVersionParts[1] === 0 &&
+    //                     packageVersionParts[0] === currentVersionParts[0] + 1 &&
+    //                     packageVersionParts[2] === 0
+    //                 )
+    //             );
+    //         }
+    //         return false;
+    //     });
+    // };
+
     const onClickUpgrade = async (record: any) => {
         upgradeVisible.value = true;
         id.value = record.id;
         clusterName.value = record.clusterName;
-        offlinePackage.value = record.offlinePackage;
 
         const currentVersionParts = record.version.replace('v', '').split('.').map(Number);
 
-        const currentOS = record.offlinePackage.split('_')[1];
+        resourceList.value = k8sCache.value.children.filter((item: any) => {
+            if (!item.name) return false;
 
-        resourceList.value = resourceList.value.filter((item: any) => {
-            const match = item.package_name.match(/k8s-v(\d+\.\d+\.\d+)/);
+            // 解析版本号
+            const packageVersionParts = item.name.replace('v', '').split('.').map(Number);
 
-            if (match) {
+            if (packageVersionParts.length < 3 || currentVersionParts.length < 3) return false;
 
-                const packageVersionParts = match[1].split('.').map(Number);
-                const packageOS = item.package_name.split('_')[1];
+            const [curMajor, curMinor, curPatch] = currentVersionParts;
+            const [pkgMajor, pkgMinor, pkgPatch] = packageVersionParts;
 
-                return (
-                    packageOS === currentOS && 
-                    packageVersionParts[0] === currentVersionParts[0] &&
-                    (
-                        packageVersionParts[1] === currentVersionParts[1] + 1 ||
-                        (
-                            packageVersionParts[1] === currentVersionParts[1] &&
-                            packageVersionParts[2] === currentVersionParts[2] + 1
-                        )
-                    ) ||
-                    (
-                        currentVersionParts[1] === 9 && packageVersionParts[1] === 0 &&
-                        packageVersionParts[0] === currentVersionParts[0] + 1 &&
-                        packageVersionParts[2] === 0
-                    )
-                );
-            }
-            return false;
+            return (
+                pkgMajor === curMajor &&
+                (
+                    pkgMinor === curMinor + 1 ||  // 次版本号 +1
+                    (pkgMinor === curMinor && pkgPatch === curPatch + 1) || // 补丁号 +1
+                    (curMinor === 9 && pkgMinor === 0 && pkgMajor === curMajor + 1 && pkgPatch === 0) // 版本大升级 9.x -> (x+1).0.0
+                )
+            );
         });
     };
 
 
     // 处理升级时的离线包
     const hasHigherVersion = (record: any) => {
-        if (!Array.isArray(resourceList.value)) {
-            console.error('resourceList.value is not an array or is undefined');
+        if (!Array.isArray(k8sCache.value.children)) {
             return false;
         }
 
-        return resourceList.value.some((item: any) => {
-            const match = item.package_name.match(/k8s-v(\d+\.\d+\.\d+)/);
-            if (match) {
-                const packageVersion = match[1];
-                return compareVersions(packageVersion, record.version) === 1;
+        return k8sCache.value.children.some((item: any) => {
+            if (item?.name) {
+                return compareVersions(item.name, record.version) === 1;
             }
             return false;
         });
     };
+
 
     // 集群升级
     const handleUpgradeOk = async () => {
@@ -368,7 +397,6 @@
             id : id.value,
             clusterName: clusterName.value,
             version: cluster.version,
-            offlinePackage: cluster.offlinePackage,
         }
         const result: any = await upgradeCluster(data);
         if(result.status === 'ok'){
@@ -383,7 +411,7 @@
 
     const handleUpgradeCancel = async() => {
         upgradeVisible.value = false;
-        cluster.offlinePackage = '';
+        cluster.version = '';
     }
 
     // 安装部署集群
@@ -510,14 +538,6 @@
         }
     };
    
-    watch(
-        () => cluster.offlinePackage,
-        (newPackage) => {
-            const match = newPackage?.match(/v\d+\.\d+\.\d+/);
-            cluster.version = match ? match[0] : '';
-        }
-    );
-
     onMounted(async () => {
         k8sLogos.value['v1.22'] = (await import('@/assets/images/logo/k8s-1.22.png')).default;
         k8sLogos.value['v1.23'] = (await import('@/assets/images/logo/k8s-1.23.png')).default;
@@ -559,6 +579,11 @@
         title: '节点总数(master/node)',
         dataIndex: 'count',
         slotName: 'count',
+    },
+    {
+        title: 'master1',
+        dataIndex: 'master1',
+        slotName: 'master1',
     },
     {
         title: '集群状态',

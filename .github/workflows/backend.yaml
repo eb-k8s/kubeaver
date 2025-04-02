@@ -58,11 +58,11 @@ jobs:
 
     - name: Move backend to Dockerfile
       run: |
-        mv backend backend/Dockerfile/backend
+        mv backend docker/backend/backend
         
     - name: Install dependencies in backend
       run: |
-        cd backend/Dockerfile/backend
+        cd docker/backend/backend
         npm install
         
     - name: Log in to the Container registry
@@ -79,7 +79,7 @@ jobs:
       uses: docker/build-push-action@v6
       with:
         context: Dockerfile
-        file: backend/Dockerfile/Dockerfile
+        file: docker/backend/Dockerfile
         push: true
         pull: true
         platforms: linux/amd64
