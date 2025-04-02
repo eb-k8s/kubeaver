@@ -101,7 +101,6 @@ async function removeImageAddrJob(imageAddrInfo) {
   };
 }
 
-<<<<<<< HEAD
 // 辅助函数：解析 TOML 内容
 function parseToml(tomlContent) {
   // 在这里实现 TOML 解析逻辑
@@ -109,8 +108,6 @@ function parseToml(tomlContent) {
   return require('toml').parse(tomlContent);
 }
 
-=======
->>>>>>> origin/feature
 async function getImageAddrJob(id) {
   //ansible-playbook -i inventory_path query.yml
   //这里可以直接获取host.yaml文件，因为前提条件集群已经部署了
@@ -135,17 +132,12 @@ async function getImageAddrJob(id) {
         if (stderr) {
           console.error(`错误输出: ${stderr}`);
         }
-<<<<<<< HEAD
         //console.log(stdout)
-=======
-        console.log(stdout)
->>>>>>> origin/feature
         resolve();
       });
     });
 
 
-<<<<<<< HEAD
     // 新代码：读取并解析 .toml 文件
     const registryConfigDir = '/tmp/registry_config';
     const hostDirs = fs.readdirSync(registryConfigDir);
@@ -187,8 +179,6 @@ async function getImageAddrJob(id) {
       msg: "镜像地址成功",
       status: "ok"
     };
-=======
->>>>>>> origin/feature
   } catch (error) {
     console.error('查询镜像仓库时发生错误:', error.message || error);
     return {
@@ -197,16 +187,6 @@ async function getImageAddrJob(id) {
       status: "error"
     };
   }
-<<<<<<< HEAD
-
-=======
-  return {
-    code: 20000,
-    data: '',
-    msg: "镜像地址成功",
-    status: "ok"
-  };
->>>>>>> origin/feature
 }
 
 
