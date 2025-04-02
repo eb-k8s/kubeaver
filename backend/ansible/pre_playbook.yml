@@ -95,7 +95,7 @@
       register: repo_files
       when: not is_ubuntu
 
-    - name: Backup exists .repo files(RedHat OS)
+    - name: Backup exists .repo files(RedHat series)
       command: mv {{ item.path }} {{ item.path }}.bak
       with_items: "{{ repo_files.files }}"
       when: 
@@ -113,29 +113,29 @@
           gpgcheck=0
       when: not is_ubuntu
 
-    - name: Clean all yum caches (RedHat OS) 
+    - name: Clean all yum caches (RedHat series) 
       ansible.builtin.command:
         cmd: yum clean all
       become: yes
       when: not is_ubuntu
 
-    - name: Rebuild yum cache (RedHat OS) 
+    - name: Rebuild yum cache (RedHat series) 
       ansible.builtin.command:
         cmd: yum makecache
       become: yes
       when: not is_ubuntu
 
-    - name: Backup exists .list files(Debian OS)
+    - name: Backup exists .list files(Debian series)
       command: mv /etc/apt/sources.list /etc/apt/sources.list.bak
       when: is_ubuntu
 
-    - name: Create sources.list in /etc/apt (Debian OS) 
+    - name: Create sources.list in /etc/apt (Debian series) 
       copy:
         dest: /etc/apt/sources.list
         content: deb [trusted=yes] file:{{ node_repo_path }}/repo ./ 
       when: is_ubuntu
 
-    - name: apt-get update (Debian OS) 
+    - name: apt-get update (Debian series) 
       ansible.builtin.command:
         cmd: apt-get update
       become: yes
@@ -155,14 +155,19 @@
       become: yes
       when: is_rocky or is_openeuler
 
-    - name: Stop firewalld (RedHat OS)
-      ansible.builtin.command:
-        cmd: sudo systemctl stop firewalld
-      become: yes
-      ignore_errors: true 
+    - name: Manage firewalld service (RedHat series)
+      block:
+        - name: Stop firewalld
+          ansible.builtin.command: sudo systemctl stop firewalld
+          become: yes
+
+        - name: Disable firewalld
+          ansible.builtin.command: sudo systemctl disable firewalld
+          become: yes
       when: not is_ubuntu
+      ignore_errors: true
     
-    - name: Stop ufw (Debian OS)
+    - name: Stop ufw (Debian series)
       ansible.builtin.command:
         cmd: sudo ufw disable
       become: yes
