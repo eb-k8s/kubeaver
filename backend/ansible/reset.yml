@@ -133,6 +133,7 @@
       ignore_errors: true 
       failed_when: false
       when:
+        - inventory_hostname != groups['kube_control_plane'] | first
         - inventory_hostname in groups['etcd']
         - etcd_member_id.stdout | length > 0
 
