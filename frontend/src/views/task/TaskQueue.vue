@@ -334,6 +334,7 @@
     const columns = [
         { title: 'IP', dataIndex: 'ip' },
         { title: '名称', dataIndex: 'taskName' },
+        { title: '角色', dataIndex: 'role' },
         { title: '创建时间', dataIndex: 'createTime' },
         { title: '任务状态', dataIndex: 'status' , slotName: 'status',},
         { title: '任务进度', dataIndex: 'progress' , slotName: 'progress',},

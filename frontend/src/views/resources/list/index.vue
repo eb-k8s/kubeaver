@@ -166,7 +166,7 @@
         try {
             setLoading(true);
             const result: any = await getResources();
-            result.forEach(item => {
+            result.data.forEach(item => {
                 if (item.name === 'k8s_cache') {
                     k8sCache.value = item
                 } else if (item.name === 'network_plugins') {
