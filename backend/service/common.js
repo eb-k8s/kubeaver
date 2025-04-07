@@ -187,6 +187,12 @@ async function getImageAddrJob(id) {
       status: "error"
     };
   }
+  return {
+    code: 20000,
+    data: '',
+    msg: "镜像地址成功",
+    status: "ok"
+  };
 }
 
 
