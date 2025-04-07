@@ -80,13 +80,13 @@
                     </template>
                     <template #operations="{ record }">
                         <template v-if="record.role === 'master'">
-                            <a-button v-if="record.status === 'Unknown' && record.activeJobType === '暂无任务'" type="text" size="small" @click="onClickJoinNode(record)">
+                            <a-button v-if="record.status === 'Unknown' && record.activeJobType === '暂无任务'" type="text" size="small" @click="onClickJoinMaster(record)">
                                 加入
                             </a-button>
                             <a-button v-if="record.status === 'Unknown' && record.activeJobType === '暂无任务'" type="text" size="small" @click="onClickDelete(record)">
                                 删除
                             </a-button>
-                            <a-button v-if="record.status !== 'Unknown' && record.activeJobType === '暂无任务'" type="text" size="small" @click="onClickRemove(record)">
+                            <a-button v-if="master1.value !== record.name && record.status !== 'Unknown' && record.activeJobType === '暂无任务'" type="text" size="small" @click="onClickRemove(record)">
                                 移除
                             </a-button>
                             <a-button v-if="record.lastJobType === 'upgradeCluster' && record.lastJobStatus === 'failed' && record.activeJobType === '暂无任务'" type="text" size="small" @click="onClickRetry(record)">
@@ -230,6 +230,7 @@
     const repoFiles = ref();
     const version = ref();
     const clusterName = ref();
+    const master1 = ref();
     const cluster = reactive({
         id: '',
         controlPlaneHosts: [] as Array<{ ip: string; hostName: string; role: string; os: string }>,
@@ -240,6 +241,7 @@
     id.value = route.query.id;
     version.value = route.query.version;
     clusterName.value = route.query.clusterName;
+    master1.value = route.query.master1;
 
     const hosts = computed(() => {
         return [
@@ -330,6 +332,7 @@
                 id : id.value,
                 hosts: [node.value],
             };
+            console.log(nodeRole.value);
             if(nodeRole.value === 'master'){
                 const result: any = await deployCluster(data);
                 if(result.status === 'ok'){
@@ -462,11 +465,11 @@
         // console.log(node.value);
     }
 
-    // const onClickJoinMaster = async (record: any) => {
-    //     joinVisible.value = true;
-    //     node.value = record;
-    //     nodeRole.value = record.role;
-    // }
+    const onClickJoinMaster = async (record: any) => {
+        joinVisible.value = true;
+        node.value = record;
+        nodeRole.value = record.role;
+    }
    
     const onClickDelete = async (record: any) =>{
         if (record.role === 'master' && masterCount.value <= 1) {
@@ -567,6 +570,10 @@
 
     const handleRemoveOk = async () => {
         try {
+            if(master1.value === name.value){
+                Message.warning("不能移除最后一个master节点！");
+                return;
+            }
             const data = {
                 id : id.value,
                 ip: nodeip.value

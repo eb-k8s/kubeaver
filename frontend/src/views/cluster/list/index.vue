@@ -266,10 +266,10 @@
     }
 
     // 查看集群的详情
-    const onClickView = (record: { clusterName: string; id: string; version: string }) => {
+    const onClickView = (record: { clusterName: string; id: string; version: string; master1: string; }) => {
         router.push({
             path: `/cluster/detail/${record.clusterName}`,
-            query: { id: record.id, clusterName: record.clusterName, version: cluster.version }
+            query: { id: record.id, clusterName: record.clusterName, version: cluster.version, master1: record.master1 }
         });
     };
 
