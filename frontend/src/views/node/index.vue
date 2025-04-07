@@ -200,6 +200,7 @@
     import { getNodeList, deleteNode, removeNode, addNode, joinCluster } from '@/api/node';
     import { getResources } from '@/api/resources';
     import { deployCluster } from '@/api/cluster';
+    import { upgradeCluster } from '@/api/tasks';
     import useLoading from '@/hooks/loading';
     import { useRoute } from 'vue-router';
     import { Message } from '@arco-design/web-vue';
@@ -227,6 +228,8 @@
     const resourceList = ref();
     const supportedOS = ref();
     const repoFiles = ref();
+    const version = ref();
+    const clusterName = ref();
     const cluster = reactive({
         id: '',
         controlPlaneHosts: [] as Array<{ ip: string; hostName: string; role: string; os: string }>,
@@ -235,7 +238,8 @@
     const name = ref();
 
     id.value = route.query.id;
-    offlinePackage.value = route.query.offlinePackage;
+    version.value = route.query.version;
+    clusterName.value = route.query.clusterName;
 
     const hosts = computed(() => {
         return [
@@ -458,11 +462,11 @@
         // console.log(node.value);
     }
 
-    const onClickJoinMaster = async (record: any) => {
-        joinVisible.value = true;
-        node.value = record;
-        nodeRole.value = record.role;
-    }
+    // const onClickJoinMaster = async (record: any) => {
+    //     joinVisible.value = true;
+    //     node.value = record;
+    //     nodeRole.value = record.role;
+    // }
    
     const onClickDelete = async (record: any) =>{
         if (record.role === 'master' && masterCount.value <= 1) {
@@ -482,7 +486,22 @@
     }
 
     const onClickRetry = async (record: any) =>{
-        console.log(record);
+        try {
+        const data = {
+            id : id.value,
+            clusterName: clusterName.value,
+            version: version.value,
+            ip: record.ip,
+        }
+        console.log(data);
+        const result: any = await upgradeCluster(data);
+        if(result.status === 'ok'){
+            Message.info("节点正在升级,请稍后......");
+            fetchNodeList();
+        }
+      } catch (err) {
+        console.log(err);
+      }
 
     }
 

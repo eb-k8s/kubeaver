@@ -197,7 +197,6 @@
     const resourceList = ref();
     const clusterList = ref();
     const clusterStatus = ref();
-    const offlinePackage = ref();
     const hostList = ref();
     const id = ref();
     const k8sLogos = ref({});
@@ -267,10 +266,10 @@
     }
 
     // 查看集群的详情
-    const onClickView = (record: { clusterName: string; id: string; offlinePackage: string }) => {
+    const onClickView = (record: { clusterName: string; id: string; version: string }) => {
         router.push({
             path: `/cluster/detail/${record.clusterName}`,
-            query: { id: record.id }
+            query: { id: record.id, clusterName: record.clusterName, version: cluster.version }
         });
     };
 
@@ -397,6 +396,10 @@
             id : id.value,
             clusterName: clusterName.value,
             version: cluster.version,
+        }
+        if(cluster.version === ''){
+            Message.error("请选择集群版本");
+            return;
         }
         const result: any = await upgradeCluster(data);
         if(result.status === 'ok'){
