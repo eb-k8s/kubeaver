@@ -4,6 +4,8 @@ A graphical K8s cluster management tool for offline installation and maintenance
 
 :construction: This project is currently work in progress.
 
+[简体中文](./docs/README_CN.md)
+
 ## Getting started
 
 
