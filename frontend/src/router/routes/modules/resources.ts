@@ -26,19 +26,6 @@ const RESOURCES: AppRouteRecordRaw = {
         activeMenu: 'resources',
       },
     },
-    {
-      // path: '/resources/detail/:package_name',
-      path: '/resources/detail',
-      name: 'resources.detail',
-      component: () => import('@/views/resources/detail/index.vue'),
-      meta: {
-        locale: '离线包',
-        requiresAuth: true,
-        roles: ['*'],
-        hideInMenu: true,
-        activeMenu: 'resources',
-      },
-    },
   ],
 };
 
