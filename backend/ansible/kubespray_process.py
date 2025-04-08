@@ -351,6 +351,33 @@ def main():
         shutil.copytree(f"{kubespray_path}/inventory/sample/group_vars/all", f"{kubespray_path}/roles/kubespray-defaults/defaults/main/all")
         shutil.copytree(f"{kubespray_path}/inventory/sample/group_vars/k8s_cluster", f"{kubespray_path}/roles/kubespray-defaults/defaults/main/k8s_cluster")
 
+    # 修改playbooks/cluster.yml，新增重启nginx
+    lines = read_yaml_file(f"{kubespray_path}/playbooks/cluster.yml")
+    # - { role: kubernetes/preinstall, when: "dns_mode != 'none' and resolvconf_mode == 'host_resolvconf'", tags: resolvconf, dns_late: true }后新增
+    new_string = """- name: Restart nginx-proxy containers
+  hosts: kube_control_plane 
+  roles:
+    - { role: kubespray-defaults }
+  tasks:
+  - name: Restart nginx-proxy containers
+    shell: "{{bin_dir}}/crictl ps | grep nginx-proxy | awk '{print $1}' | xargs {{bin_dir}}/crictl stop"
+    loop: "{{ groups['kube_node'] }}"
+    delegate_to: "{{ item }}"
+    ignore_errors: yes"""
+    modified_lines = insert_line_after_pattern(lines, """- { role: kubernetes/preinstall, when: "dns_mode != 'none' and resolvconf_mode == 'host_resolvconf'", tags: resolvconf, dns_late: true }""", new_string)
+    # 将更改写入文件
+    write_yaml_file(f"{kubespray_path}/playbooks/cluster.yml", modified_lines)
+
+    # 修改roles/kubernetes/control-plane/tasks/kubeadm-secondary.yml，解决证书问题
+    lines = read_yaml_file(f"{kubespray_path}/roles/kubernetes/control-plane/tasks/kubeadm-secondary.yml")
+    # 注释条件判断
+    modified_lines = replace_line_with_pattern(lines, "- inventory_hostname == first_kube_control_plane", "# - inventory_hostname == first_kube_control_plane")
+    # 插入delegate_to
+    modified_lines = insert_line_after_pattern(modified_lines, "register: kubeadm_upload_cert", """  delegate_to: "{{ first_kube_control_plane }}" """)
+    # 将更改写入文件
+    write_yaml_file(f"{kubespray_path}/roles/kubernetes/control-plane/tasks/kubeadm-secondary.yml", modified_lines)
+    
+
 if __name__ == "__main__":
     main()
 
