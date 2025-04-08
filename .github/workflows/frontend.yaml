@@ -7,7 +7,7 @@ on:
     branches: [ "release" ]
   workflow_dispatch:
     inputs:
-      tag:
+      kubeaver_frontend_tag:
         description: 'Select a frontend tag to build'
         required: true
         default: 'v1.0.0'
@@ -65,7 +65,7 @@ jobs:
         push: true
         pull: true
         platforms: linux/amd64
-        tags: ${{ env.REGISTRY }}:${{ github.event.inputs.tag }}
+        tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME}}:${{ github.event.inputs.kubeaver_frontend_tag }}
         provenance: true
         cache-from: type=gha
         cache-to: type=gha,mode=max
