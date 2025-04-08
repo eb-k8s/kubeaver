@@ -60,7 +60,7 @@ jobs:
     - name: Build and push Docker image
       uses: docker/build-push-action@v6
       with:
-        context: Dockerfile
+        context: docker/frontend
         file: docker/frontend/Dockerfile
         push: true
         pull: true
