@@ -453,22 +453,6 @@
             return;
         }
 
-        // const selectedWorkerOSSet = new Set(selectedWorkerHosts.map(host => host.os.split(' ')[0]));
-
-        // // 如果选择的工作节点的操作系统不一致，提示错误
-        // if (selectedWorkerOSSet.size > 1) {
-        //     Message.error("选中的工作节点的操作系统必须一致！");
-        //     return;
-        // }
-
-        // const selectedWorkerOS = [...selectedWorkerOSSet][0];
-
-        // // 如果控制节点已经存在，检查工作节点的操作系统是否与控制节点一致
-        // if (controlPlaneOSSet.size > 0 && !controlPlaneOSSet.has(selectedWorkerOS)) {
-        //     Message.error("工作节点的操作系统必须与控制节点的操作系统一致！");
-        //     return;
-        // }
-
         // 遍历添加工作节点
         workerHost.value.forEach(ip => {
             if (!cluster.workerHosts.some(host => host.ip === ip)) {

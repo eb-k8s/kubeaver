@@ -48,11 +48,17 @@
       networking
       {%- endif %}
   tasks:
+    - name: Check if ansible_play_batch contains all inventory hosts
+      set_fact:
+        reset_all: "{{ ansible_play_batch | sort == groups['all'] | sort }}"
+      when: ansible_play_batch | length > 0 and groups['all'] | length > 0
+
     - name: Remove-node | List nodes
       command: >-
         {{ kubectl }} get nodes -o go-template={% raw %}'{{ range .items }}{{ .metadata.name }}{{ "\n" }}{{ end }}'{% endraw %}
       register: nodes
       when:
+        - not reset_all
         - groups['kube_control_plane'] | length > 0
       delegate_to: "{{ groups['kube_control_plane'] | first }}"
       changed_when: false
@@ -68,6 +74,7 @@
           --timeout {{ drain_timeout }}
           --delete-emptydir-data {{ kube_override_hostname | default(inventory_hostname) }}
       when:
+        - not reset_all
         - groups['kube_control_plane'] | length > 0
         # ignore servers that are not nodes
         - kube_override_hostname | default(inventory_hostname) in nodes.stdout_lines
@@ -88,6 +95,7 @@
       retries: 3
       delay: "{{ drain_grace_period }}"
       when:
+        - not reset_all
         - groups['kube_control_plane'] | length > 0
         - not allow_ungraceful_removal
         - kube_override_hostname | default(inventory_hostname) in nodes.stdout_lines
@@ -96,6 +104,8 @@
       command: "{{ bin_dir }}/kubectl get nodes --selector=node-role.kubernetes.io/control-plane -o json"
       delegate_to: "{{ groups['kube_control_plane'] | first }}"
       register: kube_control_planes_raw
+      when: 
+        - not reset_all
       ignore_errors: true
       changed_when: false
 
@@ -104,12 +114,16 @@
         joined_control_planes: "{{ ((kube_control_planes_raw.stdout | from_json)['items']) | default([]) | map(attribute='metadata') | map(attribute='name') | list }}"
       delegate_to: "{{ item }}"
       loop: "{{ groups['kube_control_plane'] }}"
-      when: kube_control_planes_raw is succeeded
+      when:
+        - not reset_all 
+        - kube_control_planes_raw is succeeded
       run_once: true
 
     - name: Set fact first_kube_control_plane
       set_fact:
         first_kube_control_plane: "{{(joined_control_planes | default([]) | reject('search', inventory_hostname)) | first | default(inventory_hostname)}}"
+      when: 
+        - not reset_all
 
     - name: Check the OS
       command: grep '^NAME=' /etc/os-release
@@ -128,6 +142,7 @@
         -o jsonpath='{range .status.addresses[?(@.type=="InternalIP")]}{@.address}{"\n"}{end}'
       register: remove_node_ip
       when:
+        - not reset_all
         - groups['kube_control_plane'] | length > 0
         - inventory_hostname in groups['etcd']
         - ip is not defined
@@ -140,6 +155,7 @@
       set_fact:
         node_ip: "{{ ip | default(access_ip | default(remove_node_ip.stdout)) | trim }}"
       when:
+        - not reset_all
         - inventory_hostname in groups['etcd']
       ignore_errors: true 
 
@@ -148,6 +164,7 @@
         that: node_ip is defined and node_ip | length > 0
         msg: "Etcd node ip is not set !"
       when:
+        - not reset_all
         - inventory_hostname in groups['etcd']
 
     - name: Lookup etcd member id
@@ -168,7 +185,9 @@
         ETCDCTL_CACERT: "{{ kube_cert_dir + '/etcd/ca.crt' if etcd_deployment_type == 'kubeadm' else etcd_cert_dir + '/ca.pem' }}"
         ETCDCTL_ENDPOINTS: "https://127.0.0.1:2379"
       delegate_to: "{{ groups['etcd'] | first }}"
-      when: inventory_hostname in groups['etcd']
+      when:
+        - not reset_all 
+        - inventory_hostname in groups['etcd']
 
     - name: Remove etcd member from cluster
       command: "{{ bin_dir }}/etcdctl member remove {{ etcd_member_id.stdout }}"
@@ -182,6 +201,7 @@
       ignore_errors: true 
       failed_when: false
       when:
+        - not reset_all
         - inventory_hostname != groups['kube_control_plane'] | first
         - inventory_hostname in groups['etcd']
         - etcd_member_id.stdout | length > 0
@@ -666,10 +686,10 @@
       when: is_ubuntu
 
     - name: Remove-node | Delete node, kubectl delete
-      command: "{{ kubectl }} delete node {{ node }}"
+      command: "{{ kubectl }} delete node {{ inventory_hostname }}"
       delegate_to: "{{ first_kube_control_plane }}"
       when:
-        - node is defined
+        - not reset_all 
         - groups['kube_control_plane'] | length > 0
         # ignore servers that are not nodes
         - inventory_hostname in groups['k8s_cluster'] 
