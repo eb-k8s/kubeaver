@@ -88,4 +88,4 @@ jobs:
         cache-from: type=gha
         cache-to: type=gha,mode=max
         build-args: |
-          APP_VERSION=${{ github.event.inputs.tag }}
+          kubespray_version=${{ github.event.inputs.kubespray_version }}
