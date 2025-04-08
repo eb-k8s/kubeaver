@@ -77,11 +77,12 @@ jobs:
 
     - name: Build and push Docker image
       uses: docker/build-push-action@v6
-      run: |  
-        pwd
       with:
-        context: Dockerfile
+        context: docker/backend
         file: docker/backend/Dockerfile
+        - name: Check Dockerfile location
+          run: |
+            ls -l docker/backend
         push: true
         pull: true
         platforms: linux/amd64
