@@ -77,9 +77,11 @@ jobs:
 
     - name: Build and push Docker image
       uses: docker/build-push-action@v6
+      run: |  
+        pwd
       with:
         context: Dockerfile
-        file: docker/backend/
+        file: docker/backend/Dockerfile
         push: true
         pull: true
         platforms: linux/amd64
