@@ -1,8 +1,8 @@
 FROM rockylinux:9.3 AS builder
-ARG {KUBESPRAY_VERSION}
+ARG KUBESPRAY_VERSION
 
 # Use the build-time variable
-ENV {KUBESPRAY_VERSION}=${{KUBESPRAY_VERSION}}
+ENV KUBESPRAY_VERSION=${KUBESPRAY_VERSION}
 
 ##安装所需的工具和依赖
 RUN yum -y install openssh-clients binutils findutils rsync git
