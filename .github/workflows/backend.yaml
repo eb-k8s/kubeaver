@@ -79,7 +79,7 @@ jobs:
       uses: docker/build-push-action@v6
       with:
         context: Dockerfile
-        file: docker/backend/Dockerfile
+        file: docker/backend/
         push: true
         pull: true
         platforms: linux/amd64
