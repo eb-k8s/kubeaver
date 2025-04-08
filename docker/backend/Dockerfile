@@ -62,6 +62,10 @@ RUN find /root/python_env/kubespray-${KUBESPRAY_VERSION} -name "*.pyc" -delete &
 
 # 第二阶段：运行阶段
 FROM rockylinux:9.3
+ARG KUBESPRAY_VERSION
+
+# Use the build-time variable
+ENV KUBESPRAY_VERSION=${KUBESPRAY_VERSION}
 # 设置工作目录
 WORKDIR /root
 RUN yum -y install openssh-clients rsync iputils
