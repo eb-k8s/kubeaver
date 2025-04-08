@@ -530,8 +530,22 @@
     const handleAddNodeOk = async () => {
         
         try {
+
+            let count = 0;
+            nodeList.value.forEach(itme => {
+                if(itme.role === 'master'){
+                    count += 1;
+                }
+            });
+
             if (cluster.controlPlaneHosts.length === 0 && cluster.workerHosts.length === 0) {
                 Message.error("至少需要添加一个控制节点或一个工作节点！");
+                return;
+            }
+
+            // 校验控制节点个数是否为单数
+            if (cluster.controlPlaneHosts.length % 2 !== 0 && count % 2 !==0 ) {
+                Message.error(`添加后有 ${cluster.controlPlaneHosts.length + count} 个控制节点，建议保持单数以保证高可用！`);
                 return;
             }
 

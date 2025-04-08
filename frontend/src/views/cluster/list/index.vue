@@ -272,15 +272,7 @@
             query: { id: record.id, clusterName: record.clusterName, version: cluster.version, master1: record.master1 }
         });
     };
-
-    // 查看离线包的详情
-    // const onClickOfflinePackageView = (record: { offlinePackage: string; id: string }) => {
-    //     router.push({
-    //         path: `/resources/detail`,
-    //         query: { package_name: record.offlinePackage }
-    //     });
-    // };
-
+    
     // 安装部署之前编辑集群信息
     const onClickEdit = (record: { clusterName: string; id: string; offlinePackage: string; version: string; taskNum: string}) => {
         router.push({
@@ -304,45 +296,6 @@
         id.value = record.id;
         name.value = record.clusterName;
     }
-
-    // const onClickUpgrade = async (record: any) => {
-    //     upgradeVisible.value = true;
-    //     id.value = record.id;
-    //     clusterName.value = record.clusterName;
-    //     offlinePackage.value = record.offlinePackage;
-
-    //     const currentVersionParts = record.version.replace('v', '').split('.').map(Number);
-
-    //     const currentOS = record.offlinePackage.split('_')[1];
-
-    //     resourceList.value = resourceList.value.filter((item: any) => {
-    //         const match = item.package_name.match(/k8s-v(\d+\.\d+\.\d+)/);
-
-    //         if (match) {
-
-    //             const packageVersionParts = match[1].split('.').map(Number);
-    //             const packageOS = item.package_name.split('_')[1];
-
-    //             return (
-    //                 packageOS === currentOS && 
-    //                 packageVersionParts[0] === currentVersionParts[0] &&
-    //                 (
-    //                     packageVersionParts[1] === currentVersionParts[1] + 1 ||
-    //                     (
-    //                         packageVersionParts[1] === currentVersionParts[1] &&
-    //                         packageVersionParts[2] === currentVersionParts[2] + 1
-    //                     )
-    //                 ) ||
-    //                 (
-    //                     currentVersionParts[1] === 9 && packageVersionParts[1] === 0 &&
-    //                     packageVersionParts[0] === currentVersionParts[0] + 1 &&
-    //                     packageVersionParts[2] === 0
-    //                 )
-    //             );
-    //         }
-    //         return false;
-    //     });
-    // };
 
     const onClickUpgrade = async (record: any) => {
         upgradeVisible.value = true;
