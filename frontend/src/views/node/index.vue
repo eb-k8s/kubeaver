@@ -332,7 +332,7 @@
                 id : id.value,
                 hosts: [node.value],
             };
-            console.log(nodeRole.value);
+            console.log(data);
             if(nodeRole.value === 'master'){
                 const result: any = await deployCluster(data);
                 if(result.status === 'ok'){

@@ -17,10 +17,10 @@ export function editCluster(data: any) {
 }
 
 
-export function deployCluster(id: any) {
+export function deployCluster(data: any) {
   return axios.post<any>(
-    '/api/k8sClusterMasterJob',
-    { id: id },
+    '/api/k8sClusterMasterJob', data,
+    // { data: data },
     {
       headers: {
         'Content-Type': 'application/json',
