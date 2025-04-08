@@ -478,7 +478,10 @@
 
     const handleDeployOk = async () => {
         try {
-        const result: any = await deployCluster(id.value);
+        const data = {
+            id : id.value,
+        };
+        const result: any = await deployCluster(data);
         if(result.status === 'ok'){
             Message.info("正在安装集群,请稍后......");
             fetchClusterList();
