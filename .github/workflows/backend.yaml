@@ -80,8 +80,11 @@ jobs:
       run: |  
         pwd
       with:
-        context: Dockerfile
-        file: docker/backend/
+        context: docker/backend
+        file: docker/backend/Dockerfile
+        - name: Check Dockerfile location
+          run: |
+            ls -l docker/backend
         push: true
         pull: true
         platforms: linux/amd64
