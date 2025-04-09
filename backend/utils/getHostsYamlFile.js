@@ -155,8 +155,9 @@ async function getHostsYamlFile(data, clusterId) {
   // 将数据转换为 YAML 格式
   const yamlStr = yaml.dump(yamlData);
   // 指定保存路径(离线部署替换掉相应hosts.yaml文件)
-  const currentDir = process.cwd();
-  let inventoryPath = path.join(currentDir, '/data/inventory', `inventory-${clusterId}`);
+  //const currentDir = process.cwd();
+  let inventoryPath = path.join(__dirname, '../data/inventory',`inventory-${clusterId}`);
+  //let inventoryPath = path.join(currentDir, '/data/inventory', `inventory-${clusterId}`);
   if (!fs.existsSync(inventoryPath)) {
     fs.mkdirSync(inventoryPath, { recursive: true });
   }
