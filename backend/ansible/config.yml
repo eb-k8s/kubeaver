@@ -5,7 +5,7 @@ kubeadm_version: "{{kube_version}}"
 registry_host: "store.e-byte.cn"
 #registry_host_ip: "10.1.69.240"
 #kube_network_plugin: flannel
-calico_version: "v3.25.2"
+calico_version: "v3.28.1"
 metrics_server_version: "v0.6.4"
 # 默认配置metrics-server
 metrics_server_enabled: true
