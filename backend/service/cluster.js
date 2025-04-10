@@ -403,9 +403,10 @@ async function updateK8sCluster(clusterInfo) {
 
 async function deleteK8sCluster(id) {
   //先删除inventory-clusterId文件夹
-  const currentDir = process.cwd();
+  //const currentDir = process.cwd();
+  const inventoryDir = path.join(__dirname, '../data/inventory',`inventory-${id}`);
   // 使用相对路径
-  const inventoryDir = path.join(currentDir, '/data/inventory', `inventory-${id}`);
+  //const inventoryDir = path.join(currentDir, '/data/inventory', `inventory-${id}`);
   try {
     if (fs.existsSync(inventoryDir)) {
       fs.rmSync(inventoryDir, { recursive: true, force: true });
