@@ -32,7 +32,7 @@
     drain_timeout: 360s
     drain_retries: 3
     drain_retry_delay_seconds: 10
-    reset_cluster: false
+    reset_cluster: true
     reset_restart_network_service_name: >-
       {% if ansible_os_family == "RedHat" -%}
       {%-
