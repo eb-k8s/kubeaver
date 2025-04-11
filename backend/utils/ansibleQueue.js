@@ -620,7 +620,8 @@ async function processResetNode(job) {
       '-i', `${hostsPath}`,
       '--become',
       '--become-user=root', job.data.playbook.task,
-      '-e', `node=${job.data.playbook.hostName}`
+      '-e', `node=${job.data.playbook.hostName}`,
+      '-e', 'reset_cluster=false',
     ]
     console.log("移除节点" + args)
     let workDir = job.data.playbook.workDir
@@ -694,6 +695,7 @@ async function processResetCluster(job) {
       '--become',
       '--become-user=root', job.data.playbook.task,
       '-e', `node=${job.data.playbook.hostName}`,
+      '-e', 'reset_cluster=true',
     ], {
       cwd: job.data.playbook.workDir,
       env: { ...process.env, ANSIBLE_CALLBACKS_ENABLED: 'reset_task_counter_callback,profile_tasks' },
