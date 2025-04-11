@@ -7,7 +7,7 @@ on:
     branches: [ "release" ]
   workflow_dispatch:
     inputs:
-      tag:
+      kubeaver_frontend_tag:
         description: 'Select a frontend tag to build'
         required: true
         default: 'v1.0.0'
@@ -44,6 +44,7 @@ jobs:
 
     - name: mv dist frontend
       run: |
+        mkdir -p docker/frontend/dist
         mv frontend/dist/* docker/frontend/dist
 
     - name: Log in to the Container registry
@@ -59,12 +60,12 @@ jobs:
     - name: Build and push Docker image
       uses: docker/build-push-action@v6
       with:
-        context: Dockerfile
+        context: docker/frontend
         file: docker/frontend/Dockerfile
         push: true
         pull: true
         platforms: linux/amd64
-        tags: ${{ env.REGISTRY }}:${{ github.event.inputs.tag }}
+        tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME}}:${{ github.event.inputs.kubeaver_frontend_tag }}
         provenance: true
         cache-from: type=gha
         cache-to: type=gha,mode=max
