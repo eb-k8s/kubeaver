@@ -153,13 +153,21 @@
         state: present
         allowerasing: true
       become: yes
-      when: not is_ubuntu
+      when: is_openeuler or is_rocky
+
+    - name: Install nfs-utils (CentOS series)
+      yum:
+        name: nfs-utils
+        state: present
+      become: yes
+      when: is_centos
 
     - name: start NFS server (RedHat series)
       service:
         name: nfs-server
         state: restarted
         enabled: yes
+      when: not is_ubuntu
 
     - name: install NFS server (Debian series)
       apt:
