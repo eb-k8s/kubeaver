@@ -520,6 +520,11 @@ async function upgradeK8sClusterJob(newClusterInfo, targetIP = null) {
       if (targetIP && node.ip !== targetIP) {
         continue;
       }
+      // Skip nodes with the same version
+      if (node.k8sVersion === newClusterInfo.version) {
+        console.log(`Node ${node.hostName} already at version ${newClusterInfo.version}, skipping upgrade.`);
+        continue;
+      }
       let taskName = 'upgradeCluster'
       let taskId = `${newClusterInfo.id}_${taskName}`
       const resultPackageData = await offlinePackagesPath()

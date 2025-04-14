@@ -138,7 +138,7 @@ def main():
     process_files(FILES2, "force_reset_playbook: ../reset.yml")
 
     parser = argparse.ArgumentParser(description="Process some parameters.")
-    parser.add_argument('--kubespray_version', type=str, default='v2.26.0',
+    parser.add_argument('--kubespray_version', type=str, default='v2.23.3',
                         help='The kubespray version.')
 
     args = parser.parse_args()
@@ -347,6 +347,12 @@ def main():
         shutil.copytree(f"{kubespray_path}/inventory/sample/group_vars/all", f"{kubespray_path}/roles/kubespray-defaults/defaults/main/all")
         shutil.copytree(f"{kubespray_path}/inventory/sample/group_vars/k8s_cluster", f"{kubespray_path}/roles/kubespray-defaults/defaults/main/k8s_cluster")
         shutil.move(f"{kubespray_path}/roles/kubespray-defaults/defaults/main.yaml", f"{kubespray_path}/roles/kubespray-defaults/defaults/main/main.yaml")
+        # 解决calico版本问题
+        lines = read_yaml_file(f"{kubespray_path}/roles/network_plugin/calico/tasks/check.yml")
+        # - name: Stop if supported Calico versions后插入
+        modified_lines = insert_line_after_pattern(lines, "- name: Stop if supported Calico versions","  when: false")
+        # 更改写入文件
+        write_yaml_file(f"{kubespray_path}/roles/network_plugin/calico/tasks/check.yml", modified_lines)  
     elif kubespray_version == "2.26.0":
         shutil.copytree(f"{kubespray_path}/inventory/sample/group_vars/all", f"{kubespray_path}/roles/kubespray-defaults/defaults/main/all")
         shutil.copytree(f"{kubespray_path}/inventory/sample/group_vars/k8s_cluster", f"{kubespray_path}/roles/kubespray-defaults/defaults/main/k8s_cluster")
