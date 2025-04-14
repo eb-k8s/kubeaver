@@ -196,6 +196,7 @@ async function addK8sClusterNode(clusterInfo) {
         'user', hostInfo.user,
         'hostName', newNode.hostName,
         'role', newNode.role,
+        'os', hostInfo.os,
         'k8sVersion', 'Unknown',
         'status', 'Unknown',
         'createTime', createTime,
