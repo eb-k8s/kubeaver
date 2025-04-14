@@ -1,6 +1,26 @@
 const KoaRouter = require('koa-router');
 const router = new KoaRouter();
+const Joi = require('joi');
 const serviceHost = require('../service/cluster')
+
+const updateClusterSchema = Joi.object({
+  id: Joi.string().required(),
+  clusterName: Joi.string().optional(),
+  version: Joi.string().optional(),
+  hosts: Joi.array().items(
+    Joi.object({
+      ip: Joi.string().ip().required(),
+      hostName: Joi.string().required(),
+      role: Joi.string().valid('master', 'node').required(),
+      user: Joi.string().required(),
+      os: Joi.string().required(),
+      k8sVersion: Joi.string().optional(),
+      status: Joi.string().optional(),
+      createTime: Joi.string().optional(),
+      updateTime: Joi.string().optional(),
+    })
+  ).optional()
+});
 
 // 创建集群,用户选择k8s版本，网络插件。
 router.post('/k8sCluster', async (ctx) => {
@@ -39,9 +59,18 @@ router.get('/k8sCluster', async (ctx) => {
 
 // 更新集群信息,更新的时候id不存在，需要控制
 router.put('/k8sCluster', async (ctx) => {
-  //curl -X PUT -H "Content-Type: application/json"  http://10.1.35.91:8000/k8sCluster -d '{"id": "2bboadxz","clusterName": "aa","version": "1.28.2","offlinePackage": "spray-2.25.0-k8s-1.28.2_amd"}'
-  //curl -X PUT -H "Content-Type: application/json"  http://10.1.35.91:8000/k8sCluster -d '{"id": "kcadleue","clusterName": "aa","version": "1.28.2","offlinePackage": "spray-2.25.0-k8s-1.28.2_amd","hosts":[{"ip": "10.1.69.232","hostName": "master1","role": "master"},{"ip": "10.1.69.235","hostName": "node2","role": "node"}]}'
+  //curl -X PUT -H "Content-Type: application/json"  http://10.1.35.91:8000/k8sCluster -d '{"id": "kcadleue","clusterName": "aa","version": "1.28.2","hosts":[{"ip": "10.1.69.232","hostName": "master1","user":"root","role": "master"},{"ip": "10.1.69.235","hostName": "node2","user":"root","role": "node"}]}'
   const clusterInfo = ctx.request.body;
+  const { error } = updateClusterSchema.validate(clusterInfo);
+  if (error) {
+    ctx.body = {
+      code: 40000,
+      data: "",
+      msg: error.details[0].message,
+      status: "error"
+    };
+    return;
+  }
   try {
     const result = await serviceHost.updateK8sCluster(clusterInfo);
     ctx.body = result
