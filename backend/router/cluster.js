@@ -59,7 +59,7 @@ router.get('/k8sCluster', async (ctx) => {
 
 // 更新集群信息,更新的时候id不存在，需要控制
 router.put('/k8sCluster', async (ctx) => {
-  //curl -X PUT -H "Content-Type: application/json"  http://10.1.35.91:8000/k8sCluster -d '{"id": "kcadleue","clusterName": "aa","version": "1.28.2","hosts":[{"ip": "10.1.69.232","hostName": "master1","user":"root","role": "master"},{"ip": "10.1.69.235","hostName": "node2","user":"root","role": "node"}]}'
+  //curl -X PUT -H "Content-Type: application/json"  http://10.1.35.91:8000/k8sCluster -d '{"id": "kcadleue","clusterName": "aa","version": "1.28.2","hosts":[{"ip": "10.1.69.232","hostName": "master1","user":"root","os":"centos 7","role": "master"},{"ip": "10.1.69.235","hostName": "node2","user":"root","os":"centos 7","role": "node"}]}'
   const clusterInfo = ctx.request.body;
   const { error } = updateClusterSchema.validate(clusterInfo);
   if (error) {
