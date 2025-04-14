@@ -147,13 +147,52 @@
         state: present
       when: is_openeuler
 
-    - name: Install nfs-utils (Rocky or openEuler)
+    - name: Install nfs-utils (RedHat series)
       yum:
         name: nfs-utils
         state: present
         allowerasing: true
       become: yes
-      when: is_rocky or is_openeuler
+      when: is_openeuler or is_rocky
+
+    - name: Install nfs-utils (CentOS series)
+      yum:
+        name: nfs-utils
+        state: present
+      become: yes
+      when: is_centos
+
+    - name: start NFS server (RedHat series)
+      service:
+        name: nfs-server
+        state: restarted
+        enabled: yes
+      when: not is_ubuntu
+
+    - name: install NFS server (Debian series)
+      apt:
+        name:
+          - nfs-kernel-server
+          # - rpcbind
+        state: present
+      become: yes
+      when: is_ubuntu
+
+    # - name: start rpcbind server (Debian series)
+    #   service:
+    #     name: rpcbind
+    #     state: started
+    #     enabled: yes
+    #   become: yes
+    #   when: is_ubuntu
+
+    - name: start NFS server (Debian series)
+      service:
+        name: nfs-kernel-server
+        state: restarted  
+        enabled: yes
+      become: yes
+      when: is_ubuntu
 
     - name: Manage firewalld service (RedHat series)
       block:
