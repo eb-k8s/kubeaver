@@ -84,7 +84,7 @@
                                 升级
                             </a-button>
                             <a-button 
-                                v-if="record.status === 'Ready'" 
+                                v-if="record.status === 'Ready' && isActiveTaskEmpty(record.activeTask)" 
                                 type="text" 
                                 size="small" 
                                 @click="handleLink(record)">

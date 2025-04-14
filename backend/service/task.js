@@ -520,6 +520,11 @@ async function upgradeK8sClusterJob(newClusterInfo, targetIP = null) {
       if (targetIP && node.ip !== targetIP) {
         continue;
       }
+      // Skip nodes with the same version
+      if (node.k8sVersion === newClusterInfo.version) {
+        console.log(`Node ${node.hostName} already at version ${newClusterInfo.version}, skipping upgrade.`);
+        continue;
+      }
       let taskName = 'upgradeCluster'
       let taskId = `${newClusterInfo.id}_${taskName}`
       const resultPackageData = await offlinePackagesPath()
@@ -628,40 +633,6 @@ async function getTaskInfo(id, ip, taskType, timestamp) {
   let nodeKey = `k8s_cluster:${id}:tasks:${ip}:${taskType}:${timestamp}`
   try {
     let taskInfo = await redis.hgetall(nodeKey);
-    /*
-    let taskInfoData = taskInfo.stdout;
-    //rest 开始
-    if (taskInfoData.includes("PLAY [force delete node]")) {
-      taskInfoData = taskInfoData.replace("PLAY [force delete node]", "Start Stage: reset————\nPLAY [force delete node]");
-    }
- 
-    // pre开始
-    if (taskInfoData.includes("PLAY [prepare for using kubespray playbook]")) {
-      taskInfoData = taskInfoData.replace("PLAY [prepare for using kubespray playbook]", "Start Stage: pre_playbook————\nPLAY [prepare for using kubespray playbook]");
-    }
-    //预检查开始
-    if (taskInfoData.includes("PLAY [Prepare for etcd install]")) {
-      taskInfoData = taskInfoData.replace("PLAY [Prepare for etcd install]", "Start Stage: pre_check————\nPLAY [Prepare for etcd install]");
-    }
-    //download阶段开始
-    const downloadTask = "TASK [download : Prep_download | On localhost, check if passwordless root is possible]";
-    if (taskInfoData.includes(downloadTask)) {
-      const regex = new RegExp(`(TASK \\[download : Prep_download \\| Set a few facts\\] \\*{30,})`);
-      taskInfoData = taskInfoData.replace(regex, "Start Stage: download————\n$1");
-    }
-    //安装k8s集群阶段开始
-    if (taskInfoData.includes("PLAY [Install etcd]")) {
-      taskInfoData = taskInfoData.replace("PLAY [Install etcd]", "Start Stage: install k8s cluster————\nPLAY [Install etcd]");
-    }
-    //开始安装网络插件
-    if (taskInfoData.includes("PLAY [Invoke kubeadm and install a CNI]")) {
-      taskInfoData = taskInfoData.replace("PLAY [Invoke kubeadm and install a CNI]", "Start Stage: install network_plugin————\nPLAY [Invoke kubeadm and install a CNI]");
-    }
-    //检查
-    if (taskInfoData.includes("PLAY [Patch Kubernetes for Windows]")) {
-      taskInfoData = taskInfoData.replace("PLAY [Patch Kubernetes for Windows]", "Start Stage: after_check————\nPLAY [Patch Kubernetes for Windows]");
-    }
-    */
     return {
       code: 20000,
       data: taskInfo.stdout,
