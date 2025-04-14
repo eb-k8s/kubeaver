@@ -197,33 +197,17 @@ async function createK8sCluster(clusterInfo) {
     //目前先增加主机数据
     for (const newNode of clusterInfo.hosts) {
       const hostsNodeKey = `k8s_cluster:${clusterKey}:hosts:${newNode.ip}`;
-      //查询用户名
-      let hostKey = `host:${newNode.ip}`
-      const hostInfo = await redis.hgetall(hostKey);
       await redis.hset(hostsNodeKey,
         'ip', newNode.ip,
         'hostName', newNode.hostName,
-        'user', hostInfo.user,
+        'user', newNode.user,
         'role', newNode.role,
-        'os', hostInfo.os,
+        'os', newNode.os,
         'k8sVersion', 'Unknown',
         'status', 'Unknown',
         'createTime', createTime,
         'updateTime', createTime
       );
-      // const nodeData = JSON.stringify({
-      //   ip: newNode.ip,
-      //   user: hostInfo.user,
-      //   hostName: newNode.hostName,
-      //   role: newNode.role,
-      //   k8sVersion: 'Unknown',
-      //   status: 'Unknown',
-      //   createTime: createTime,
-      //   updateTime: createTime
-      // });
-
-      // // 使用 rpush 将节点信息存入 Redis 列表
-      // await redis.rpush(`k8s_cluster:${clusterKey}:hosts`, nodeData);
     }
 
     return {
