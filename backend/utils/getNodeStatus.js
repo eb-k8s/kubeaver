@@ -37,32 +37,14 @@ async function getRedis(id) {
     const hostInfo = await redis.hgetall(hosthash);
     formattedInfo.hosts.push({
       ip: nodeInfo.ip,
-      user: nodeInfo.user,
+      user: hostInfo.user,
       hostName: nodeInfo.hostName,
       password: hostInfo.password,
       role: nodeInfo.role,
+      k8sVersion: hostInfo.k8sVersion,
       status: nodeInfo.status
     });
   }
-  // let nodeListKey = `k8s_cluster:${id}:hosts`;
-
-  // // 使用 lrange 获取列表中的所有节点信息
-  // const nodeDataList = await redis.lrange(nodeListKey, 0, -1);
-
-  // for (const nodeData of nodeDataList) {
-  //   const nodeInfo = JSON.parse(nodeData); // 反序列化 JSON 字符串为对象
-  //   // 增加根据 ip，用户名，查询主机密码，然后设置进去
-  //   let hosthash = `host:${nodeInfo.ip}`;
-  //   const hostInfo = await redis.hgetall(hosthash);
-  //   formattedInfo.hosts.push({
-  //     ip: nodeInfo.ip,
-  //     user: nodeInfo.user,
-  //     hostName: nodeInfo.hostName,
-  //     password: hostInfo.password,
-  //     role: nodeInfo.role,
-  //     status: nodeInfo.status
-  //   });
-  // }
   return formattedInfo;
 }
 

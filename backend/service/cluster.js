@@ -205,6 +205,7 @@ async function createK8sCluster(clusterInfo) {
         'hostName', newNode.hostName,
         'user', hostInfo.user,
         'role', newNode.role,
+        'os', hostInfo.os,
         'k8sVersion', 'Unknown',
         'status', 'Unknown',
         'createTime', createTime,
@@ -306,7 +307,9 @@ async function updateK8sCluster(clusterInfo) {
       await redis.hset(hostsNodeKey,
         'ip', newNode.ip,
         'hostName', newNode.hostName,
+        'user', newNode.user,
         'role', newNode.role,
+        'os', newNode.os,
         'status', 'Unknown',
         'createTime', updateTime,
         'updateTime', updateTime
@@ -404,7 +407,7 @@ async function updateK8sCluster(clusterInfo) {
 async function deleteK8sCluster(id) {
   //先删除inventory-clusterId文件夹
   //const currentDir = process.cwd();
-  const inventoryDir = path.join(__dirname, '../data/inventory',`inventory-${id}`);
+  const inventoryDir = path.join(__dirname, '../data/inventory', `inventory-${id}`);
   // 使用相对路径
   //const inventoryDir = path.join(currentDir, '/data/inventory', `inventory-${id}`);
   try {
