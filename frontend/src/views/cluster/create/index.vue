@@ -293,8 +293,8 @@
         networkPlugin: '',
         version: '',
         taskNum: 5,
-        controlPlaneHosts: [] as Array<{ ip: string; hostName: string; role: string; os: string }>,
-        workerHosts: [] as Array<{ ip: string; hostName: string; role: string; os: string }>
+        controlPlaneHosts: [] as Array<{ ip: string; hostName: string; role: string; os: string; user: string }>,
+        workerHosts: [] as Array<{ ip: string; hostName: string; role: string; os: string; user: string }>
     });
     const config = reactive({
         loadbalancer_apiserver_port: 6443,
@@ -418,7 +418,7 @@
                 const segments = selectedHost.hostIP.split('.');
                 const result = segments[2] + segments[3];
                 const hostName = `master${result}`;
-                cluster.controlPlaneHosts.push({ ip: selectedIP, hostName, role: 'master', os: selectedHost.os });
+                cluster.controlPlaneHosts.push({ ip: selectedIP, hostName, role: 'master', os: selectedHost.os, user: selectedHost.user });
             }
         });
         
@@ -463,7 +463,7 @@
                 const result = segments[2] + segments[3];
                 const hostName = `node${result}`;
 
-                cluster.workerHosts.push({ ip, hostName, role: 'node', os: selectedHost.os });
+                cluster.workerHosts.push({ ip, hostName, role: 'node', os: selectedHost.os, user: selectedHost.user});
             }
         });
 
@@ -531,11 +531,11 @@
             version: cluster.version,
             hosts: hosts.value,
             taskNum: cluster.taskNum,
-            originalClusterName: ''
         };
 
         try {
             setLoading(true);
+            console.log(data);
             const result: any = await createCluster(data);
             if (result.status === 'ok') {
                 Message.success("集群创建成功！");
