@@ -316,7 +316,7 @@
 </template>
 <script lang="ts" setup>
 
-    import { ref, watch, onMounted, computed, reactive } from 'vue';
+    import { ref, onMounted, computed, reactive } from 'vue';
     import useLoading from '@/hooks/loading';
     import { getResources } from '@/api/resources';
     import { getAvailableHostList } from '@/api/hosts';
@@ -345,10 +345,8 @@
         networkPlugin: '',
         version: '',
         taskNum: 5,
-        controlPlaneHosts: [] as Array<{ ip: string; hostName: string; role: string; os: string; user: string }>,
-        workerHosts: [] as Array<{ ip: string; hostName: string; role: string; os: string; user: string }>
-        // controlPlaneHosts: [] as Array<{ ip: string; hostName: string; role: string; os: string }>,
-        // workerHosts: [] as Array<{ ip: string; hostName: string; role: string; os: string }>
+        controlPlaneHosts: [] as Array<{ip: string; hostName: string; role: string; os: string; user: string; lastJobType?: string; lastJobStatus?: string; createTime: string }>,
+        workerHosts: [] as Array<{ ip: string; hostName: string; role: string; os: string; user: string; lastJobType?: string; lastJobStatus?: string; createTime: string }>
     });
 
     const config = reactive({
@@ -385,17 +383,19 @@
     });
 
     const hosts = computed(() => {
+        const formatHost = (host: any, role: string) => ({
+            ip: host.ip,
+            hostName: host.hostName,
+            role,
+            os: host.os,
+            user: host.user,
+            ...(host.lastJobType && { lastJobType: host.lastJobType }),
+            ...(host.lastJobStatus && { lastJobStatus: host.lastJobStatus })
+        });
+
         return [
-            ...cluster.controlPlaneHosts.map(host => ({
-                ...host, 
-                hostName: host.hostName,
-                role: 'master',
-            })),
-            ...cluster.workerHosts.map(host => ({
-                ...host, 
-                hostName: host.hostName,
-                role: 'node'
-            }))
+            ...cluster.controlPlaneHosts.map(host => formatHost(host, 'master')),
+            ...cluster.workerHosts.map(host => formatHost(host, 'node'))
         ];
     });
 
@@ -463,7 +463,20 @@
                 const segments = selectedHost.hostIP.split('.');
                 const result = segments[2] + segments[3];
                 const hostName = `master${result}`;
-                cluster.controlPlaneHosts.push({ ip: selectedIP, hostName, role: 'master', os: selectedHost.os, user: selectedHost.user });
+
+                const newHost: any = {
+                    ip: selectedIP,
+                    hostName,
+                    role: 'master',
+                    os: selectedHost.os,
+                    user: selectedHost.user,
+                    createTime: selectedHost.createTime
+                };
+
+                if (selectedHost.lastJobType) newHost.lastJobType = selectedHost.lastJobType;
+                if (selectedHost.lastJobStatus) newHost.lastJobStatus = selectedHost.lastJobStatus;
+
+                cluster.controlPlaneHosts.push(newHost);
             }
         });
         
@@ -500,20 +513,30 @@
             return;
         }
 
-        // 遍历添加工作节点
         workerHost.value.forEach(ip => {
             if (!cluster.workerHosts.some(host => host.ip === ip)) {
                 const selectedHost = hostList.value.find(host => host.hostIP === ip);
-                if (!selectedHost) return; // 如果没有找到主机，跳过
+                if (!selectedHost) return;
 
                 const segments = selectedHost.hostIP.split('.');
                 const result = segments[2] + segments[3];
                 const hostName = `node${result}`;
 
-                cluster.workerHosts.push({ ip, hostName, role: 'node', os: selectedHost.os, user: selectedHost.user });
+                const newWorker: any = {
+                    ip,
+                    hostName,
+                    role: 'node',
+                    os: selectedHost.os,
+                    user: selectedHost.user,
+                    createTime: selectedHost.createTime
+                };
+
+                if (selectedHost.lastJobType) newWorker.lastJobType = selectedHost.lastJobType;
+                if (selectedHost.lastJobStatus) newWorker.lastJobStatus = selectedHost.lastJobStatus;
+
+                cluster.workerHosts.push(newWorker);
             }
         });
-
         workerHost.value = [];
     };
 
@@ -610,6 +633,7 @@
         } else {
             console.error('clusterList is not an array or undefined');
         }
+        console.log(nodeList.value);
         if (Array.isArray(nodeList.value)) {
             nodeList.value.forEach(item => {
                 if (item.role === "master") {

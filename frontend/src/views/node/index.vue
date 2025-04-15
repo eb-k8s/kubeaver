@@ -569,6 +569,7 @@
                     ...(Array.isArray(cluster.workerHosts) ? cluster.workerHosts : [])
                 ]
             };
+            console.log(data);
             const result: any = await addNode(data);
             if(result.status === 'ok'){
                 Message.success("节点添加成功！");
