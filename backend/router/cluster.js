@@ -3,7 +3,6 @@ const router = new KoaRouter();
 const Joi = require('joi');
 const serviceHost = require('../service/cluster')
 
-
 const clusterSchema = Joi.object({
   clusterName: Joi.string().required(),
   version: Joi.string().required(),
