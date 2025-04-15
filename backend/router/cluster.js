@@ -16,14 +16,16 @@ const clusterSchema = Joi.object({
       user: Joi.string().required(),
       os: Joi.string().required(),
       role: Joi.string().valid('master', 'node').required()
-    })
-  ).min(1).required()
+    }),
+  ).min(1).required(),
 });
 
 const updateClusterSchema = Joi.object({
   id: Joi.string().required(),
   clusterName: Joi.string().optional(),
   version: Joi.string().optional(),
+  networkPlugin: Joi.string().required(),
+  taskNum: Joi.number().integer().min(1).required(),
   hosts: Joi.array().items(
     Joi.object({
       ip: Joi.string().ip().required(),
@@ -33,6 +35,8 @@ const updateClusterSchema = Joi.object({
       os: Joi.string().required(),
       k8sVersion: Joi.string().optional(),
       status: Joi.string().optional(),
+      lastJobType: Joi.string().optional(),
+      lastJobStatus: Joi.string().optional(),
       createTime: Joi.string().optional(),
       updateTime: Joi.string().optional(),
     })
@@ -86,7 +90,7 @@ router.get('/k8sCluster', async (ctx) => {
 
 // 更新集群信息,更新的时候id不存在，需要控制
 router.put('/k8sCluster', async (ctx) => {
-  //curl -X PUT -H "Content-Type: application/json"  http://10.1.35.91:8000/k8sCluster -d '{"id": "kcadleue","clusterName": "aa","version": "1.28.2","hosts":[{"ip": "10.1.69.232","hostName": "master1","user":"root","os":"centos 7","role": "master"},{"ip": "10.1.69.235","hostName": "node2","user":"root","os":"centos 7","role": "node"}]}'
+  //curl -X PUT -H "Content-Type: application/json"  http://10.1.35.91:8000/k8sCluster -d '{"id": "kcadleue","clusterName": "aa","networkPlugin":"calico","taskNum":"2","version": "1.28.2","hosts":[{"ip": "10.1.69.232","hostName": "master1","user":"root","os":"centos 7","role": "master","status":'',"lastJobType":'failed',"lastJobStatus":'initCluster'}]}'
   const clusterInfo = ctx.request.body;
   const { error } = updateClusterSchema.validate(clusterInfo);
   if (error) {
