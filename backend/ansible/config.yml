@@ -6,6 +6,7 @@ registry_host: "store.e-byte.cn"
 #registry_host_ip: "10.1.69.240"
 #kube_network_plugin: flannel
 calico_version: "v3.28.1"
+loadbalancer_apiserver_keepalive_timeout: 5m
 metrics_server_version: "v0.6.4"
 # 默认配置metrics-server
 metrics_server_enabled: true

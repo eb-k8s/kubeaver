@@ -3,6 +3,22 @@ const router = new KoaRouter();
 const Joi = require('joi');
 const serviceHost = require('../service/cluster')
 
+const clusterSchema = Joi.object({
+  clusterName: Joi.string().required(),
+  version: Joi.string().required(),
+  networkPlugin: Joi.string().required(),
+  taskNum: Joi.number().integer().min(1).required(),
+  hosts: Joi.array().items(
+    Joi.object({
+      ip: Joi.string().ip().required(),
+      hostName: Joi.string().required(),
+      user: Joi.string().required(),
+      os: Joi.string().required(),
+      role: Joi.string().valid('master', 'node').required()
+    })
+  ).min(1).required()
+});
+
 const updateClusterSchema = Joi.object({
   id: Joi.string().required(),
   clusterName: Joi.string().optional(),
@@ -24,8 +40,18 @@ const updateClusterSchema = Joi.object({
 
 // 创建集群,用户选择k8s版本，网络插件。
 router.post('/k8sCluster', async (ctx) => {
-  //curl -X POST -H "Content-Type: application/json" http://10.1.70.162:8000/api/k8sCluster -d '{"clusterName": "ubuntu","version": "v1.28.12","networkPlugin": "flannel","taskNum": 5,"hosts":[{"ip": "10.1.69.95","hostName": "eb95master","role": "master"}]}'
+  //curl -X POST -H "Content-Type: application/json" http://10.1.70.162:8000/api/k8sCluster -d '{"clusterName": "ubuntu","version": "v1.28.12","networkPlugin": "flannel","taskNum": 5,"hosts":[{"ip": "10.1.69.95","hostName": "eb95master","user":"root","os":"centos 7","role": "master"}]}'
   const clusterInfo = ctx.request.body;
+  const { error } = clusterSchema.validate(clusterInfo);
+  if (error) {
+    ctx.body = {
+      code: 40000,
+      data: "",
+      msg: `Validation error: ${error.details[0].message}`,
+      status: "error"
+    };
+    return;
+  }
   try {
     const result = await serviceHost.createK8sCluster(clusterInfo)
     ctx.body = result
