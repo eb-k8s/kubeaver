@@ -296,7 +296,9 @@ async function updateK8sCluster(clusterInfo) {
         'os', newNode.os,
         'status', 'Unknown',
         'createTime', updateTime,
-        'updateTime', updateTime
+        'updateTime', updateTime,
+        'lastJobType', newNode.lastJobType || '',
+        'lastJobStatus', newNode.lastJobStatus || '',
       );
     }
 
