@@ -21,8 +21,8 @@ const clusterSchema = Joi.object({
 
 const updateClusterSchema = Joi.object({
   id: Joi.string().required(),
-  clusterName: Joi.string().optional(),
-  version: Joi.string().optional(),
+  clusterName: Joi.string().required(),
+  version: Joi.string().required(),
   networkPlugin: Joi.string().required(),
   taskNum: Joi.number().integer().min(1).required(),
   hosts: Joi.array().items(
