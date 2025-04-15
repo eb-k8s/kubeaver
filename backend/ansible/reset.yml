@@ -4,29 +4,13 @@
   become: true
   gather_facts: true
   vars:
-    bin_dir: /usr/local/bin
     cri_stop_containers_grace_period: 0
-    kube_config_dir: /etc/kubernetes
-    containerd_storage_dir: "/var/lib/containerd"
-    etcd_config_dir: /etc/ssl/etcd
-    etcd_events_data_dir: "/var/lib/etcd-events"
-    etcd_data_dir: /var/lib/etcd
-    nginx_config_dir: "/etc/nginx"
-    krew_root_dir: "/usr/local/krew"
-    sysctl_file_path: "/etc/sysctl.d/99-sysctl.conf"
-    containerd_bin_dir: "{{ bin_dir }}"
-    container_manager: containerd
-    deploy_container_engine: true
     flush_iptables: true
-    enable_dual_stack_networks: false
-    kube_proxy_mode: ipvs
     # reset_restart_network: true
-    kubectl: "{{ bin_dir }}/kubectl"
     delete_node_retries: 2
     delete_node_delay_seconds: 1
     etcd_deployment_type: kubeadm
     is_fedora_coreos: false
-    kube_cert_dir: "{{ kube_config_dir }}/ssl"
     allow_ungraceful_removal: false
     drain_grace_period: 300
     drain_timeout: 360s
@@ -48,6 +32,9 @@
       {%- elif ansible_os_family == "Debian" -%}
       networking
       {%- endif %}
+  roles:
+    - { role: kubespray-defaults}
+    - { role: kubernetes/preinstall, when: "dns_mode != 'none' and resolvconf_mode == 'host_resolvconf'", tags: resolvconf, dns_early: true }
   tasks:
     - name: Remove-node | List nodes
       command: >-
@@ -611,9 +598,9 @@
         - files
         - dns
 
-    - name: Kill process occupying port 6443
-      command: kill -9 $(lsof -t -i :6443)
-      ignore_errors: true
+    # - name: Kill process occupying port 6443
+    #   command: kill -9 $(lsof -t -i :6443)
+    #   ignore_errors: true
     # 移除网络插件建立的网桥，否则会导致coredns无法启动
     - name: Reset | check cni network device
       stat:
