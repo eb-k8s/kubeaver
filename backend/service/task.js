@@ -306,7 +306,7 @@ async function removeK8sNodeJob(id, ip) {
         let taskName = `resetNode`
         let taskId = `${id}_${taskName}`
         const resultPackageData = await offlinePackagesPath()
-        let task = `${resultPackageData.kubesprayPath}/reset.yml`
+        let task = `${resultPackageData.kubesprayPath}/kubespray/reset.yml`
         let workDir = `${resultPackageData.kubesprayPath}/kubespray`
         const playbook = {
           task: task,
@@ -395,7 +395,7 @@ async function resetK8sClusterJob(id) {
     let taskName = 'resetCluster'
     let taskId = `${id}_${taskName}`
     const resultPackageData = await offlinePackagesPath()
-    let task = `${resultPackageData.kubesprayPath}/reset.yml`
+    let task = `${resultPackageData.kubesprayPath}/kubespray/reset.yml`
     let workDir = `${resultPackageData.kubesprayPath}/kubespray`
     const playbook = {
       id: id,

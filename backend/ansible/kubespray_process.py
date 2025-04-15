@@ -132,10 +132,10 @@ def process_files(files, insert_content):
         print(f"Added new content to {file}.")
 def main():
     # 解决python_load.sh问题
-    FILES1 = ["kubespray/cluster.yml", "kubespray/scale.yml", "kubespray/reset.yml"]
+    FILES1 = ["kubespray/cluster.yml", "kubespray/scale.yml"]
     FILES2 = ["kubespray/cluster.yml", "kubespray/scale.yml"]
     process_files(FILES1, "pre_playbook: ../pre_playbook.yml")
-    process_files(FILES2, "force_reset_playbook: ../reset.yml")
+    process_files(FILES2, "force_reset_playbook: ./reset.yml")
 
     parser = argparse.ArgumentParser(description="Process some parameters.")
     parser.add_argument('--kubespray_version', type=str, default='v2.26.0',
@@ -407,6 +407,10 @@ def main():
     modified_lines = insert_line_after_pattern(modified_lines, "register: kubeadm_upload_cert", """  delegate_to: "{{ first_kube_control_plane }}" """)
     # 将更改写入文件
     write_yaml_file(f"{kubespray_path}/roles/kubernetes/control-plane/tasks/kubeadm-secondary.yml", modified_lines)
+
+    # 移动reset.yml文件并覆盖
+    os.remove("./kubespray/playbooks/reset.yml")
+    shutil.copy2("reset.yml", "./kubespray/playbooks")
     
 
 if __name__ == "__main__":
