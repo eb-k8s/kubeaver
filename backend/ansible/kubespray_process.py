@@ -369,7 +369,12 @@ def main():
     shell: "{{bin_dir}}/crictl ps | grep nginx-proxy | awk '{print $1}' | xargs {{bin_dir}}/crictl stop"
     loop: "{{ groups['kube_node'] }}"
     delegate_to: "{{ item }}"
-    ignore_errors: yes"""
+    ignore_errors: yes
+  - name: Restart first flannel containers
+    shell: "{{bin_dir}}/crictl ps | grep kube-flannel | awk '{print $1}' | xargs {{bin_dir}}/crictl stop"
+    delegate_to: "{{ groups['kube_control_plane'] | first }}"
+    ignore_errors: yes
+    when: inventory_hostname == groups['kube_control_plane'][0]"""
     modified_lines = insert_line_after_pattern(lines, """- { role: kubernetes/preinstall, when: "dns_mode != 'none' and resolvconf_mode == 'host_resolvconf'", tags: resolvconf, dns_late: true }""", new_string)
     # 将更改写入文件
     write_yaml_file(f"{kubespray_path}/playbooks/cluster.yml", modified_lines)
