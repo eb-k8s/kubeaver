@@ -340,21 +340,15 @@
     const supportedOS = ref();
     const k8sCache = ref();
     const repoFiles =ref();
-    // const cluster = reactive({
-    //     clusterName: '',
-    //     networkPlugin: '',
-    //     version: '',
-    //     taskNum: 0,
-    //     controlPlaneHosts: [] as Array<{ ip: string; hostName: string; role: string }>,
-    //     workerHosts: [] as Array<{ ip: string; hostName: string; role: string }>
-    // });
     const cluster = reactive({
         clusterName: '',
         networkPlugin: '',
         version: '',
         taskNum: 5,
-        controlPlaneHosts: [] as Array<{ ip: string; hostName: string; role: string; os: string }>,
-        workerHosts: [] as Array<{ ip: string; hostName: string; role: string; os: string }>
+        controlPlaneHosts: [] as Array<{ ip: string; hostName: string; role: string; os: string; user: string }>,
+        workerHosts: [] as Array<{ ip: string; hostName: string; role: string; os: string; user: string }>
+        // controlPlaneHosts: [] as Array<{ ip: string; hostName: string; role: string; os: string }>,
+        // workerHosts: [] as Array<{ ip: string; hostName: string; role: string; os: string }>
     });
 
     const config = reactive({
@@ -395,7 +389,7 @@
             ...cluster.controlPlaneHosts.map(host => ({
                 ...host, 
                 hostName: host.hostName,
-                role: 'master'
+                role: 'master',
             })),
             ...cluster.workerHosts.map(host => ({
                 ...host, 
@@ -434,11 +428,6 @@
         });
     });
 
-     // 检查是否已经存在该主机
-     const isHostExist = (hostIP) => {
-      return cluster.workerHosts.some(host => host.ip === hostIP);
-    };
-
     const addControlPlaneHost = () => {
         if (!controlPlaneHost.value || controlPlaneHost.value.length === 0) {
             Message.error("请选择控制节点主机！");
@@ -474,7 +463,7 @@
                 const segments = selectedHost.hostIP.split('.');
                 const result = segments[2] + segments[3];
                 const hostName = `master${result}`;
-                cluster.controlPlaneHosts.push({ ip: selectedIP, hostName, role: 'master', os: selectedHost.os });
+                cluster.controlPlaneHosts.push({ ip: selectedIP, hostName, role: 'master', os: selectedHost.os, user: selectedHost.user });
             }
         });
         
@@ -511,22 +500,6 @@
             return;
         }
 
-        // const selectedWorkerOSSet = new Set(selectedWorkerHosts.map(host => host.os.split(' ')[0]));
-
-        // // 如果选择的工作节点的操作系统不一致，提示错误
-        // if (selectedWorkerOSSet.size > 1) {
-        //     Message.error("选中的工作节点的操作系统必须一致！");
-        //     return;
-        // }
-
-        // const selectedWorkerOS = [...selectedWorkerOSSet][0];
-
-        // // 如果控制节点已经存在，检查工作节点的操作系统是否与控制节点一致
-        // if (controlPlaneOSSet.size > 0 && !controlPlaneOSSet.has(selectedWorkerOS)) {
-        //     Message.error("工作节点的操作系统必须与控制节点的操作系统一致！");
-        //     return;
-        // }
-
         // 遍历添加工作节点
         workerHost.value.forEach(ip => {
             if (!cluster.workerHosts.some(host => host.ip === ip)) {
@@ -537,7 +510,7 @@
                 const result = segments[2] + segments[3];
                 const hostName = `node${result}`;
 
-                cluster.workerHosts.push({ ip, hostName, role: 'node', os: selectedHost.os });
+                cluster.workerHosts.push({ ip, hostName, role: 'node', os: selectedHost.os, user: selectedHost.user });
             }
         });
 
@@ -717,8 +690,10 @@
             taskNum: cluster.taskNum,
             hosts: hosts.value, 
         };
+       
         try{
             setLoading(true);
+            console.log(data);
             const result: any = await editCluster(data);
             if(result.status === 'ok'){
                 Message.success("编辑成功！")

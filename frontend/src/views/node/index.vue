@@ -708,6 +708,11 @@
         slotName: 'role',
     },
     {
+        title: '操作系统',
+        dataIndex: 'os',
+        slotName: 'os',
+    },
+    {
         title: 'k8s版本',
         dataIndex: 'k8sVersion',
         slotName: 'k8sVersion',
