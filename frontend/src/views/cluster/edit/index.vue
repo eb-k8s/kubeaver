@@ -316,7 +316,7 @@
 </template>
 <script lang="ts" setup>
 
-    import { ref, watch, onMounted, computed, reactive } from 'vue';
+    import { ref, onMounted, computed, reactive } from 'vue';
     import useLoading from '@/hooks/loading';
     import { getResources } from '@/api/resources';
     import { getAvailableHostList } from '@/api/hosts';
@@ -345,10 +345,8 @@
         networkPlugin: '',
         version: '',
         taskNum: 5,
-        controlPlaneHosts: [] as Array<{ ip: string; hostName: string; role: string; os: string; user: string }>,
-        workerHosts: [] as Array<{ ip: string; hostName: string; role: string; os: string; user: string }>
-        // controlPlaneHosts: [] as Array<{ ip: string; hostName: string; role: string; os: string }>,
-        // workerHosts: [] as Array<{ ip: string; hostName: string; role: string; os: string }>
+        controlPlaneHosts: [] as Array<{ip: string; hostName: string; role: string; os: string; user: string; updateTime: string; status: string; lastJobType: string; lastJobStatus: string; k8sVersion: string;  createTime: string }>,
+        workerHosts: [] as Array<{ ip: string; hostName: string; role: string; os: string; user: string; updateTime: string; status: string; lastJobType: string; lastJobStatus: string; k8sVersion: string;  createTime: string }>
     });
 
     const config = reactive({
@@ -386,15 +384,23 @@
 
     const hosts = computed(() => {
         return [
-            ...cluster.controlPlaneHosts.map(host => ({
-                ...host, 
-                hostName: host.hostName,
+            ...cluster.controlPlaneHosts.map(({ createTime, hostName, ip, k8sVersion, lastJobStatus, lastJobType, os, status, updateTime, user }) => ({
+                hostName,
+                ip,
+                lastJobStatus,
+                lastJobType,
+                os,
                 role: 'master',
+                user
             })),
-            ...cluster.workerHosts.map(host => ({
-                ...host, 
-                hostName: host.hostName,
-                role: 'node'
+            ...cluster.workerHosts.map(({ hostName, ip, lastJobStatus, lastJobType, os, status, updateTime, user }) => ({
+                hostName,
+                ip,
+                lastJobStatus,
+                lastJobType,
+                os,
+                role: 'node',
+                user
             }))
         ];
     });
@@ -463,7 +469,7 @@
                 const segments = selectedHost.hostIP.split('.');
                 const result = segments[2] + segments[3];
                 const hostName = `master${result}`;
-                cluster.controlPlaneHosts.push({ ip: selectedIP, hostName, role: 'master', os: selectedHost.os, user: selectedHost.user });
+                cluster.controlPlaneHosts.push({ ip: selectedIP, hostName, role: 'master', os: selectedHost.os, user: selectedHost.user, updateTime: selectedHost.updateTime, status: selectedHost.status, lastJobType: selectedHost.lastJobType, lastJobStatus: selectedHost.lastJobStatus, k8sVersion: selectedHost.k8sVersion, createTime: selectedHost.createTime });
             }
         });
         
@@ -506,11 +512,12 @@
                 const selectedHost = hostList.value.find(host => host.hostIP === ip);
                 if (!selectedHost) return; // 如果没有找到主机，跳过
 
+
                 const segments = selectedHost.hostIP.split('.');
                 const result = segments[2] + segments[3];
                 const hostName = `node${result}`;
 
-                cluster.workerHosts.push({ ip, hostName, role: 'node', os: selectedHost.os, user: selectedHost.user });
+                cluster.workerHosts.push({ ip, hostName, role: 'node', os: selectedHost.os, user: selectedHost.user, updateTime: selectedHost.updateTime, status: selectedHost.status, lastJobType: selectedHost.lastJobType, lastJobStatus: selectedHost.lastJobStatus, k8sVersion: selectedHost.k8sVersion, createTime: selectedHost.createTime });
             }
         });
 
@@ -610,6 +617,7 @@
         } else {
             console.error('clusterList is not an array or undefined');
         }
+        console.log(nodeList.value);
         if (Array.isArray(nodeList.value)) {
             nodeList.value.forEach(item => {
                 if (item.role === "master") {
