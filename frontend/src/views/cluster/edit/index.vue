@@ -382,29 +382,6 @@
         system_master_cpu_reserved: '250m', 
     });
 
-    // const hosts = computed(() => {
-    //     return [
-    //         ...cluster.controlPlaneHosts.map(({ hostName, ip, lastJobStatus, lastJobType, os, user }) => ({
-    //             hostName,
-    //             ip,
-    //             lastJobStatus,
-    //             lastJobType,
-    //             os,
-    //             role: 'master',
-    //             user
-    //         })),
-    //         ...cluster.workerHosts.map(({ hostName, ip, lastJobStatus, lastJobType, os, user }) => ({
-    //             hostName,
-    //             ip,
-    //             lastJobStatus,
-    //             lastJobType,
-    //             os,
-    //             role: 'node',
-    //             user
-    //         }))
-    //     ];
-    // });
-
     const hosts = computed(() => {
         const formatHost = (host: any, role: string) => ({
             ip: host.ip,
@@ -482,12 +459,6 @@
             }
 
             // 检查是否已经添加过
-            // if (!cluster.controlPlaneHosts.some(host => host.ip === selectedIP)) {
-            //     const segments = selectedHost.hostIP.split('.');
-            //     const result = segments[2] + segments[3];
-            //     const hostName = `master${result}`;
-            //     cluster.controlPlaneHosts.push({ ip: selectedIP, hostName, role: 'master', os: selectedHost.os, user: selectedHost.user, lastJobType: selectedHost.lastJobType, lastJobStatus: selectedHost.lastJobStatus, createTime: selectedHost.createTime });
-            // }
             if (!cluster.controlPlaneHosts.some(host => host.ip === selectedIP)) {
                 const segments = selectedHost.hostIP.split('.');
                 const result = segments[2] + segments[3];
@@ -541,21 +512,6 @@
             Message.error("某些选中的主机不存在！");
             return;
         }
-
-        // 遍历添加工作节点
-        // workerHost.value.forEach(ip => {
-        //     if (!cluster.workerHosts.some(host => host.ip === ip)) {
-        //         const selectedHost = hostList.value.find(host => host.hostIP === ip);
-        //         if (!selectedHost) return; // 如果没有找到主机，跳过
-
-
-        //         const segments = selectedHost.hostIP.split('.');
-        //         const result = segments[2] + segments[3];
-        //         const hostName = `node${result}`;
-
-        //         cluster.workerHosts.push({ ip, hostName, role: 'node', os: selectedHost.os, user: selectedHost.user, lastJobType: selectedHost.lastJobType, lastJobStatus: selectedHost.lastJobStatus, createTime: selectedHost.createTime });
-        //     }
-        // });
 
         workerHost.value.forEach(ip => {
             if (!cluster.workerHosts.some(host => host.ip === ip)) {
@@ -765,9 +721,9 @@
             const result: any = await editCluster(data);
             if(result.status === 'ok'){
                 Message.success("编辑成功！")
-                // router.push('/cluster').then(() => {
-                //     window.location.reload();
-                // })
+                router.push('/cluster').then(() => {
+                    window.location.reload();
+                })
                 fetchClustersList();
             }
         } catch (err) {
