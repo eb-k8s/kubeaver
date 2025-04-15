@@ -138,7 +138,7 @@ def main():
     process_files(FILES2, "force_reset_playbook: ../reset.yml")
 
     parser = argparse.ArgumentParser(description="Process some parameters.")
-    parser.add_argument('--kubespray_version', type=str, default='v2.23.3',
+    parser.add_argument('--kubespray_version', type=str, default='v2.26.0',
                         help='The kubespray version.')
 
     args = parser.parse_args()
@@ -365,16 +365,36 @@ def main():
   roles:
     - { role: kubespray-defaults }
   tasks:
-  - name: Restart nginx-proxy containers
-    shell: "{{bin_dir}}/crictl ps | grep nginx-proxy | awk '{print $1}' | xargs {{bin_dir}}/crictl stop"
-    loop: "{{ groups['kube_node'] }}"
-    delegate_to: "{{ item }}"
-    ignore_errors: yes
-  - name: Restart first flannel containers
-    shell: "{{bin_dir}}/crictl ps | grep kube-flannel | awk '{print $1}' | xargs {{bin_dir}}/crictl stop"
-    delegate_to: "{{ groups['kube_control_plane'] | first }}"
-    ignore_errors: yes
-    when: inventory_hostname == groups['kube_control_plane'][0]"""
+    - name: Nginx-proxy | Make nginx directory
+      file:
+        path: "{{ nginx_config_dir }}"
+        state: directory
+        mode: "0700"
+        owner: root
+      loop: "{{ groups['kube_node'] }}"
+      delegate_to: "{{ item }}"
+
+    - name: Nginx-proxy | Write nginx-proxy configuration
+      template:
+        src: "../roles/kubernetes/node/templates/loadbalancer/nginx.conf.j2"
+        dest: "{{ nginx_config_dir }}/nginx.conf"
+        owner: root
+        mode: "0755"
+        backup: true
+      loop: "{{ groups['kube_node'] }}"
+      delegate_to: "{{ item }}"
+
+    - name: Restart nginx-proxy containers
+      shell: "{{bin_dir}}/crictl ps | grep nginx-proxy | awk '{print $1}' | xargs {{bin_dir}}/crictl stop"
+      loop: "{{ groups['kube_node'] }}"
+      delegate_to: "{{ item }}"
+      ignore_errors: yes
+
+    - name: Restart first flannel containers
+      shell: "{{bin_dir}}/crictl ps | grep kube-flannel | awk '{print $1}' | xargs {{bin_dir}}/crictl stop"
+      delegate_to: "{{ groups['kube_control_plane'] | first }}"
+      ignore_errors: yes
+    """
     modified_lines = insert_line_after_pattern(lines, """- { role: kubernetes/preinstall, when: "dns_mode != 'none' and resolvconf_mode == 'host_resolvconf'", tags: resolvconf, dns_late: true }""", new_string)
     # 将更改写入文件
     write_yaml_file(f"{kubespray_path}/playbooks/cluster.yml", modified_lines)
