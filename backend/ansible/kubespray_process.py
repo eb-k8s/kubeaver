@@ -246,6 +246,11 @@ def main():
         modified_lines = remove_lines_after_pattern(lines, "sha256: \"{{ metrics_server_digest_checksum | default(None) }}\"")
         # 在sha256: "{{ metrics_server_digest_checksum | default(None) }}"后新增    groups:和    - k8s_cluster
         modified_lines = insert_line_after_pattern(modified_lines, "sha256: \"{{ metrics_server_digest_checksum | default(None) }}\"", "    groups:\n    - k8s_cluster")
+        
+        # 删除sha256: "{{ dnsautoscaler_digest_checksum | default(None) }}"
+        modified_lines = remove_lines_after_pattern(modified_lines, "sha256: \"{{ dnsautoscaler_digest_checksum | default(None) }}\"")
+        # 在sha256: "{{ dnsautoscaler_digest_checksum | default(None) }}"后新增    groups:和    - k8s_cluster
+        modified_lines = insert_line_after_pattern(modified_lines, "sha256: \"{{ dnsautoscaler_digest_checksum | default(None) }}\"", "    groups:\n    - k8s_cluster")
         # 将更改写入文件
         write_yaml_file(f"{kubespray_path}/roles/download/defaults/main/main.yml", modified_lines)
     elif kubespray_version == "2.26.0":
@@ -255,6 +260,11 @@ def main():
         modified_lines = remove_lines_after_pattern(lines, "sha256: \"{{ metrics_server_digest_checksum | default(None) }}\"")
         # 在sha256: "{{ metrics_server_digest_checksum | default(None) }}"后新增    groups:和    - k8s_cluster
         modified_lines = insert_line_after_pattern(modified_lines, "sha256: \"{{ metrics_server_digest_checksum | default(None) }}\"", "    groups:\n    - k8s_cluster")
+
+        # 删除sha256: "{{ dnsautoscaler_digest_checksum | default(None) }}"
+        modified_lines = remove_lines_after_pattern(modified_lines, "sha256: \"{{ dnsautoscaler_digest_checksum | default(None) }}\"")
+        # 在sha256: "{{ dnsautoscaler_digest_checksum | default(None) }}"后新增    groups:和    - k8s_cluster
+        modified_lines = insert_line_after_pattern(modified_lines, "sha256: \"{{ dnsautoscaler_digest_checksum | default(None) }}\"", "    groups:\n    - k8s_cluster")
         # 将更改写入文件
         write_yaml_file(f"{kubespray_path}/roles/kubespray-defaults/defaults/main/download.yml", modified_lines)
 
