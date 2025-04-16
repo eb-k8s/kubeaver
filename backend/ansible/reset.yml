@@ -17,7 +17,6 @@
     drain_retries: 3
     drain_retry_delay_seconds: 10
     reset_cluster: true
-    install_package_reset: true
     reset_restart_network_service_name: >-
       {% if ansible_os_family == "RedHat" -%}
       {%-
@@ -35,7 +34,7 @@
       {%- endif %}
   roles:
     - { role: kubespray-defaults}
-    - { role: kubernetes/preinstall, when: "dns_mode != 'none' and resolvconf_mode == 'host_resolvconf'", tags: resolvconf, dns_early: true }
+    # - { role: kubernetes/preinstall, when: "dns_mode != 'none' and resolvconf_mode == 'host_resolvconf'", tags: resolvconf, dns_early: true }
   tasks:
     - name: Remove-node | List nodes
       command: >-
