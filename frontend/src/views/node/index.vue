@@ -100,7 +100,7 @@
                             <a-button v-if="record.status === 'Unknown' && record.activeJobType === '暂无任务'" type="text" size="small" @click="onClickDelete(record)">
                                 删除
                             </a-button>
-                            <a-button v-if="record.status !== 'Unknown' && record.activeJobType === '暂无任务' && isMasterNotReadyAndDeploying" type="text" size="small" @click="onClickRemove(record)">
+                            <a-button v-if="record.status !== 'Unknown' && record.activeJobType === '暂无任务'" type="text" size="small" @click="onClickRemove(record)">
                                 移除
                             </a-button>
                             <a-button v-if="record.lastJobType === 'upgradeCluster' && record.lastJobStatus === 'failed' && record.activeJobType === '暂无任务'" type="text" size="small" @click="onClickRetry(record)">
