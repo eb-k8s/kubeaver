@@ -1,13 +1,7 @@
 ---
-- name: Common tasks for every playbooks
-  import_playbook: boilerplate.yml
-
-- name: Gather facts
-  import_playbook: facts.yml
-
 - name: force delete node
   hosts: "{{ node | default('k8s_cluster') }}"
-  become: true
+  # become: true
   gather_facts: false
   vars:
     cri_stop_containers_grace_period: 0
@@ -43,6 +37,39 @@
     - { role: kubespray-defaults}
    # - { role: kubernetes/preinstall, when: "dns_mode != 'none' and resolvconf_mode == 'host_resolvconf'", tags: resolvconf, dns_early: true }
   tasks:
+    - name: Create remote_tmp for it is used by another module
+      file:
+        path: "{{ ansible_remote_tmp | default('~/.ansible/tmp') }}"
+        state: directory
+        mode: "0700"
+
+    - name: Gather facts
+      setup:
+        gather_subset: '!all'
+        filter: ansible_*
+    
+    - name: Gather minimal facts
+      setup:
+        gather_subset: '!all'
+
+    # filter match the following variables:
+    # ansible_default_ipv4
+    # ansible_default_ipv6
+    # ansible_all_ipv4_addresses
+    # ansible_all_ipv6_addresses
+    - name: Gather necessary facts (network)
+      setup:
+        gather_subset: '!all,!min,network'
+        filter: "ansible_*_ipv[46]*"
+
+    # filter match the following variables:
+    # ansible_memtotal_mb
+    # ansible_swaptotal_mb
+    - name: Gather necessary facts (hardware)
+      setup:
+        gather_subset: '!all,!min,hardware'
+        filter: "ansible_*total_mb"
+
     - name: Remove-node | List nodes
       command: >-
         {{ kubectl }} get nodes -o go-template={% raw %}'{{ range .items }}{{ .metadata.name }}{{ "\n" }}{{ end }}'{% endraw %}
