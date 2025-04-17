@@ -9,7 +9,7 @@ calico_version: "v3.28.1"
 loadbalancer_apiserver_keepalive_timeout: 5m
 metrics_server_version: "v0.6.4"
 # 默认配置metrics-server
-metrics_server_enabled: true
+metrics_server_enabled: false
 #image_arch: amd64
 # 自动更新证书
 auto_renew_certificates: true
