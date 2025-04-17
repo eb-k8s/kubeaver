@@ -246,6 +246,11 @@ def main():
         modified_lines = remove_lines_after_pattern(lines, "sha256: \"{{ metrics_server_digest_checksum | default(None) }}\"")
         # 在sha256: "{{ metrics_server_digest_checksum | default(None) }}"后新增    groups:和    - k8s_cluster
         modified_lines = insert_line_after_pattern(modified_lines, "sha256: \"{{ metrics_server_digest_checksum | default(None) }}\"", "    groups:\n    - k8s_cluster")
+        
+        # 删除sha256: "{{ dnsautoscaler_digest_checksum | default(None) }}"
+        modified_lines = remove_lines_after_pattern(modified_lines, "sha256: \"{{ dnsautoscaler_digest_checksum | default(None) }}\"")
+        # 在sha256: "{{ dnsautoscaler_digest_checksum | default(None) }}"后新增    groups:和    - k8s_cluster
+        modified_lines = insert_line_after_pattern(modified_lines, "sha256: \"{{ dnsautoscaler_digest_checksum | default(None) }}\"", "    groups:\n    - k8s_cluster")
         # 将更改写入文件
         write_yaml_file(f"{kubespray_path}/roles/download/defaults/main/main.yml", modified_lines)
     elif kubespray_version == "2.26.0":
@@ -255,6 +260,11 @@ def main():
         modified_lines = remove_lines_after_pattern(lines, "sha256: \"{{ metrics_server_digest_checksum | default(None) }}\"")
         # 在sha256: "{{ metrics_server_digest_checksum | default(None) }}"后新增    groups:和    - k8s_cluster
         modified_lines = insert_line_after_pattern(modified_lines, "sha256: \"{{ metrics_server_digest_checksum | default(None) }}\"", "    groups:\n    - k8s_cluster")
+
+        # 删除sha256: "{{ dnsautoscaler_digest_checksum | default(None) }}"
+        modified_lines = remove_lines_after_pattern(modified_lines, "sha256: \"{{ dnsautoscaler_digest_checksum | default(None) }}\"")
+        # 在sha256: "{{ dnsautoscaler_digest_checksum | default(None) }}"后新增    groups:和    - k8s_cluster
+        modified_lines = insert_line_after_pattern(modified_lines, "sha256: \"{{ dnsautoscaler_digest_checksum | default(None) }}\"", "    groups:\n    - k8s_cluster")
         # 将更改写入文件
         write_yaml_file(f"{kubespray_path}/roles/kubespray-defaults/defaults/main/download.yml", modified_lines)
 
@@ -412,14 +422,14 @@ def main():
     os.remove("./kubespray/playbooks/reset.yml")
     shutil.copy2("reset.yml", "./kubespray/playbooks")
 
-    # 修改roles/kubernetes/preinstall/tasks/0070-system-packages.yml
-    lines = read_yaml_file(f"{kubespray_path}/roles/kubernetes/preinstall/tasks/0070-system-packages.yml")
-    # 替换  when: ansible_os_family == "Debian"
-    modified_lines = replace_line_with_pattern(lines, "  when: ansible_os_family == \"Debian\"", "  when: ansible_os_family == \"Debian\" and install_package_reset is not defined")
-    # 替换  when: not (ansible_os_family in ["Flatcar", "Flatcar Container Linux by Kinvolk"] or is_fedora_coreos)
-    modified_lines = replace_line_with_pattern(modified_lines, "  when: not (ansible_os_family in [\"Flatcar\", \"Flatcar Container Linux by Kinvolk\"] or is_fedora_coreos)", "  when: not (ansible_os_family in [\"Flatcar\", \"Flatcar Container Linux by Kinvolk\"] or is_fedora_coreos) and install_package_reset is not defined")
-    # 将更改写入文件
-    write_yaml_file(f"{kubespray_path}/roles/kubernetes/preinstall/tasks/0070-system-packages.yml", modified_lines)
+    # # 修改roles/kubernetes/preinstall/tasks/0070-system-packages.yml
+    # lines = read_yaml_file(f"{kubespray_path}/roles/kubernetes/preinstall/tasks/0070-system-packages.yml")
+    # # 替换  when: ansible_os_family == "Debian"
+    # modified_lines = replace_line_with_pattern(lines, "  when: ansible_os_family == \"Debian\"", "  when: ansible_os_family == \"Debian\" and install_package_reset is not defined")
+    # # 替换  when: not (ansible_os_family in ["Flatcar", "Flatcar Container Linux by Kinvolk"] or is_fedora_coreos)
+    # modified_lines = replace_line_with_pattern(modified_lines, "  when: not (ansible_os_family in [\"Flatcar\", \"Flatcar Container Linux by Kinvolk\"] or is_fedora_coreos)", "  when: not (ansible_os_family in [\"Flatcar\", \"Flatcar Container Linux by Kinvolk\"] or is_fedora_coreos) and install_package_reset is not defined")
+    # # 将更改写入文件
+    # write_yaml_file(f"{kubespray_path}/roles/kubernetes/preinstall/tasks/0070-system-packages.yml", modified_lines)
     
 
 if __name__ == "__main__":
