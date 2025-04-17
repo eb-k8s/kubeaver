@@ -1,8 +1,14 @@
 ---
+- name: Common tasks for every playbooks
+  import_playbook: boilerplate.yml
+
+- name: Gather facts
+  import_playbook: facts.yml
+
 - name: force delete node
   hosts: "{{ node | default('k8s_cluster') }}"
   become: true
-  gather_facts: true
+  gather_facts: false
   vars:
     cri_stop_containers_grace_period: 0
     flush_iptables: true
@@ -32,9 +38,10 @@
       {%- elif ansible_os_family == "Debian" -%}
       networking
       {%- endif %}
+  environment: "{{ proxy_disable_env }}"
   roles:
     - { role: kubespray-defaults}
-    # - { role: kubernetes/preinstall, when: "dns_mode != 'none' and resolvconf_mode == 'host_resolvconf'", tags: resolvconf, dns_early: true }
+   # - { role: kubernetes/preinstall, when: "dns_mode != 'none' and resolvconf_mode == 'host_resolvconf'", tags: resolvconf, dns_early: true }
   tasks:
     - name: Remove-node | List nodes
       command: >-
@@ -683,5 +690,3 @@
       until: result is not failed
       ignore_errors: true 
       failed_when: false
-
-
