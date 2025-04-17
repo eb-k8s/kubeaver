@@ -408,10 +408,10 @@
             const workerOSSet = new Set(cluster.workerHosts.map(host => host.os.split(' ')[0]));
             
             // 如果已经选择了工作节点，检查控制节点的操作系统是否一致
-            if (workerOSSet.size > 0 && !workerOSSet.has(selectedHostOS)) {
-                Message.error(`控制节点 ${selectedIP} 的操作系统必须与工作节点的操作系统一致`);
-                return;
-            }
+            // if (workerOSSet.size > 0 && !workerOSSet.has(selectedHostOS)) {
+            //     Message.error(`控制节点 ${selectedIP} 的操作系统必须与工作节点的操作系统一致`);
+            //     return;
+            // }
 
             // 检查是否已经添加过
             if (!cluster.controlPlaneHosts.some(host => host.ip === selectedIP)) {
@@ -444,14 +444,14 @@
         }
 
         // 获取所有控制节点的操作系统集合
-        const controlPlaneOSSet = new Set(cluster.controlPlaneHosts.map(host => host.os.split(' ')[0]));
+        // const controlPlaneOSSet = new Set(cluster.controlPlaneHosts.map(host => host.os.split(' ')[0]));
 
-        // 检查所有选中的工作节点的操作系统是否一致
-        const selectedWorkerHosts = workerHost.value.map(ip => hostList.value.find(host => host.hostIP === ip));
-        if (selectedWorkerHosts.some(host => !host)) {
-            Message.error("某些选中的主机不存在！");
-            return;
-        }
+        // // 检查所有选中的工作节点的操作系统是否一致
+        // const selectedWorkerHosts = workerHost.value.map(ip => hostList.value.find(host => host.hostIP === ip));
+        // if (selectedWorkerHosts.some(host => !host)) {
+        //     Message.error("某些选中的主机不存在！");
+        //     return;
+        // }
 
         // 遍历添加工作节点
         workerHost.value.forEach(ip => {

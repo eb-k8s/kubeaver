@@ -1,8 +1,14 @@
 ---
+- name: Common tasks for every playbooks
+  import_playbook: boilerplate.yml
+
+- name: Gather facts
+  import_playbook: facts.yml
+
 - name: force delete node
   hosts: "{{ node | default('k8s_cluster') }}"
   become: true
-  gather_facts: true
+  gather_facts: false
   vars:
     cri_stop_containers_grace_period: 0
     flush_iptables: true
@@ -32,16 +38,17 @@
       {%- elif ansible_os_family == "Debian" -%}
       networking
       {%- endif %}
+  environment: "{{ proxy_disable_env }}"
   roles:
     - { role: kubespray-defaults}
-    - { role: kubernetes/preinstall, when: "dns_mode != 'none' and resolvconf_mode == 'host_resolvconf'", tags: resolvconf, dns_early: true }
+   # - { role: kubernetes/preinstall, when: "dns_mode != 'none' and resolvconf_mode == 'host_resolvconf'", tags: resolvconf, dns_early: true }
   tasks:
     - name: Remove-node | List nodes
       command: >-
         {{ kubectl }} get nodes -o go-template={% raw %}'{{ range .items }}{{ .metadata.name }}{{ "\n" }}{{ end }}'{% endraw %}
       register: nodes
       when:
-        - not reset_cluster
+        - not reset_cluster | bool
         - groups['kube_control_plane'] | length > 0
       delegate_to: "{{ groups['kube_control_plane'] | first }}"
       changed_when: false
@@ -57,7 +64,7 @@
           --timeout {{ drain_timeout }}
           --delete-emptydir-data {{ kube_override_hostname | default(inventory_hostname) }}
       when:
-        - not reset_cluster
+        - not reset_cluster | bool
         - groups['kube_control_plane'] | length > 0
         # ignore servers that are not nodes
         - kube_override_hostname | default(inventory_hostname) in nodes.stdout_lines
@@ -78,7 +85,7 @@
       retries: 3
       delay: "{{ drain_grace_period }}"
       when:
-        - not reset_cluster
+        - not reset_cluster | bool
         - groups['kube_control_plane'] | length > 0
         - not allow_ungraceful_removal
         - kube_override_hostname | default(inventory_hostname) in nodes.stdout_lines
@@ -88,7 +95,7 @@
       delegate_to: "{{ groups['kube_control_plane'] | first }}"
       register: kube_control_planes_raw
       when: 
-        - not reset_cluster
+        - not reset_cluster | bool
       ignore_errors: true
       changed_when: false
 
@@ -98,7 +105,7 @@
       delegate_to: "{{ item }}"
       loop: "{{ groups['kube_control_plane'] }}"
       when:
-        - not reset_cluster 
+        - not reset_cluster | bool 
         - kube_control_planes_raw is succeeded
       run_once: true
 
@@ -106,7 +113,7 @@
       set_fact:
         first_kube_control_plane: "{{(joined_control_planes | default([]) | reject('search', inventory_hostname)) | first | default(inventory_hostname)}}"
       when: 
-        - not reset_cluster
+        - not reset_cluster | bool
 
     - name: Check the OS
       command: grep '^NAME=' /etc/os-release
@@ -125,7 +132,7 @@
         -o jsonpath='{range .status.addresses[?(@.type=="InternalIP")]}{@.address}{"\n"}{end}'
       register: remove_node_ip
       when:
-        - not reset_cluster
+        - not reset_cluster | bool
         - groups['kube_control_plane'] | length > 0
         - inventory_hostname in groups['etcd']
         - ip is not defined
@@ -138,7 +145,7 @@
       set_fact:
         node_ip: "{{ ip | default(access_ip | default(remove_node_ip.stdout)) | trim }}"
       when:
-        - not reset_cluster
+        - not reset_cluster | bool
         - inventory_hostname in groups['etcd']
       ignore_errors: true 
 
@@ -147,7 +154,7 @@
         that: node_ip is defined and node_ip | length > 0
         msg: "Etcd node ip is not set !"
       when:
-        - not reset_cluster
+        - not reset_cluster | bool
         - inventory_hostname in groups['etcd']
 
     - name: Lookup etcd member id
@@ -169,7 +176,7 @@
         ETCDCTL_ENDPOINTS: "https://127.0.0.1:2379"
       delegate_to: "{{ groups['etcd'] | first }}"
       when:
-        - not reset_cluster 
+        - not reset_cluster | bool 
         - inventory_hostname in groups['etcd']
 
     - name: Remove etcd member from cluster
@@ -184,7 +191,7 @@
       ignore_errors: true 
       failed_when: false
       when:
-        - not reset_cluster
+        - not reset_cluster | bool
         - inventory_hostname != groups['kube_control_plane'] | first
         - inventory_hostname in groups['etcd']
         - etcd_member_id.stdout | length > 0
@@ -672,7 +679,7 @@
       command: "{{ kubectl }} delete node {{ inventory_hostname }}"
       delegate_to: "{{ first_kube_control_plane }}"
       when:
-        - not reset_cluster 
+        - not reset_cluster | bool 
         - groups['kube_control_plane'] | length > 0
         # ignore servers that are not nodes
         - inventory_hostname in groups['k8s_cluster'] 
@@ -683,5 +690,3 @@
       until: result is not failed
       ignore_errors: true 
       failed_when: false
-
-

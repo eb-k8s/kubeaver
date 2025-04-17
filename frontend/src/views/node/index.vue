@@ -127,7 +127,7 @@
                             style="flex: 1; margin-right: 10px;"
                             multiple
                         >
-                            <a-option v-for="item in filteredControlPlaneHosts" :key="item.hostId" :value="item.hostIP">
+                            <a-option v-for="item in filteredControlPlaneHosts" :key="item.hostIP" :value="item.hostIP">
                                 {{ `${item.hostIP} (${item.os})` }}
                             </a-option>
                         </a-select>
@@ -160,7 +160,7 @@
                             style="flex: 1; margin-right: 10px;"
                             multiple
                         >
-                            <a-option v-for="item in filteredWorkerHosts" :key="item.hostId" :value="item.hostIP">
+                            <a-option v-for="item in filteredWorkerHosts" :key="item.hostIP" :value="item.hostIP">
                                 <!-- {{ item.hostIP }} -->
                                 {{ `${item.hostIP} (${item.os})` }}
                             </a-option>
@@ -196,7 +196,7 @@
 </template>
 <script lang="ts" setup>
 
-    import { reactive, ref, onMounted, computed } from 'vue';
+    import { reactive, ref, onMounted, computed, watch } from 'vue';
     import { getNodeList, deleteNode, removeNode, addNode, joinCluster } from '@/api/node';
     import { getResources } from '@/api/resources';
     import { deployCluster } from '@/api/cluster';
@@ -357,10 +357,6 @@
         joinVisible.value = false;
     }
 
-    const isHostExist = (hostIP) => {
-      return cluster.workerHosts.some(host => host.ip === hostIP);
-    };
-
     const addControlPlaneHost = () => {
         if (!controlPlaneHost.value || controlPlaneHost.value.length === 0) {
             Message.error("请选择控制节点主机！");
@@ -380,16 +376,16 @@
                 return;
             }
 
-            const selectedHostOS = selectedHost.os.split(' ')[0]; // 获取操作系统名称
+            // const selectedHostOS = selectedHost.os.split(' ')[0]; // 获取操作系统名称
             
             // 获取所有工作节点的操作系统集合
-            const workerOSSet = new Set(cluster.workerHosts.map(host => (host.os ? host.os.split(' ')[0] : '')).filter(os => os));
+            // const workerOSSet = new Set(cluster.workerHosts.map(host => (host.os ? host.os.split(' ')[0] : '')).filter(os => os));
             
             // 如果已经选择了工作节点，检查控制节点的操作系统是否一致
-            if (workerOSSet.size > 0 && !workerOSSet.has(selectedHostOS)) {
-                Message.error(`控制节点 ${selectedIP} 的操作系统必须与工作节点的操作系统一致`);
-                return;
-            }
+            // if (workerOSSet.size > 0 && !workerOSSet.has(selectedHostOS)) {
+            //     Message.error(`控制节点 ${selectedIP} 的操作系统必须与工作节点的操作系统一致`);
+            //     return;
+            // }
 
             // 检查是否已经添加过
             if (!cluster.controlPlaneHosts.some(host => host.ip === selectedIP)) {
@@ -495,7 +491,6 @@
             version: version.value,
             ip: record.ip,
         }
-        console.log(data);
         const result: any = await upgradeCluster(data);
         if(result.status === 'ok'){
             Message.info("节点正在升级,请稍后......");
@@ -569,12 +564,11 @@
                     ...(Array.isArray(cluster.workerHosts) ? cluster.workerHosts : [])
                 ]
             };
-            console.log(data);
             const result: any = await addNode(data);
             if(result.status === 'ok'){
                 Message.success("节点添加成功！");
-                cluster.workerHosts = null;
-                cluster.controlPlaneHosts = null;
+                cluster.workerHosts = []; 
+                cluster.controlPlaneHosts = []; 
                 fetchNodeList();
             }
         } catch (err) {
@@ -686,6 +680,10 @@
         await fetchResourcesList();
         roleLogos.value['node'] = (await import('@/assets/images/logo/node.png')).default;
         roleLogos.value['master'] = (await import('@/assets/images/logo/master.png')).default;
+        watch(hostList.value, (newValue) => {
+            console.log('hostList updated:', newValue);
+            hostList.value = Array.isArray(newValue) ? [...newValue] : [];
+        });
     });
 
     const columns = [
