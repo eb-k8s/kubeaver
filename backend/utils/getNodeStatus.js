@@ -41,7 +41,7 @@ async function getRedis(id) {
       hostName: nodeInfo.hostName,
       password: hostInfo.password,
       role: nodeInfo.role,
-      k8sVersion: hostInfo.k8sVersion,
+      k8sVersion: nodeInfo.k8sVersion,
       status: nodeInfo.status
     });
   }
