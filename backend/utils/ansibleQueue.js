@@ -105,6 +105,7 @@ async function createAnsibleQueue(baseQueueId, concurrency) {
         delay: 0,
       },
     });
+
     queue.process(config.name, config.taskNum, config.processFunction);
     queue.on('active', async (job) => {
       console.log(`Job ${job.id} is now active`);
@@ -762,7 +763,6 @@ async function addTaskToQueue(id, taskName, playbook) {
   //updateQueueConcurrency(queueId, taskNum)
   //console.log(queues[queueId])
   await queues[queueId].add(taskName, { playbook });
-
   //更新redi数据中节点信息的当前执行的是什么任务
   await updateNodeStatus(id, playbook.ip, taskName)
 }
@@ -954,4 +954,5 @@ module.exports = {
   updateNodeStatus,
   removeAllJobs,
   removeWaitingJobs,
+  queues,
 };
