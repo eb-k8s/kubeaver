@@ -179,69 +179,6 @@ async function getAvailableHosts() {
     };
   }
 }
-// async function getAvailableHosts() {
-//   try {
-//     const keys = await redis.keys(`${HOSTS_PREFIX}*`);
-//     const hosts = await Promise.all(keys.map(async key => {
-//       const hostData = await redis.hgetall(key);
-//       return hostData;
-//     }));
-
-//     const nodeList = await redis.lrange(`k8s_cluster:*:hosts`, 0, -1); // 获取列表中的所有节点数据
-//     const nodes = nodeList.map(nodeData => JSON.parse(nodeData)); // 解析存储的 JSON 字符串
-
-//     const availableHosts = hosts.filter(host => {
-//       return !nodes.some(node => node.ip === host.hostIP);
-//     });
-
-//     return {
-//       code: 20000,
-//       data: availableHosts,
-//       msg: "",
-//       status: "ok"
-//     };
-//   } catch (error) {
-//     console.error('Error:', error.message);
-//     return {
-//       code: 50000,
-//       data: "",
-//       msg: error.message || 'Failed to retrieve hosts',
-//       status: "error"
-//     };
-//   }
-// }
-
-// 获取主机列表，并异步获取主机详细信息
-// async function getHosts() {
-//   try {
-//     const keys = await redis.keys(`${HOSTS_PREFIX}*`);
-//     const hosts = await Promise.all(keys.map(async key => {
-//       const hostData = await redis.hgetall(key); // 获取哈希数据
-
-//       // 异步获取主机详细信息
-//       fetchAndSaveHostDetails(hostData.hostIP);
-
-//       return hostData;
-//     }));
-
-//     return {
-//       code: 20000,
-//       data: hosts,
-//       msg: "",
-//       status: "ok"
-//     };
-//   } catch (error) {
-//     console.error('Error:', error.message);
-//     return {
-//       code: 50000,
-//       data: "",
-//       msg: error.message || 'Failed to retrieve hosts',
-//       status: "error"
-//     };
-//   }
-// }
-
-
 
 // 获取主机列表
 async function getHosts() {
