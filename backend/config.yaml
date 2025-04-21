@@ -1,5 +1,0 @@
-kubeaver_version: "1.0.0"
-kubespary_version: "v2.26.0"
-k8s_versions:
-  min_version: "v1.28"
-  max_version: "v1.30"
