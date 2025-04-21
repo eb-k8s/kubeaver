@@ -88,19 +88,22 @@ async function getConfigFile(id, hostPath, masterIP) {
   const privateKeyPath = path.join(__dirname, '../ssh', 'id_rsa');
   const ansibleCommand = `ansible kube_control_plane[0] --private-key ${privateKeyPath} -i ${hostPath} -m fetch -a "src=/etc/kubernetes/admin.conf dest=${outputPath} flat=yes" -b`;
   //console.log(outputPath)
-  await new Promise((resolve, reject) => {
-    exec(ansibleCommand, (error, stdout, stderr) => {
-      if (error) {
-        //console.log("config文件不存在")
-        return reject(`执行命令时出错: ${error.message}`);
-      }
-      if (stderr) {
-        console.error(`错误输出: ${stderr}`);
-      }
-      resolve();
+  try {
+    await new Promise((resolve, reject) => {
+      exec(ansibleCommand, (error, stdout, stderr) => {
+        if (error) {
+          //console.log("config文件不存在")
+          return reject(`执行命令时出错: ${error.message}`);
+        }
+        if (stderr) {
+          console.error(`错误输出: ${stderr}`);
+        }
+        resolve();
+      });
     });
-  });
-
+  } catch (error) {
+    console.error('获取配置文件时发生错误:', error.message);
+  }
   const fileContents = fs.readFileSync(outputPath, 'utf8');
   // 解析 YAML
   parsedData = yaml.load(fileContents);
