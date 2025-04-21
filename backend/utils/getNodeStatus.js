@@ -102,7 +102,7 @@ async function getConfigFile(id, hostPath, masterIP) {
       });
     });
   } catch (error) {
-    console.error('获取配置文件时发生错误:', error.message);
+    console.error('获取配置文件时发生错误:', error.message || '配置文件不存在');
   }
   const fileContents = fs.readFileSync(outputPath, 'utf8');
   // 解析 YAML
