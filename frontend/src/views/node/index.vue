@@ -335,12 +335,16 @@
                 if(result.status === 'ok'){
                     Message.info("正在安装master节点,请稍后......");
                     fetchNodeList();
+                }else{
+                    Message.error(result.msg);
                 }
             }else{
                 const result: any = await joinCluster(data);
                 if(result.status === 'ok'){
                     Message.info("节点正在加入集群中，请稍后......");
                     fetchNodeList();
+                }else{
+                    Message.error(result.msg);
                 }
             }
             
@@ -493,6 +497,8 @@
         if(result.status === 'ok'){
             Message.info("节点正在升级,请稍后......");
             fetchNodeList();
+        }else{
+            Message.error(result.msg);
         }
       } catch (err) {
         console.log(err);
@@ -510,6 +516,8 @@
             if(result.status === 'ok'){
                 Message.success("节点删除成功！");
                 fetchNodeList();
+            }else{
+                Message.error(result.msg);
             }
         } catch (err) {
             console.log(err);
@@ -568,6 +576,8 @@
                 cluster.workerHosts = []; 
                 cluster.controlPlaneHosts = []; 
                 fetchNodeList();
+            }else{
+                Message.error(result.msg);
             }
         } catch (err) {
             console.log(err);
@@ -588,6 +598,8 @@
             if(result.status === 'ok'){
                 Message.info("节点正在移除中，请稍后......");
                 fetchNodeList();
+            }else{
+                Message.error(result.msg);
             }
         } catch (err) {
             console.log(err);
