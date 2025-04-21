@@ -23,7 +23,6 @@ function ensureDirectory(dir) {
 // 初始化
 async function initOffline() {
   try {
-    await insertInfo();
     ensureDirectory(offlineDir);
     const files = fs.readdirSync(offlineDir);
     const tarFiles = files.filter(file => file.endsWith('.tgz'));
@@ -225,30 +224,6 @@ async function waitForFileTransfer(filePath, interval = 3000, maxAttempts = 100)
 
     setTimeout(checkFileSize, interval);
   });
-}
-
-// async function getTgzPackageSize(filePath) {
-//   try {
-//     const stats = fs.statSync(filePath);
-//     return stats.size; // 返回文件大小，单位为字节
-//   } catch (error) {
-//     console.error(`无法获取文件大小: ${error.message}`);
-//     return null; // 如果出错，返回 null
-//   }
-// }
-
-
-
-
-
-
-//初始化的时候在redis中插入数据，版本信息，支持的k8s版本，以便前端可以进行接口访问
-async function insertInfo() {
-  const data = {
-    "kubeaverVersion": "v1",
-    "k8sVersions": ["1.28", "1.29", "1.30"]
-  };
-  await redis.set('kubeaver_version_1.0.0', JSON.stringify(data));
 }
 
 module.exports = { startFileWatcher, initOffline };
