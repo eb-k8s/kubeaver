@@ -216,10 +216,8 @@
     const nodeList = ref();
     const route = useRoute();
     const id = ref();
-    const offlinePackage = ref();
     const nodeip = ref();
     const node = ref();
-    // const workerHost = ref();
     const workerHost = ref<string[]>([]);
     const controlPlaneHost = ref();
     const hostList = ref();
@@ -654,6 +652,23 @@
                 const statusMap = {
                     running: '运行中',
                     waiting: '等待中',
+                };
+                return statusMap[node.activeStatus] || '暂无状态';
+            })(),
+            lastJobType: (() => {
+                const typeMap = {
+                    initCluster: '初始化集群',
+                    addNode: '添加节点',
+                    upgradeCluster: '升级集群',
+                    resetCluster: '重置集群',
+                    resetNode: '重置节点',
+                };
+                return typeMap[node.lastJobType] || '暂无任务';
+            })(),
+            lastJobStatus: (() => {
+                const statusMap = {
+                    worked: '已完成',
+                    failed: '失败',
                 };
                 return statusMap[node.activeStatus] || '暂无状态';
             })(),
