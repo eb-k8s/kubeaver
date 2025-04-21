@@ -124,6 +124,8 @@ const handleAddOk = async () => {
   if (result.status === 'ok') {
     Message.success("主机添加成功，正在获取详细信息...");
     await fetchHostList();
+  }else{
+    Message.error(result.msg);
   }
 }
 
@@ -152,6 +154,8 @@ const handleDeleteOk = async () => {
     if (result.status === 'ok') {
       Message.success("删除成功！");
       await fetchHostList();  // 刷新主机列表
+    }else{
+      Message.error(result.msg);
     }
   } catch (err) {
     console.log(err);

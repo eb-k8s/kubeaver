@@ -16,7 +16,6 @@ export function editCluster(data: any) {
   });
 }
 
-
 export function deployCluster(data: any) {
   return axios.post<any>(
     '/api/k8sClusterMasterJob', data,
