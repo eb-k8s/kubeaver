@@ -1,13 +1,7 @@
 ---
-- name: Common tasks for every playbooks
-  import_playbook: boilerplate.yml
-
-- name: Gather facts
-  import_playbook: facts.yml
-
 - name: force delete node
   hosts: "{{ node | default('k8s_cluster') }}"
-  become: true
+  # become: true
   gather_facts: false
   vars:
     cri_stop_containers_grace_period: 0
@@ -43,6 +37,36 @@
     - { role: kubespray-defaults}
    # - { role: kubernetes/preinstall, when: "dns_mode != 'none' and resolvconf_mode == 'host_resolvconf'", tags: resolvconf, dns_early: true }
   tasks:
+    - name: Create remote_tmp for it is used by another module
+      file:
+        path: "{{ ansible_remote_tmp | default('~/.ansible/tmp') }}"
+        state: directory
+        mode: "0700"
+
+    - name: Gather facts
+      setup:
+        gather_subset: '!all'
+        filter: ansible_*
+    
+    - name: Gather minimal facts
+      setup:
+        gather_subset: '!all'
+
+
+    - name: Gather necessary facts (network)
+      setup:
+        gather_subset: '!all,!min,network'
+        filter: "ansible_*_ipv[46]*"
+
+
+    - name: Gather necessary facts (hardware)
+      setup:
+        gather_subset: '!all,!min,hardware'
+        filter: "ansible_*total_mb"
+
+    - name: Gather information about installed services
+      service_facts:
+
     - name: Remove-node | List nodes
       command: >-
         {{ kubectl }} get nodes -o go-template={% raw %}'{{ range .items }}{{ .metadata.name }}{{ "\n" }}{{ end }}'{% endraw %}
@@ -196,7 +220,7 @@
         - inventory_hostname in groups['etcd']
         - etcd_member_id.stdout | length > 0
 
-    - name: 删除 /etc/hosts 中 store.e-byte.cn 的域名映射
+    - name: remove /etc/hosts  store.e-byte.cn 
       ansible.builtin.lineinfile:
         path: /etc/hosts  
         regexp: '^.*store.e-byte.cn.*$'
@@ -237,14 +261,6 @@
         - containerd
         - crio
 
-    # - name: Reset | Remove Docker
-    #   include_role:
-    #     name: container-engine/docker
-    #     tasks_from: reset
-    #   when: container_manager == 'docker'
-    #   tags:
-    #     - docker
-
     - name: Reset | systemctl daemon-reload  # noqa no-handler
       systemd_service:
         daemon_reload: true
@@ -269,10 +285,10 @@
       tags:
         - crio
         - containerd
-      # when:
-      #   - crictl.stat.exists
-      #   - container_manager in ["crio", "containerd"]
-      #   - ansible_facts.services['containerd.service'] is defined or ansible_facts.services['cri-o.service'] is defined
+      when:
+        - crictl.stat.exists
+        - container_manager in ["crio", "containerd"]
+        - ansible_facts.services['containerd.service'] is defined or ansible_facts.services['cri-o.service'] is defined
       ignore_errors: true  # noqa ignore-errors
 
     - name: Reset | force remove all cri containers
@@ -284,27 +300,27 @@
       tags:
         - crio
         - containerd
-      # when:
-      #   - crictl.stat.exists
-      #   - container_manager in ["crio", "containerd"]
-      #   - deploy_container_engine
-      #   - ansible_facts.services['containerd.service'] is defined or ansible_facts.services['cri-o.service'] is defined
+      when:
+        - crictl.stat.exists
+        - container_manager in ["crio", "containerd"]
+        - deploy_container_engine
+        - ansible_facts.services['containerd.service'] is defined or ansible_facts.services['cri-o.service'] is defined
       ignore_errors: true  # noqa ignore-errors
 
-    - name: Reset | stop and disable crio service
-      service:
-        name: crio
-        state: stopped
-        enabled: false
-      failed_when: false
-      tags: [ crio ]
-      when: container_manager == "crio"
+    # - name: Reset | stop and disable crio service
+    #   service:
+    #     name: crio
+    #     state: stopped
+    #     enabled: false
+    #   failed_when: false
+    #   tags: [ crio ]
+    #   when: container_manager == "crio"
 
-    - name: Reset | forcefully wipe CRI-O's container and image storage
-      command: "crio wipe -f"
-      failed_when: false
-      tags: [ crio ]
-      when: container_manager == "crio"
+    # - name: Reset | forcefully wipe CRI-O's container and image storage
+    #   command: "crio wipe -f"
+    #   failed_when: false
+    #   tags: [ crio ]
+    #   when: container_manager == "crio"
 
     - name: Reset | stop all cri pods
       shell: "set -o pipefail && {{ bin_dir }}/crictl pods -q | xargs -r {{ bin_dir }}/crictl -t 60s stopp"
