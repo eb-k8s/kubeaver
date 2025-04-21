@@ -12,8 +12,8 @@ function formatBytes(bytes) {
 
 //获取目录结构
 // Load config.yaml
-const configPath = path.join(__dirname, '../config.yaml');
-const config = yaml.load(fs.readFileSync(configPath, 'utf8'));
+//const configPath = path.join(__dirname, '../config.yaml');
+//const config = yaml.load(fs.readFileSync(configPath, 'utf8'));
 
 function isVersionInRange(version, minVersion, maxVersion) {
   // 提取主版本号和次版本号（例如，从 v1.28.12 提取 v1.28）
@@ -47,10 +47,10 @@ async function getOfflineContents() {
           };
 
           // 仅在 k8s_cache 目录下进行版本比较
-          if (isK8sCache) {
-            const isK8sVersion = isVersionInRange(file, config.k8s_versions.min_version, config.k8s_versions.max_version);
-            directoryEntry.inVersionRange = isK8sVersion ? 'true' : 'false';
-          }
+          // if (isK8sCache) {
+          //   const isK8sVersion = isVersionInRange(file, config.k8s_versions.min_version, config.k8s_versions.max_version);
+          //   directoryEntry.inVersionRange = isK8sVersion ? 'true' : 'false';
+          // }
 
           result.push(directoryEntry);
         }
