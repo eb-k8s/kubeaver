@@ -115,14 +115,10 @@
     };
 
     const calculatePercent = (record: any): number => {
+        
         const current = Number(record.current_task)
         const total = Number(record.task_counts)
-        console.log(current);
-        console.log(total);
         const percent = Number(((current / total)).toFixed(2))
-
-        console.log(percent);
-        console.log(record.status);
         if (record.status === '活跃中' && percent >= 1.0) {
             return 0.99
         }
