@@ -91,6 +91,7 @@ async function getConfigFile(id, hostPath, masterIP) {
   try {
     await new Promise((resolve, reject) => {
       exec(ansibleCommand, (error, stdout, stderr) => {
+        console.log(stdout)
         if (error) {
           //console.log("config文件不存在")
           return reject(`执行命令时出错: ${error.message}`);
