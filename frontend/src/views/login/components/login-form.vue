@@ -78,6 +78,7 @@
   import { useI18n } from 'vue-i18n';
   import { useStorage } from '@vueuse/core';
   import { useUserStore } from '@/store';
+  import { availableBackend } from '@/api/user';
   import useLoading from '@/hooks/loading';
   import type { LoginData } from '@/api/user';
   import logo from '@/assets/images/logo.png';
@@ -111,20 +112,12 @@
       setLoading(true);
       try {
         await userStore.login(values as LoginData);
-        // const { redirect, ...othersQuery } = router.currentRoute.value.query;
-        // router.push({
-          // name: (redirect as string) || 'Workplace',
-          // query: {
-          //   ...othersQuery,
-          // },
-
-        // });
+        const result: any = await availableBackend();
+        console.log(result);
         router.push(`/cluster`);
         Message.success(t('login.form.login.success'));
         const { rememberPassword } = loginConfig.value;
         const { username, password } = values;
-        // 实际生产环境需要进行加密存储。
-        // The actual production environment requires encrypted storage.
         loginConfig.value.username = rememberPassword ? username : '';
         loginConfig.value.password = rememberPassword ? password : '';
       } catch (err) {

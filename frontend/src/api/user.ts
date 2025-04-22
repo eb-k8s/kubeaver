@@ -14,6 +14,10 @@ export function login(data: LoginData) {
   return axios.post<LoginRes>('/api/user/login', data);
 }
 
+export function availableBackend() {
+  return axios.get<any>('/backend/available');
+}
+
 export function logout() {
   return axios.post<LoginRes>('/api/user/logout');
 }
