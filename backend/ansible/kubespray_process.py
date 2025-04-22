@@ -419,8 +419,8 @@ def main():
     write_yaml_file(f"{kubespray_path}/roles/kubernetes/control-plane/tasks/kubeadm-secondary.yml", modified_lines)
 
     # 移动reset.yml文件并覆盖
-    os.remove("./kubespray/playbooks/reset.yml")
-    shutil.copy2("reset.yml", "./kubespray/playbooks")
+    # os.remove("./kubespray/playbooks/reset.yml")
+    # shutil.copy2("reset.yml", "./kubespray/playbooks")
 
     # ansible.cfg配置
     lines = read_yaml_file(f"{kubespray_path}/ansible.cfg")
