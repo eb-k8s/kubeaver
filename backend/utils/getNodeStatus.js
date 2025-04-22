@@ -19,10 +19,12 @@ async function getRedis(id) {
   } catch (error) {
     console.log(error)
   }
+  const [networkPlugin, networkVersion] = clusterInfo.networkPlugin.split(' - ');
   const formattedInfo = {
     clusterName: clusterInfo.clusterName,
     k8sVersion: clusterInfo.version,
-    networkPlugin: clusterInfo.networkPlugin,
+    networkPlugin: networkPlugin,
+    networkVersion: networkVersion,
     clusterId: clusterInfo.clusterId || '',
     hosts: []
   };
