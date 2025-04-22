@@ -100,7 +100,7 @@
                             <a-button v-if="record.status === 'Unknown' && record.activeJobType === '暂无任务'" type="text" size="small" @click="onClickDelete(record)">
                                 删除
                             </a-button>
-                            <a-button v-if="record.status !== 'Unknown' && record.activeJobType === '暂无任务'" type="text" size="small" @click="onClickRemove(record)">
+                            <a-button v-if="record.status !== 'Unknown' && record.activeJobType === '暂无任务' && isMasterNotReadyAndDeploying" type="text" size="small" @click="onClickRemove(record)">
                                 移除
                             </a-button>
                             <a-button v-if="record.lastJobType === 'upgradeCluster' && record.lastJobStatus === 'failed' && record.activeJobType === '暂无任务'" type="text" size="small" @click="onClickRetry(record)">
@@ -216,10 +216,8 @@
     const nodeList = ref();
     const route = useRoute();
     const id = ref();
-    const offlinePackage = ref();
     const nodeip = ref();
     const node = ref();
-    // const workerHost = ref();
     const workerHost = ref<string[]>([]);
     const controlPlaneHost = ref();
     const hostList = ref();
@@ -337,12 +335,16 @@
                 if(result.status === 'ok'){
                     Message.info("正在安装master节点,请稍后......");
                     fetchNodeList();
+                }else{
+                    Message.error(result.msg);
                 }
             }else{
                 const result: any = await joinCluster(data);
                 if(result.status === 'ok'){
                     Message.info("节点正在加入集群中，请稍后......");
                     fetchNodeList();
+                }else{
+                    Message.error(result.msg);
                 }
             }
             
@@ -495,6 +497,8 @@
         if(result.status === 'ok'){
             Message.info("节点正在升级,请稍后......");
             fetchNodeList();
+        }else{
+            Message.error(result.msg);
         }
       } catch (err) {
         console.log(err);
@@ -512,6 +516,8 @@
             if(result.status === 'ok'){
                 Message.success("节点删除成功！");
                 fetchNodeList();
+            }else{
+                Message.error(result.msg);
             }
         } catch (err) {
             console.log(err);
@@ -570,6 +576,8 @@
                 cluster.workerHosts = []; 
                 cluster.controlPlaneHosts = []; 
                 fetchNodeList();
+            }else{
+                Message.error(result.msg);
             }
         } catch (err) {
             console.log(err);
@@ -590,6 +598,8 @@
             if(result.status === 'ok'){
                 Message.info("节点正在移除中，请稍后......");
                 fetchNodeList();
+            }else{
+                Message.error(result.msg);
             }
         } catch (err) {
             console.log(err);
@@ -654,6 +664,23 @@
                 const statusMap = {
                     running: '运行中',
                     waiting: '等待中',
+                };
+                return statusMap[node.activeStatus] || '暂无状态';
+            })(),
+            lastJobType: (() => {
+                const typeMap = {
+                    initCluster: '初始化集群',
+                    addNode: '添加节点',
+                    upgradeCluster: '升级集群',
+                    resetCluster: '重置集群',
+                    resetNode: '重置节点',
+                };
+                return typeMap[node.lastJobType] || '暂无任务';
+            })(),
+            lastJobStatus: (() => {
+                const statusMap = {
+                    worked: '已完成',
+                    failed: '失败',
                 };
                 return statusMap[node.activeStatus] || '暂无状态';
             })(),

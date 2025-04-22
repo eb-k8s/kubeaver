@@ -359,6 +359,8 @@
             Message.info("集群正在升级,请稍后......");
             localStorage.setItem('createdCluster', JSON.stringify(data));
             fetchClusterList();
+        }else{
+            Message.error(result.msg);
         }
       } catch (err) {
         console.log(err);
@@ -417,6 +419,8 @@
         if(result.status === 'ok'){
             Message.info("正在重置集群,请稍后......");
             fetchClusterList();
+        }else{
+            Message.error(result.msg);
         }
       } catch (err) {
         console.log(err);
@@ -438,6 +442,8 @@
         if(result.status === 'ok'){
             Message.info("正在安装集群,请稍后......");
             fetchClusterList();
+        }else{
+            Message.error(result.msg);
         }
       } catch (err) {
         console.log(err);
@@ -454,6 +460,8 @@
         if(result.status === 'ok'){
             Message.success("删除成功！");
             await fetchClusterList();
+        }else{
+            Message.error(result.msg);
         }
       } catch (err) {
         console.log(err);
