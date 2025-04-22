@@ -79,7 +79,8 @@ ENV PATH=${PATH}:/root/.pyenv/bin:/root/.pyenv/shims
 ENV PATH=$PATH:/root/backend/bin
 # 修改默认的 Redis 配置以使用新的数据存储路径
 # 创建 Redis 数据存储目录
-RUN yum -y install redis
+RUN yum -y install redis && \
+    yum -y install procps-ng
 ENV REDIS_DATA_DIR=/root/backend/data/redis
 RUN mkdir -p $REDIS_DATA_DIR && \
     chown -R redis:redis $REDIS_DATA_DIR
@@ -101,7 +102,7 @@ RUN source ~/.bashrc && pyenv rehash && pyenv global kubespray-${KUBESPRAY_VERSI
 # 设置回工作目录
 WORKDIR /root
 
-RUN mv /root/backend/ansible/kubespray/ansible.cfg /root/.ansible.cfg
+COPY /root/backend/ansible/kubespray/ansible.cfg /root/.ansible.cfg
 RUN chmod 600 /root/backend/ssh/id_rsa
 COPY start.sh /root/start.sh
 
