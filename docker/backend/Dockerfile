@@ -102,7 +102,7 @@ RUN source ~/.bashrc && pyenv rehash && pyenv global kubespray-${KUBESPRAY_VERSI
 # 设置回工作目录
 WORKDIR /root
 
-COPY /root/backend/ansible/kubespray/ansible.cfg /root/.ansible.cfg
+RUN cp /root/backend/ansible/kubespray/ansible.cfg /root/.ansible.cfg
 RUN chmod 600 /root/backend/ssh/id_rsa
 COPY start.sh /root/start.sh
 
