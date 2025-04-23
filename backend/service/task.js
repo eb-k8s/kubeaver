@@ -128,6 +128,7 @@ async function addK8sMasterJob(clusterInfo) {
           kubeVersion: resultData.k8sVersion,
           imageArch: resultPackageData.imageArch,
           networkPlugin: resultData.networkPlugin,
+          networkVersion: resultData.networkVersion,
           workDir: workDir,
           configFile: configFile,
         }
@@ -157,6 +158,7 @@ async function addK8sMasterJob(clusterInfo) {
           kubeVersion: resultData.k8sVersion,
           imageArch: resultPackageData.imageArch,
           networkPlugin: resultData.networkPlugin,
+          networkVersion: resultData.networkVersion,
           workDir: workDir,
           configFile: configFile,
         }
@@ -233,6 +235,7 @@ async function addK8sNodeJob(clusterInfo) {
           kubeVersion: resultData.k8sVersion,
           imageArch: resultPackageData.imageArch,
           networkPlugin: resultData.networkPlugin,
+          networkVersion: resultData.networkVersion,
           workDir: workDir,
           configFile: configFile,
         }
@@ -540,6 +543,7 @@ async function upgradeK8sClusterJob(newClusterInfo, targetIP = null) {
         kubeVersion: newClusterInfo.version,
         imageArch: resultPackageData.imageArch,
         networkPlugin: resultData.networkPlugin,
+        networkVersion: resultData.networkVersion,
         workDir: workDir,
         configFile: configFile,
       }

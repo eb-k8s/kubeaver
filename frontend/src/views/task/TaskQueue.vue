@@ -14,10 +14,30 @@
                         </div>
                         <a-table :data="task.tasks" :columns="columns" :loading="loading">
                             <template v-slot:progress="{ record }">
-                                <a-progress 
+                                <!-- <a-progress 
                                     type="circle"
                                     :percent="record.task_counts > 0 ? Number((Number(record.current_task) / Number(record.task_counts)).toFixed(2)) : 0" 
-                                />
+                                /> -->
+                                <!-- <a-progress
+                                    type="circle"
+                                    :percent="
+                                        record.task_counts > 0
+                                        ? (record.status === '活跃中' &&
+                                            Number(((Number(record.current_task) / Number(record.task_counts)) * 100).toFixed(2)) === 100
+                                            ? 99
+                                            : Number(((Number(record.current_task) / Number(record.task_counts)) * 100).toFixed(2)))
+                                        : 0
+                                    "
+                                /> -->
+                                <template v-if="record.task_counts > 0">
+                                    <a-progress
+                                        type="circle"
+                                        :percent="calculatePercent(record)"
+                                    />
+                                </template>
+                                <template v-else>
+                                    <a-progress type="circle" :percent="0" />
+                                </template>
                             </template>
                             <template #status="{ record }">
                                 <div class="status-container">
@@ -94,8 +114,16 @@
         openWebSocketModal(record);
     };
 
-    const handleRefresh = async () =>{
-        connectWebSocket(id.value);
+    const calculatePercent = (record: any): number => {
+        
+        const current = Number(record.current_task)
+        const total = Number(record.task_counts)
+        const percent = Number(((current / total)).toFixed(2))
+        if (record.status === '活跃中' && percent >= 1.0) {
+            return 0.99
+        }
+      
+        return percent
     }
 
     const onClickBulkTermination = async (taskname: any) => {
@@ -117,6 +145,8 @@
             if(result.status === 'ok'){
                 Message.success("任务已终止！");
                 connectWebSocket(id.value);
+            }else{
+                Message.error(result.msg);
             }
         } catch (err) {
             console.log(err);
@@ -145,6 +175,8 @@
             if(result.status === 'ok'){
                 Message.success("任务已删除！");
                 connectWebSocket(id.value);
+            }else{
+                Message.error(result.msg);
             }
         } catch (err) {
             console.log(err);
@@ -173,6 +205,8 @@
             if(result.status === 'ok'){
                 Message.success("任务已终止！");
                 connectWebSocket(id.value);
+            }else{
+                Message.error(result.msg);
             }
         } catch (err) {
             console.log(err);
