@@ -419,8 +419,15 @@ def main():
     write_yaml_file(f"{kubespray_path}/roles/kubernetes/control-plane/tasks/kubeadm-secondary.yml", modified_lines)
 
     # 移动reset.yml文件并覆盖
-    os.remove("./kubespray/playbooks/reset.yml")
-    shutil.copy2("reset.yml", "./kubespray/playbooks")
+    # os.remove("./kubespray/playbooks/reset.yml")
+    # shutil.copy2("reset.yml", "./kubespray/playbooks")
+
+    # ansible.cfg配置
+    lines = read_yaml_file(f"{kubespray_path}/ansible.cfg")
+    # 在#control_path = ~/.ssh/ansible-%%r@%%h:%%p后添加
+    modified_lines = insert_line_after_pattern(lines, "#control_path = ~/.ssh/ansible-%%r@%%h:%%p", "control_path = ~/.ssh/ansible-%%h")
+    # 将更改写入文件
+    write_yaml_file(f"{kubespray_path}/ansible.cfg", modified_lines)
 
     # # 修改roles/kubernetes/preinstall/tasks/0070-system-packages.yml
     # lines = read_yaml_file(f"{kubespray_path}/roles/kubernetes/preinstall/tasks/0070-system-packages.yml")

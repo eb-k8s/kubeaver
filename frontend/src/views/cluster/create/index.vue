@@ -543,6 +543,8 @@
                     window.location.reload();
                 });
                 fetchClustersList();
+            }else{
+                Message.error(result.msg);
             }
         } catch (err) {
             console.log(err);

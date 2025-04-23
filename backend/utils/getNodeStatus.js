@@ -19,10 +19,12 @@ async function getRedis(id) {
   } catch (error) {
     console.log(error)
   }
+  const [networkPlugin, networkVersion] = clusterInfo.networkPlugin.split(' - ');
   const formattedInfo = {
     clusterName: clusterInfo.clusterName,
     k8sVersion: clusterInfo.version,
-    networkPlugin: clusterInfo.networkPlugin,
+    networkPlugin: networkPlugin,
+    networkVersion: networkVersion,
     clusterId: clusterInfo.clusterId || '',
     hosts: []
   };
@@ -91,6 +93,7 @@ async function getConfigFile(id, hostPath, masterIP) {
   try {
     await new Promise((resolve, reject) => {
       exec(ansibleCommand, (error, stdout, stderr) => {
+        console.log(stdout)
         if (error) {
           //console.log("config文件不存在")
           return reject(`执行命令时出错: ${error.message}`);
@@ -102,34 +105,40 @@ async function getConfigFile(id, hostPath, masterIP) {
       });
     });
   } catch (error) {
-    console.error('获取配置文件时发生错误:', error.message);
+    console.error('获取配置文件时发生错误:', error.message || '配置文件不存在');
   }
-  const fileContents = fs.readFileSync(outputPath, 'utf8');
-  // 解析 YAML
-  parsedData = yaml.load(fileContents);
-  const newServerValue = `https://${masterIP}:6443`;
-  if (parsedData.clusters) {
-    parsedData.clusters.forEach(cluster => {
-      if (cluster.cluster && cluster.cluster.server) {
-        cluster.cluster.server = newServerValue; // 更新 server 字段
-      }
-    });
-  } else {
-    console.log('没有找到 clusters 字段。');
-  }
-  const newYaml = yaml.dump(parsedData);
-  //fs.writeFileSync(outputPath, newYaml, 'utf8');
-  //将config文件存入数据库
-  // 将更新后的文件内容存储到 Redis（同步）
-  const configHashKey = `k8s_cluster:${id}:config`
-  redis.set(configHashKey, newYaml, (redisError) => {
-    if (redisError) {
-      console.error(`存储到 Redis 时出错: ${redisError.message}`);
-      return;
+  try {
+    if (!fs.existsSync(outputPath)) {
+      throw new Error(`配置文件${outputPath}不存在`);
     }
-    //console.log('配置文件已成功存储到 Redis！');
-  });
-  //return outputPath;  //返回文件路径 
+    const fileContents = fs.readFileSync(outputPath, 'utf8');
+    // 解析 YAML
+    parsedData = yaml.load(fileContents);
+    const newServerValue = `https://${masterIP}:6443`;
+    if (parsedData.clusters) {
+      parsedData.clusters.forEach(cluster => {
+        if (cluster.cluster && cluster.cluster.server) {
+          cluster.cluster.server = newServerValue; // 更新 server 字段
+        }
+      });
+    } else {
+      console.log('没有找到 clusters 字段。');
+    }
+    const newYaml = yaml.dump(parsedData);
+    //fs.writeFileSync(outputPath, newYaml, 'utf8');
+    //将config文件存入数据库
+    // 将更新后的文件内容存储到 Redis（同步）
+    const configHashKey = `k8s_cluster:${id}:config`
+    redis.set(configHashKey, newYaml, (redisError) => {
+      if (redisError) {
+        console.error(`存储到 Redis 时出错: ${redisError.message}`);
+        return;
+      }
+      //console.log('配置文件已成功存储到 Redis！');
+    });
+  } catch (error) {
+    console.error('获取配置文件时发生错误:', error.message || '配置文件不存在');
+  }
 }
 
 async function getNodeStatus(id, hostName, hostPath, masterIP) {
