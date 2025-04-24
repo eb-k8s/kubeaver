@@ -12,6 +12,10 @@ loadbalancer_apiserver_keepalive_timeout: 5m
 metrics_server_version: "v0.6.4"
 flannel_version: "{{ kube_network_version if kube_network_plugin == 'flannel' else 'v3.26.1' }}"
 calico_version: "{{ kube_network_version if kube_network_plugin == 'calico' else 'v0.22.0' }}"
+flannel_supported_versions:
+  v0.22.0: "v1.1.2"
+  v0.26.5: "v1.6.2-flannel1"
+flannel_cni_version: "{{ flannel_supported_versions[flannel_version] }}"
 # 默认配置metrics-server
 metrics_server_enabled: true
 # 自动更新证书
