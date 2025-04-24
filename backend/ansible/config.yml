@@ -10,8 +10,8 @@ calico_crds_archive_checksum: "ignore_checksum_placeholder"
 calicoctl_binary_checksum: "ignore_checksum_placeholder"
 loadbalancer_apiserver_keepalive_timeout: 5m
 metrics_server_version: "v0.6.4"
-flannel_version: "{{ kube_network_version if kube_network_plugin == 'flannel' else '' }}"
-calico_version: "{{ kube_network_version if kube_network_plugin == 'calico' else '' }}"
+flannel_version: "{{ kube_network_version if kube_network_plugin == 'flannel' else 'v3.26.1' }}"
+calico_version: "{{ kube_network_version if kube_network_plugin == 'calico' else 'v0.22.0' }}"
 # 默认配置metrics-server
 metrics_server_enabled: true
 #image_arch: amd64
