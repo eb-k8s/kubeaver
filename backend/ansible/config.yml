@@ -18,6 +18,7 @@ flannel_supported_versions:
 flannel_cni_version: "{{ flannel_supported_versions[flannel_version] }}"
 # 默认配置metrics-server
 metrics_server_enabled: true
+#image_arch: amd64
 # 自动更新证书
 auto_renew_certificates: true
 # 关闭nodelocaldns
