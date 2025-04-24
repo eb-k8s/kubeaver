@@ -105,7 +105,13 @@ async function getConfigFile(id, hostPath, masterIP) {
       });
     });
   } catch (error) {
-    console.error('获取配置文件时发生错误:', error.message || '配置文件不存在');
+    console.error('执行命令时出错:', error.message || '配置文件不存在');
+    try {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    } catch (cleanupError) {
+      console.error('清理临时目录时出错:', cleanupError.message);
+    }
+    return;
   }
   try {
     if (!fs.existsSync(outputPath)) {
@@ -137,7 +143,8 @@ async function getConfigFile(id, hostPath, masterIP) {
       //console.log('配置文件已成功存储到 Redis！');
     });
   } catch (error) {
-    console.error('获取配置文件时发生错误:', error.message || '配置文件不存在');
+    console.error('读取配置文件时发生错误:', error.message || '配置文件不存在');
+    return;
   }
 }
 
@@ -151,7 +158,7 @@ async function getNodeStatus(id, hostName, hostPath, masterIP) {
       await getConfigFile(id, hostPath, masterIP);
       configContent = await redis.get(configHashKey);
       if (!configContent) {
-        console.error('获取配置文件失败');
+        console.error(`获取集群${id}配置文件失败`);
         //return "Unknown";
         return { status: "Unknown", version: "Unknown" };
       }
