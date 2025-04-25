@@ -8,7 +8,7 @@ services:
     container_name: registry_dev
     restart: always
     ports:
-      - 5000:5000
+      - 80:5000
     environment:
       REGISTRY_HTTP_HEADERS_Access-Control-Allow-Origin: '[http://store.e-byte.cn]'
       REGISTRY_HTTP_HEADERS_Access-Control-Allow-Methods: '[HEAD,GET,OPTIONS,DELETE]'
@@ -28,8 +28,6 @@ services:
     container_name: apploader_dev
     user: root
     restart: always
-    ports:
-      - 8081:8081
     volumes:
       - ./data/apps:/srv/apps
       - ./data/offline:/srv/offline  
