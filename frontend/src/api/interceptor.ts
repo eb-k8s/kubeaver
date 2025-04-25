@@ -68,11 +68,11 @@ axios.interceptors.response.use(
     return res;
   },
   (error) => {
-    console.log(error);
-    Message.error({
-      content: error.msg || 'Request Error',
-      duration: 5 * 1000,
-    });
+    // console.log(error);
+    // Message.error({
+    //   content: error.msg || 'Request Error',
+    //   duration: 5 * 1000,
+    // });
     return Promise.reject(error);
   }
 );

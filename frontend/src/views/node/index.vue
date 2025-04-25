@@ -227,6 +227,7 @@
     const supportedOS = ref();
     const repoFiles = ref();
     const version = ref();
+    const upgradeVersion = ref();
     const clusterName = ref();
     const master1 = ref();
     const cluster = reactive({
@@ -240,6 +241,35 @@
     version.value = route.query.version;
     clusterName.value = route.query.clusterName;
     master1.value = route.query.master1;
+    upgradeVersion.value = route.query.upgradeVersion;
+
+    const getFirstK8sVersionFromStorage = (key = 'k8sVersionList'): string => {
+        const versionArrayStr = localStorage.getItem(key);
+        if (versionArrayStr) {
+            try {
+                const versionArray = JSON.parse(versionArrayStr);
+                if (Array.isArray(versionArray) && versionArray.length > 0) {
+                    return versionArray[0]; // 返回第一个版本
+                }
+            } catch (parseError) {
+                console.error('版本信息解析失败:', parseError);
+            }
+        }
+        return '';
+    };
+
+    const getMappedK8sVersion = (version: string)=> {
+        try {
+            const versionMapStr = localStorage.getItem('k8sVersionMap');
+            if (!versionMapStr) return '';
+
+            const versionMap: Record<string, string> = JSON.parse(versionMapStr);
+            return versionMap[version] || '';
+        } catch (err) {
+            console.error('解析版本映射失败:', err);
+            return '';
+        }
+    }
 
     const hosts = computed(() => {
         return [
@@ -330,8 +360,9 @@
                 id : id.value,
                 hosts: [node.value],
             };
+            const k8sVersion = getMappedK8sVersion(version.value);
             if(nodeRole.value === 'master'){
-                const result: any = await deployCluster(data);
+                const result: any = await deployCluster(data, k8sVersion);
                 if(result.status === 'ok'){
                     Message.info("正在安装master节点,请稍后......");
                     fetchNodeList();
@@ -339,7 +370,7 @@
                     Message.error(result.msg);
                 }
             }else{
-                const result: any = await joinCluster(data);
+                const result: any = await joinCluster(data, k8sVersion);
                 if(result.status === 'ok'){
                     Message.info("节点正在加入集群中，请稍后......");
                     fetchNodeList();
@@ -493,7 +524,8 @@
             version: version.value,
             ip: record.ip,
         }
-        const result: any = await upgradeCluster(data);
+        const k8sVersion = getMappedK8sVersion(upgradeVersion.value);
+        const result: any = await upgradeCluster(data, k8sVersion);
         if(result.status === 'ok'){
             Message.info("节点正在升级,请稍后......");
             fetchNodeList();
@@ -512,7 +544,8 @@
                 id : id.value,
                 ip: nodeip.value
             };
-            const result: any = await deleteNode(data);
+            const k8sVersion = getFirstK8sVersionFromStorage();
+            const result: any = await deleteNode(data, k8sVersion);
             if(result.status === 'ok'){
                 Message.success("节点删除成功！");
                 fetchNodeList();
@@ -570,7 +603,8 @@
                     ...(Array.isArray(cluster.workerHosts) ? cluster.workerHosts : [])
                 ]
             };
-            const result: any = await addNode(data);
+            const k8sVersion = getFirstK8sVersionFromStorage();
+            const result: any = await addNode(data, k8sVersion);
             if(result.status === 'ok'){
                 Message.success("节点添加成功！");
                 cluster.workerHosts = []; 
@@ -594,7 +628,8 @@
                 id : id.value,
                 ip: nodeip.value
             };
-            const result: any = await removeNode(data);
+            const k8sVersion = getFirstK8sVersionFromStorage();
+            const result: any = await removeNode(data, k8sVersion);
             if(result.status === 'ok'){
                 Message.info("节点正在移除中，请稍后......");
                 fetchNodeList();
@@ -615,7 +650,8 @@
     const fetchResourcesList = async () => {
         try {
             setLoading(true);
-            const result = await getResources();
+            const k8sVersion = getFirstK8sVersionFromStorage();
+            const result = await getResources(k8sVersion);
             resourceList.value = result.data;
             resourceList.value.forEach(item => {
                 if (item.name === 'repo_files') {
@@ -646,7 +682,8 @@
     const fetchNodeList = async () => {
       try {
         setLoading(true);
-        const result = await getNodeList(id.value);
+        const k8sVersion = getFirstK8sVersionFromStorage();
+        const result = await getNodeList(id.value, k8sVersion);
         nodeList.value = result.data.map(node => ({
             ...node,
             createTime: formatTime(node.createTime), 
@@ -694,7 +731,8 @@
      //获取主机列表
      const fetchHostList = async () => {
       try {
-        const result = await getAvailableHostList();
+        const k8sVersion = getFirstK8sVersionFromStorage();
+        const result = await getAvailableHostList(k8sVersion);
         hostList.value = result.data;
       } catch (err) {
         console.log(err);
