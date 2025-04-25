@@ -128,6 +128,7 @@ async function addK8sMasterJob(clusterInfo) {
           kubeVersion: resultData.k8sVersion,
           imageArch: resultPackageData.imageArch,
           networkPlugin: resultData.networkPlugin,
+          networkVersion: resultData.networkVersion,
           workDir: workDir,
           configFile: configFile,
         }
@@ -157,6 +158,7 @@ async function addK8sMasterJob(clusterInfo) {
           kubeVersion: resultData.k8sVersion,
           imageArch: resultPackageData.imageArch,
           networkPlugin: resultData.networkPlugin,
+          networkVersion: resultData.networkVersion,
           workDir: workDir,
           configFile: configFile,
         }
@@ -233,6 +235,7 @@ async function addK8sNodeJob(clusterInfo) {
           kubeVersion: resultData.k8sVersion,
           imageArch: resultPackageData.imageArch,
           networkPlugin: resultData.networkPlugin,
+          networkVersion: resultData.networkVersion,
           workDir: workDir,
           configFile: configFile,
         }
@@ -512,11 +515,53 @@ async function upgradeK8sClusterJob(newClusterInfo, targetIP = null) {
       if (targetIP && node.ip !== targetIP) {
         continue;
       }
-      // Skip nodes with the same version
-      if (node.k8sVersion === newClusterInfo.version) {
-        console.log(`Node ${node.hostName} already at version ${newClusterInfo.version}, skipping upgrade.`);
+      // // Skip nodes with the same version
+      // if (node.k8sVersion === newClusterInfo.version) {
+      //   console.log(`Node ${node.hostName} already at version ${newClusterInfo.version}, skipping upgrade.`);
+      //   continue;
+      // }
+      // 优化后的版本解析函数（支持 v前缀 和 预发布标识）
+      const parseVersion = (v) => {
+        // 移除v前缀并截取预发布标识前的部分
+        const cleanV = v.replace(/^v/, '').split('-')[0];
+        const parts = cleanV.split('.').map(Number);
+        return {
+          major: parts[0] || 0,
+          minor: parts[1] || 0,
+          patch: parts[2] || 0
+        };
+      };
+
+      const current = parseVersion(node.k8sVersion);
+      const target = parseVersion(newClusterInfo.version);
+
+      // 1. 跳过版本相同的节点
+      if (current.major === target.major &&
+        current.minor === target.minor &&
+        current.patch === target.patch) {
+        console.log(`[跳过] ${node.hostName}: 版本无变化 (${node.k8sVersion})`);
         continue;
       }
+
+      // 2. 检查主版本是否相同
+      if (current.major !== target.major) {
+        console.log(`[禁止] ${node.hostName}: 跨主版本升级禁止 (${current.major}.x → ${target.major}.x)`);
+        continue;
+      }
+
+      // 3. 检查是否为降级
+      if (current.minor > target.minor ||
+        (current.minor === target.minor && current.patch > target.patch)) {
+        console.log(`[禁止] ${node.hostName}: 降级操作禁止 (${node.k8sVersion} → ${newClusterInfo.version})`);
+        continue;
+      }
+
+      // 4. 检查次版本差
+      if (target.minor - current.minor > 1) {
+        console.log(`[禁止] ${node.hostName}: 必须按顺序升级，请先升级到 ${current.major}.${current.minor + 1}.x`);
+        continue;
+      }
+
       let taskName = 'upgradeCluster'
       let taskId = `${newClusterInfo.id}_${taskName}`
       const resultPackageData = await offlinePackagesPath()
@@ -540,6 +585,7 @@ async function upgradeK8sClusterJob(newClusterInfo, targetIP = null) {
         kubeVersion: newClusterInfo.version,
         imageArch: resultPackageData.imageArch,
         networkPlugin: resultData.networkPlugin,
+        networkVersion: resultData.networkVersion,
         workDir: workDir,
         configFile: configFile,
       }
