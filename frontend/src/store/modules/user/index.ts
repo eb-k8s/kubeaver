@@ -61,10 +61,11 @@ const useUserStore = defineStore('user', {
     },
 
     // Login
-    async login(loginForm: LoginData) {
+    async login(loginForm: LoginData, k8sVersion: any) {
       try {
-        const res = await userLogin(loginForm);
+        const res = await userLogin(loginForm, k8sVersion);
         setToken(res.data.token);
+        console.log(res);
       } catch (err) {
         clearToken();
         throw err;

@@ -71,15 +71,16 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref, reactive } from 'vue';
+  import { ref, reactive, onMounted  } from 'vue';
   import { useRouter } from 'vue-router';
   import { Message } from '@arco-design/web-vue';
   import { ValidatedError } from '@arco-design/web-vue/es/form/interface';
   import { useI18n } from 'vue-i18n';
   import { useStorage } from '@vueuse/core';
   import { useUserStore } from '@/store';
-  import { availableBackend } from '@/api/user';
+  import { availableBackend, login } from '@/api/user';
   import useLoading from '@/hooks/loading';
+
   import type { LoginData } from '@/api/user';
   import logo from '@/assets/images/logo.png';
 
@@ -100,36 +101,111 @@
     password: loginConfig.value.password,
   });
 
+  const getFirstK8sVersionFromStorage = (key = 'k8sVersionList'): string => {
+    const versionArrayStr = localStorage.getItem(key);
+    if (versionArrayStr) {
+        try {
+            const versionArray = JSON.parse(versionArrayStr);
+            if (Array.isArray(versionArray) && versionArray.length > 0) {
+                return versionArray[0]; // 返回第一个版本
+            }
+        } catch (parseError) {
+            console.error('版本信息解析失败:', parseError);
+        }
+    }
+    return '';
+};
+
   const handleSubmit = async ({
     errors,
     values,
   }: {
-    errors: Record<string, ValidatedError> | undefined;
+    errors?: Record<string, ValidatedError>;
     values: Record<string, any>;
   }) => {
-    if (loading.value) return;
-    if (!errors) {
-      setLoading(true);
-      try {
-        await userStore.login(values as LoginData);
-        const result: any = await availableBackend();
-        console.log(result);
-        router.push(`/cluster`);
-        Message.success(t('login.form.login.success'));
-        const { rememberPassword } = loginConfig.value;
-        const { username, password } = values;
-        loginConfig.value.username = rememberPassword ? username : '';
-        loginConfig.value.password = rememberPassword ? password : '';
-      } catch (err) {
-        errorMessage.value = (err as Error).message;
-      } finally {
-        setLoading(false);
+    if (loading.value || errors) return;
+
+    setLoading(true);
+
+    try {
+      const k8sVersion = getFirstK8sVersionFromStorage();
+
+      if (!k8sVersion) {
+        throw new Error('未检测到可用的 Kubernetes 后端版本，请稍后重试。');
       }
+
+      await userStore.login(values as LoginData, k8sVersion);
+
+      // 成功登录后保存用户信息（根据是否记住密码）
+      const { rememberPassword } = loginConfig.value;
+      const { username, password } = values;
+      loginConfig.value.username = rememberPassword ? username : '';
+      loginConfig.value.password = rememberPassword ? password : '';
+
+      Message.success(t('login.form.login.success'));
+      router.push('/cluster');
+    } catch (err) {
+      const msg = `登录失败,${(err as Error).message}`|| '登录失败';
+      errorMessage.value = msg;
+      Message.error(msg);
+    } finally {
+      setLoading(false);
     }
   };
+
   const setRememberPassword = (value: boolean) => {
     loginConfig.value.rememberPassword = value;
   };
+
+  onMounted(async () => {
+      // Kubernetes 版本映射
+      const versionMap: Record<string, string> = {
+        'v1.25': 'v125',
+        'v1.26': 'v125',
+        'v1.27': 'v125',
+        'v1.28': 'v128',
+        'v1.29': 'v128',
+        'v1.30': 'v128',
+      };
+
+      const reverseMap: Record<string, string[]> = {};
+      for (const [version, mapped] of Object.entries(versionMap)) {
+        if (!reverseMap[mapped]) reverseMap[mapped] = [];
+        reverseMap[mapped].push(version);
+      }
+
+      const testedVersions = new Set<string>();
+      const availableVersions: string[] = [];
+      const availableVersionMap: Record<string, string> = {};
+      let connected = false;
+
+      for (const [mappedVersion, versionList] of Object.entries(reverseMap)) {
+        if (!testedVersions.has(mappedVersion)) {
+          testedVersions.add(mappedVersion);
+          try {
+            const result: any = await availableBackend(mappedVersion);
+            console.log(`Version ${mappedVersion} result:`, result);
+            connected = true;
+            availableVersions.push(mappedVersion);
+            versionList.forEach(version => {
+              availableVersionMap[version] = mappedVersion;
+            });
+          } catch (e) {
+            console.warn(`Failed for version ${mappedVersion}:`, e);
+          }
+        }
+      }
+
+      if (connected) {
+        localStorage.setItem('k8sVersionList', JSON.stringify(availableVersions));
+        localStorage.setItem('k8sVersionMap', JSON.stringify(availableVersionMap));
+        console.log('可用版本:', availableVersions);
+        console.log('可用版本映射:', availableVersionMap);
+      } 
+      else {
+        Message.warning('未检测到可用后端,请先启动后端程序！');
+      }
+    });
 </script>
 
 <style lang="less" scoped>

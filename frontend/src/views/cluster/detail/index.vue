@@ -234,7 +234,6 @@
   
   const { loading, setLoading } = useLoading();
   const route = useRoute();
-  const clusterName = ref(route.params.name);
   const clusterList = ref();
   const id = ref(route.query.id);
 
@@ -244,6 +243,21 @@
     '2': 2,
     '3': 3,
   });
+
+  const getFirstK8sVersionFromStorage = (key = 'k8sVersionList'): string => {
+      const versionArrayStr = localStorage.getItem(key);
+      if (versionArrayStr) {
+          try {
+              const versionArray = JSON.parse(versionArrayStr);
+              if (Array.isArray(versionArray) && versionArray.length > 0) {
+                  return versionArray[0]; // 返回第一个版本
+              }
+          } catch (parseError) {
+              console.error('版本信息解析失败:', parseError);
+          }
+      }
+      return '';
+  };
 
   const config = reactive({
         loadbalancer_apiserver_port: 6443,
@@ -295,7 +309,8 @@
   const fetchClustersList = async () => {
         try {
             setLoading(true);
-            const result = await getClusterList();
+            const k8sVersion = getFirstK8sVersionFromStorage();
+            const result = await getClusterList(k8sVersion);
             clusterList.value = result.data;
         } catch (err) {
             console.log(err);
@@ -304,24 +319,23 @@
         }
     };
 
-
   onMounted(async () => {
 
-await fetchClustersList();
-if (Array.isArray(clusterList.value)) {
-    clusterList.value.forEach(item => {
-        if (item.id === id.value) {
-            cluster.clusterName = item.clusterName || '';
-            cluster.offlinePackage = item.offlinePackage || '';
-            cluster.networkPlugin = item.networkPlugin || '';
-            cluster.version = item.version || '';
-            cluster.taskNum = item.taskNum || '0';
-        }
-    });
-} else {
-    console.error('clusterList is not an array or undefined');
-}
-});
+    await fetchClustersList();
+    if (Array.isArray(clusterList.value)) {
+        clusterList.value.forEach(item => {
+            if (item.id === id.value) {
+                cluster.clusterName = item.clusterName || '';
+                cluster.offlinePackage = item.offlinePackage || '';
+                cluster.networkPlugin = item.networkPlugin || '';
+                cluster.version = item.version || '';
+                cluster.taskNum = item.taskNum || '0';
+            }
+        });
+    } else {
+        console.error('clusterList is not an array or undefined');
+    }
+  });
 
   </script>
   
