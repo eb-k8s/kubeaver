@@ -10,6 +10,21 @@ import { removeRouteListener } from '@/utils/route-listener';
 import { UserState } from './types';
 import useAppStore from '../app';
 
+const getFirstK8sVersionFromStorage = (key = 'k8sVersionList'): string => {
+  const versionArrayStr = localStorage.getItem(key);
+  if (versionArrayStr) {
+      try {
+          const versionArray = JSON.parse(versionArrayStr);
+          if (Array.isArray(versionArray) && versionArray.length > 0) {
+              return versionArray[0]; // 返回第一个版本
+          }
+      } catch (parseError) {
+          console.error('版本信息解析失败:', parseError);
+      }
+  }
+  return '';
+};
+
 const useUserStore = defineStore('user', {
   state: (): UserState => ({
     name: undefined,
@@ -53,10 +68,11 @@ const useUserStore = defineStore('user', {
       this.$reset();
     },
 
+    
     // Get user's information
     async info() {
-      const res = await getUserInfo();
-
+      const k8sVersion = getFirstK8sVersionFromStorage();
+      const res = await getUserInfo(k8sVersion);
       this.setInfo(res.data);
     },
 
@@ -81,7 +97,8 @@ const useUserStore = defineStore('user', {
     // Logout
     async logout() {
       try {
-        await userLogout();
+        const k8sVersion = getFirstK8sVersionFromStorage();
+        await userLogout(k8sVersion);
       } finally {
         this.logoutCallBack();
       }
