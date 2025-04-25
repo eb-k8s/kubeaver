@@ -698,8 +698,8 @@ async function processResetCluster(job) {
       '-i', `${job.data.playbook.hostsPath}`,
       '--become',
       '--become-user=root', job.data.playbook.task,
-      // '-e', `node=${job.data.playbook.hostName}`,
-      '--limit', job.data.playbook.hostName,
+      '-e', `node=${job.data.playbook.hostName}`,
+      // '--limit', job.data.playbook.hostName,
       '-e', 'reset_cluster=true',
     ], {
       cwd: job.data.playbook.workDir,
