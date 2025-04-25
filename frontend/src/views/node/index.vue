@@ -719,7 +719,7 @@
                     worked: '已完成',
                     failed: '失败',
                 };
-                return statusMap[node.activeStatus] || '暂无状态';
+                return statusMap[node.lastJobStatus] || '暂无状态';
             })(),
         }));
       } catch (err) {
