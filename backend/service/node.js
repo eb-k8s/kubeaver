@@ -2,8 +2,8 @@ const util = require('util');
 const Redis = require('ioredis');
 const { getNodeStatus, getRedis } = require('../utils/getNodeStatus');
 const redisConfig = {
-  host: process.env.REDIS_HOST || '127.0.0.1', // Docker环境用服务名，本地开发用localhost
-  port: process.env.REDIS_PORT || 6379,
+  host: process.env.REDIS_HOST, 
+  port: process.env.REDIS_PORT,
 };
 
 const redis = new Redis(redisConfig);
