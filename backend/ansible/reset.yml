@@ -32,6 +32,13 @@
       {%- elif ansible_os_family == "Debian" -%}
       networking
       {%- endif %}
+  pre_tasks:
+    - name: Ensure hostname mapping exists in /etc/hosts
+      lineinfile:
+        path: /etc/hosts
+        regexp: '^127\.0\.0\.1\s+{{ inventory_hostname }}$'
+        line: '127.0.0.1 {{ inventory_hostname }}'
+        state: present
   environment: "{{ proxy_disable_env }}"
   roles:
     - { role: kubespray-defaults}
