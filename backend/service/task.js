@@ -14,8 +14,8 @@ const { offlinePackagesPath } = require('../utils/getOfflinePackage')
 //const k8s = require('@kubernetes/client-node');
 
 const redisConfig = {
-  host: process.env.REDIS_HOST || '127.0.0.1', // Docker环境用服务名，本地开发用localhost
-  port: process.env.REDIS_PORT || 6379,
+  host: process.env.REDIS_HOST, 
+  port: process.env.REDIS_PORT,
 };
 
 const redis = new Redis(redisConfig);
