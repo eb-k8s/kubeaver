@@ -10,16 +10,21 @@ export interface LoginData {
 export interface LoginRes {
   token: string;
 }
-export function login(data: LoginData) {
-  return axios.post<LoginRes>('/api/user/login', data);
+export function login(data: LoginData, k8sVersion: any) {
+  return axios.post<LoginRes>(`/${k8sVersion}/api/user/login`, data);
+  // return axios.get<any>(`/v125/api/backend/available`)
 }
 
-export function logout() {
-  return axios.post<LoginRes>('/api/user/logout');
+export function availableBackend(mappedVersion: string) {
+  return axios.get<any>(`/${mappedVersion}/api/backend/available`);
 }
 
-export function getUserInfo() {
-  return axios.post<UserState>('/api/user/info');
+export function logout(k8sVersion: string) {
+  return axios.post<LoginRes>(`${k8sVersion}/api/user/logout`);
+}
+
+export function getUserInfo(k8sVersion: string) {
+  return axios.post<UserState>(`/${k8sVersion}/api/user/info`);
 }
 
 export function getMenuList() {

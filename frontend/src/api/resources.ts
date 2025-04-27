@@ -1,13 +1,13 @@
 import axios from 'axios';
 
-export function getResources() {
-  return axios.get('/api/resources/offline');
+export function getResources(k8sVersion: any) {
+  return axios.get(`/${k8sVersion}/api/resources/offline`);
 }
 
-export function downloadConfig(id: any) {
-  return axios.get<any>(`/api/config`, {
-    params: { id },
-  });
-}
+// export function downloadConfig(id: any, k8sVersion: any) {
+//   return axios.get<any>(`/${k8sVersion}/api/config`, {
+//     params: { id },
+//   });
+// }
 
 
