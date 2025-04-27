@@ -486,6 +486,7 @@ async function getK8sClusterTaskList(id) {
 //升级集群任务
 async function upgradeK8sClusterJob(newClusterInfo, targetIP = null) {
   let resultData
+  let skippedNodes = []; // 新增：用于收集被跳过的节点信息
   try {
     resultData = await getRedis(newClusterInfo.id)
   } catch (error) {
@@ -515,11 +516,6 @@ async function upgradeK8sClusterJob(newClusterInfo, targetIP = null) {
       if (targetIP && node.ip !== targetIP) {
         continue;
       }
-      // // Skip nodes with the same version
-      // if (node.k8sVersion === newClusterInfo.version) {
-      //   console.log(`Node ${node.hostName} already at version ${newClusterInfo.version}, skipping upgrade.`);
-      //   continue;
-      // }
       // 优化后的版本解析函数（支持 v前缀 和 预发布标识）
       const parseVersion = (v) => {
         // 移除v前缀并截取预发布标识前的部分
@@ -540,12 +536,28 @@ async function upgradeK8sClusterJob(newClusterInfo, targetIP = null) {
         current.minor === target.minor &&
         current.patch === target.patch) {
         console.log(`[跳过] ${node.hostName}: 版本无变化 (${node.k8sVersion})`);
+        const skipReason = `[跳过] ${node.hostName}: 版本无变化 (${node.k8sVersion})`;
+        skippedNodes.push({
+          hostName: node.hostName,
+          ip: node.ip,
+          reason: skipReason,
+          currentVersion: node.k8sVersion,
+          targetVersion: newClusterInfo.version
+        });
         continue;
       }
 
       // 2. 检查主版本是否相同
       if (current.major !== target.major) {
         console.log(`[禁止] ${node.hostName}: 跨主版本升级禁止 (${current.major}.x → ${target.major}.x)`);
+        const skipReason = `[禁止] ${node.hostName}: 跨主版本升级禁止 (${current.major}.x → ${target.major}.x)`;
+        skippedNodes.push({
+          hostName: node.hostName,
+          ip: node.ip,
+          reason: skipReason,
+          currentVersion: node.k8sVersion,
+          targetVersion: newClusterInfo.version
+        });
         continue;
       }
 
@@ -553,12 +565,28 @@ async function upgradeK8sClusterJob(newClusterInfo, targetIP = null) {
       if (current.minor > target.minor ||
         (current.minor === target.minor && current.patch > target.patch)) {
         console.log(`[禁止] ${node.hostName}: 降级操作禁止 (${node.k8sVersion} → ${newClusterInfo.version})`);
+        const skipReason = `[禁止] ${node.hostName}: 降级操作禁止 (${node.k8sVersion} → ${newClusterInfo.version})`;
+        skippedNodes.push({
+          hostName: node.hostName,
+          ip: node.ip,
+          reason: skipReason,
+          currentVersion: node.k8sVersion,
+          targetVersion: newClusterInfo.version
+        });
         continue;
       }
 
       // 4. 检查次版本差
       if (target.minor - current.minor > 1) {
         console.log(`[禁止] ${node.hostName}: 必须按顺序升级，请先升级到 ${current.major}.${current.minor + 1}.x`);
+        const skipReason = `[禁止] ${node.hostName}: 必须按顺序升级，请先升级到 ${current.major}.${current.minor + 1}.x`;
+        skippedNodes.push({
+          hostName: node.hostName,
+          ip: node.ip,
+          reason: skipReason,
+          currentVersion: node.k8sVersion,
+          targetVersion: newClusterInfo.version
+        });
         continue;
       }
 
@@ -603,7 +631,8 @@ async function upgradeK8sClusterJob(newClusterInfo, targetIP = null) {
   return {
     code: 20000,
     msg: '任务已成功添加到队列',
-    status: "ok"
+    status: "ok",
+    details: skippedNodes,
   };
 }
 
