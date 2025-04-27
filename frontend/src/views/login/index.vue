@@ -15,11 +15,9 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref, onMounted } from 'vue';
   import Footer from '@/components/footer/index.vue';
   import LoginForm from './components/login-form.vue';
   import login from '@/assets/images/login_left4.png';
-  import { getTest, getVersions } from '@/api/user';
   /*
   const fetchData = async () => {
     try {

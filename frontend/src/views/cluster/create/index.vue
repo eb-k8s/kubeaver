@@ -338,6 +338,21 @@
     const supportedOS = ref();
     const k8sCache = ref();
     const repoFiles =ref();
+
+    const getFirstK8sVersionFromStorage = (key = 'k8sVersionList'): string => {
+        const versionArrayStr = localStorage.getItem(key);
+        if (versionArrayStr) {
+            try {
+                const versionArray = JSON.parse(versionArrayStr);
+                if (Array.isArray(versionArray) && versionArray.length > 0) {
+                    return versionArray[0]; // 返回第一个版本
+                }
+            } catch (parseError) {
+                console.error('版本信息解析失败:', parseError);
+            }
+        }
+        return '';
+    };
     
     const hosts = computed(() => {
         return [
@@ -402,10 +417,10 @@
                 return;
             }
 
-            const selectedHostOS = selectedHost.os.split(' ')[0]; // 获取操作系统名称
+            // const selectedHostOS = selectedHost.os.split(' ')[0]; // 获取操作系统名称
             
-            // 获取所有工作节点的操作系统集合
-            const workerOSSet = new Set(cluster.workerHosts.map(host => host.os.split(' ')[0]));
+            // // 获取所有工作节点的操作系统集合
+            // const workerOSSet = new Set(cluster.workerHosts.map(host => host.os.split(' ')[0]));
             
             // 如果已经选择了工作节点，检查控制节点的操作系统是否一致
             // if (workerOSSet.size > 0 && !workerOSSet.has(selectedHostOS)) {
@@ -478,7 +493,8 @@
      const fetchClustersList = async () => {
         try {
             setLoading(true);
-            const result = await getClusterList();
+            const k8sVersion = getFirstK8sVersionFromStorage();
+            const result = await getClusterList(k8sVersion);
             clusterList.value = result.data;
         } catch (err) {
             console.log(err);
@@ -535,8 +551,8 @@
 
         try {
             setLoading(true);
-            console.log(data);
-            const result: any = await createCluster(data);
+            const k8sVersion = getFirstK8sVersionFromStorage();
+            const result: any = await createCluster(data,k8sVersion);
             if (result.status === 'ok') {
                 Message.success("集群创建成功！");
                 router.push('/cluster').then(() => {
@@ -557,7 +573,8 @@
     const fetchResourcesList = async () => {
         try {
             setLoading(true);
-            const result = await getResources();
+            const k8sVersion = getFirstK8sVersionFromStorage();
+            const result = await getResources(k8sVersion);
             resourceList.value = result.data;
             resourceList.value.forEach(item => {
                 if (item.name === 'k8s_cache') {
@@ -623,7 +640,8 @@
     const fetchHostList = async () => {
       try {
         setLoading(true);
-        const result = await getAvailableHostList();
+        const k8sVersion = getFirstK8sVersionFromStorage();
+        const result = await getAvailableHostList(k8sVersion);
         hostList.value = result.data;
       } catch (err) {
         console.log(err);
