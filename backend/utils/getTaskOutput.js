@@ -1,8 +1,10 @@
 const Redis = require('ioredis');
-const redis = new Redis({
-  port: 6379,
-  host: "127.0.0.1",
-});
+const redisConfig = {
+  host: process.env.REDIS_HOST || '127.0.0.1', // Docker环境用服务名，本地开发用localhost
+  port: process.env.REDIS_PORT || 6379,
+};
+
+const redis = new Redis(redisConfig);
 
 //查找具体的某个任务的哈希值,prefix 'k8s_cluster:test:tasks:' suffix  '123456789'  
 async function findHashKeys(prefix, suffix) {
