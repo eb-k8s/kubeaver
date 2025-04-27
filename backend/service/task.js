@@ -13,11 +13,12 @@ const { getRedis, getConfigFile, getNodeStatus } = require('../utils/getNodeStat
 const { offlinePackagesPath } = require('../utils/getOfflinePackage')
 //const k8s = require('@kubernetes/client-node');
 
-//redis一直处于连接
-const redis = new Redis({
-  port: 6379,
-  host: "127.0.0.1",
-});
+const redisConfig = {
+  host: process.env.REDIS_HOST || '127.0.0.1', // Docker环境用服务名，本地开发用localhost
+  port: process.env.REDIS_PORT || 6379,
+};
+
+const redis = new Redis(redisConfig);
 
 //ansible做任务之前删除同名hostname，路径/tmp/hostname
 function deleteTmpHostnameSync(hostname) {

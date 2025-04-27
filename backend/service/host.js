@@ -5,11 +5,12 @@ const { exec } = require('child_process');
 const execAsync = promisify(exec);
 const Redis = require('ioredis');
 
-// 连接到 Redis 服务器
-const redis = new Redis({
-  port: 6379,
-  host: "127.0.0.1",
-});
+const redisConfig = {
+  host: process.env.REDIS_HOST || '127.0.0.1', // Docker环境用服务名，本地开发用localhost
+  port: process.env.REDIS_PORT || 6379,
+};
+
+const redis = new Redis(redisConfig);
 
 // Redis key 的前缀
 const HOSTS_PREFIX = 'host:';

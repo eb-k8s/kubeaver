@@ -6,10 +6,12 @@ const yaml = require('js-yaml');
 const { exec } = require('child_process');
 const { getHostsYamlFile } = require('./getHostsYamlFile');
 
-const redis = new Redis({
-  port: 6379,
-  host: "127.0.0.1",
-});
+const redisConfig = {
+  host: process.env.REDIS_HOST || '127.0.0.1', // Docker环境用服务名，本地开发用localhost
+  port: process.env.REDIS_PORT || 6379,
+};
+
+const redis = new Redis(redisConfig);
 
 async function getRedis(id) {
   const clusterKey = `k8s_cluster:${id}:baseInfo`;
