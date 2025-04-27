@@ -384,7 +384,7 @@ async function processInitCluster(job) {
       '--extra-vars', job.data.playbook.configFile,
       '--extra-vars', `registry_host_ip=${hostIp}`,
       '--limit', job.data.playbook.hostName,
-      '-vvv'
+      '-vvvv'
     ], {
       cwd: job.data.playbook.workDir, // 设置工作目录
       env: { ...process.env, ANSIBLE_CALLBACKS_ENABLED: 'init_task_counter_callback,profile_tasks' },
@@ -702,7 +702,7 @@ async function processResetCluster(job) {
       '-e', `node=${job.data.playbook.hostName}`,
       // '--limit', job.data.playbook.hostName,
       '-e', 'reset_cluster=true',
-      '-vvv',
+      '-vvvv',
     ], {
       cwd: job.data.playbook.workDir,
       env: { ...process.env, ANSIBLE_CALLBACKS_ENABLED: 'reset_task_counter_callback,profile_tasks' },
