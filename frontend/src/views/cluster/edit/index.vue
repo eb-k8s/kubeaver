@@ -382,6 +382,21 @@
         system_master_cpu_reserved: '250m', 
     });
 
+    const getFirstK8sVersionFromStorage = (key = 'k8sVersionList'): string => {
+        const versionArrayStr = localStorage.getItem(key);
+        if (versionArrayStr) {
+            try {
+                const versionArray = JSON.parse(versionArrayStr);
+                if (Array.isArray(versionArray) && versionArray.length > 0) {
+                    return versionArray[0]; // 返回第一个版本
+                }
+            } catch (parseError) {
+                console.error('版本信息解析失败:', parseError);
+            }
+        }
+        return '';
+    };
+
     const hosts = computed(() => {
         const formatHost = (host: any, role: string) => ({
             ip: host.ip,
@@ -548,7 +563,8 @@
    const fetchResourcesList = async () => {
         try {
             setLoading(true);
-            const result = await getResources();
+            const k8sVersion = getFirstK8sVersionFromStorage();
+            const result = await getResources(k8sVersion);
             resourceList.value = result.data;
             resourceList.value.forEach(item => {
                 if (item.name === 'k8s_cache') {
@@ -605,7 +621,8 @@
     const fetchHostList = async () => {
       try {
         setLoading(true);
-        const result = await getAvailableHostList();
+        const k8sVersion = getFirstK8sVersionFromStorage();
+        const result = await getAvailableHostList(k8sVersion);
         hostList.value = result.data;
       } catch (err) {
         console.log(err);
@@ -651,7 +668,8 @@
     const fetchClustersList = async () => {
         try {
             setLoading(true);
-            const result = await getClusterList();
+            const k8sVersion = getFirstK8sVersionFromStorage();
+            const result = await getClusterList(k8sVersion);
             clusterList.value = result.data;
         } catch (err) {
             console.log(err);
@@ -664,7 +682,8 @@
     const fetchNodeList = async () => {
       try {
         setLoading(true);
-        const result = await getNodeList(id.value);
+        const k8sVersion = getFirstK8sVersionFromStorage();
+        const result = await getNodeList(id.value, k8sVersion);
         nodeList.value = result.data;
       } catch (err) {
         console.log(err);
@@ -717,8 +736,8 @@
        
         try{
             setLoading(true);
-            console.log(data);
-            const result: any = await editCluster(data);
+            const k8sVersion = getFirstK8sVersionFromStorage();
+            const result: any = await editCluster(data, k8sVersion);
             if(result.status === 'ok'){
                 Message.success("编辑成功！")
                 router.push('/cluster').then(() => {

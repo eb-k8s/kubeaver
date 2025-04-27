@@ -100,6 +100,21 @@ const onClickDetailTime = (record) => {
     });
 };
 
+const getFirstK8sVersionFromStorage = (key = 'k8sVersionList'): string => {
+    const versionArrayStr = localStorage.getItem(key);
+    if (versionArrayStr) {
+        try {
+            const versionArray = JSON.parse(versionArrayStr);
+            if (Array.isArray(versionArray) && versionArray.length > 0) {
+                return versionArray[0]; // 返回第一个版本
+            }
+        } catch (parseError) {
+            console.error('版本信息解析失败:', parseError);
+        }
+    }
+    return '';
+};
+
 const drawChart = (data) => {
     const nameTranslation = {
         "reset": "重置",
@@ -262,7 +277,8 @@ const handleTaskDetail = async (task: any) => {
 
         const taskName = taskNameMap[task.taskName] || task.taskName;
 
-        const result: any = await getTaskDetail(id.value, task.IP, task.timestamp, taskName);
+        const k8sVersion = getFirstK8sVersionFromStorage();
+        const result: any = await getTaskDetail(id.value, task.IP, task.timestamp, taskName, k8sVersion);
         const rawContent = result.data || '';
 
         // 匹配所有的 play
@@ -564,7 +580,8 @@ function calculateExecutionTime(processedOn, finishedOn) {
 const fetchTaskList = async () => {
     try {
         setLoading(true);
-        const result = await getTaskList(id.value);
+        const k8sVersion = getFirstK8sVersionFromStorage();
+        const result = await getTaskList(id.value, k8sVersion);
         taskList.value = result.data;
 
         const allTasks: any[] = [];

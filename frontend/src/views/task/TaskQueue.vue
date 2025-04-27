@@ -114,6 +114,21 @@
         openWebSocketModal(record);
     };
 
+    const getFirstK8sVersionFromStorage = (key = 'k8sVersionList'): string => {
+        const versionArrayStr = localStorage.getItem(key);
+        if (versionArrayStr) {
+            try {
+                const versionArray = JSON.parse(versionArrayStr);
+                if (Array.isArray(versionArray) && versionArray.length > 0) {
+                    return versionArray[0]; // 返回第一个版本
+                }
+            } catch (parseError) {
+                console.error('版本信息解析失败:', parseError);
+            }
+        }
+        return '';
+    };
+
     const calculatePercent = (record: any): number => {
         
         const current = Number(record.current_task)
@@ -141,7 +156,8 @@
                 id: id.value,
                 taskName,
             };
-            const result: any = await stopTasks(data);
+            const k8sVersion = getFirstK8sVersionFromStorage();
+            const result: any = await stopTasks(data, k8sVersion);
             if(result.status === 'ok'){
                 Message.success("任务已终止！");
                 connectWebSocket(id.value);
@@ -171,7 +187,8 @@
                 jobId: record.jobId,
                 taskName,
             };
-            const result: any = await removeWaitingTask(data);
+            const k8sVersion = getFirstK8sVersionFromStorage();
+            const result: any = await removeWaitingTask(data, k8sVersion);
             if(result.status === 'ok'){
                 Message.success("任务已删除！");
                 connectWebSocket(id.value);
@@ -201,7 +218,8 @@
                 jobId: record.jobId,
                 taskName,
             };
-            const result: any = await stopTask(data);
+            const k8sVersion = getFirstK8sVersionFromStorage();
+            const result: any = await stopTask(data, k8sVersion);
             if(result.status === 'ok'){
                 Message.success("任务已终止！");
                 connectWebSocket(id.value);
@@ -238,9 +256,9 @@
     const openWebSocketModal = async (task) => {
     webSocketVisible.value = true;
     // const socketUrl = `ws://10.1.35.91:8000/websocket/${id.value}/${task.ip}/${task.timestamp}`;
-    
+    const k8sVersion = getFirstK8sVersionFromStorage();
     const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-    const socketUrl = `${protocol}${window.location.host}/ws/websocket/${id.value}/${task.ip}/${task.timestamp}`;
+    const socketUrl = `${protocol}${window.location.host}/${k8sVersion}/ws/websocket/${id.value}/${task.ip}/${task.timestamp}`;
 
     socket1.value = createWebSocket(socketUrl, (event) => {
         if (webSocketContent.value) {
@@ -290,8 +308,9 @@
         // socket2.value = createWebSocket(`ws://10.1.35.91:8000/activeTasks/${id}`, (event) => {
         //    handleTaskListMessage(event.data);
         // });
+        const k8sVersion = getFirstK8sVersionFromStorage();
         const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-        socket2.value = createWebSocket(`${protocol}${window.location.host}/ws/activeTasks/${id}`, (event) => {
+        socket2.value = createWebSocket(`${protocol}${window.location.host}/${k8sVersion}/ws/activeTasks/${id}`, (event) => {
           handleTaskListMessage(event.data);
         });
     };

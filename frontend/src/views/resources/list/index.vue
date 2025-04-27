@@ -165,7 +165,23 @@
     const fetchResourcesList = async () => {
         try {
             setLoading(true);
-            const result: any = await getResources();
+            // 从 localStorage 获取版本数组并解析
+            const versionArrayStr = localStorage.getItem('k8sVersionList');
+            let k8sVersion = '';
+            
+            if (versionArrayStr) {
+                try {
+                    const versionArray = JSON.parse(versionArrayStr);
+                    if (Array.isArray(versionArray) && versionArray.length > 0) {
+                        k8sVersion = versionArray[0]; // 取第一个值作为版本号
+                    }
+                } catch (parseError) {
+                    console.error('版本信息解析失败:', parseError);
+                }
+            }
+
+            // const result: any = await getResources();
+            const result: any = await getResources(k8sVersion);
             result.data.forEach(item => {
                 if (item.name === 'k8s_cache') {
                     k8sCache.value = item
