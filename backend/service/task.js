@@ -13,11 +13,12 @@ const { getRedis, getConfigFile, getNodeStatus } = require('../utils/getNodeStat
 const { offlinePackagesPath } = require('../utils/getOfflinePackage')
 //const k8s = require('@kubernetes/client-node');
 
-//redis一直处于连接
-const redis = new Redis({
-  port: 6379,
-  host: "127.0.0.1",
-});
+const redisConfig = {
+  host: process.env.REDIS_HOST, 
+  port: process.env.REDIS_PORT,
+};
+
+const redis = new Redis(redisConfig);
 
 //ansible做任务之前删除同名hostname，路径/tmp/hostname
 function deleteTmpHostnameSync(hostname) {
@@ -486,14 +487,15 @@ async function getK8sClusterTaskList(id) {
 //升级集群任务
 async function upgradeK8sClusterJob(newClusterInfo, targetIP = null) {
   let resultData
+  let skippedNodes = []; // 新增：用于收集被跳过的节点信息
   try {
     resultData = await getRedis(newClusterInfo.id)
   } catch (error) {
     console.error('从 Redis 获取数据时发生错误:', error.message || error);
     return {
       code: 50000,
-      msg: '获取集群信息失败',
-      status: "error"
+      msg: error.message,
+      status: '获取集群信息失败'
     };
   }
   //生成相应的host.yaml文件
@@ -504,7 +506,7 @@ async function upgradeK8sClusterJob(newClusterInfo, targetIP = null) {
     return {
       code: 50000,
       msg: error.message,
-      status: "error"
+      status: "生成hosts.yaml文件错误"
     };
   }
 
@@ -515,11 +517,6 @@ async function upgradeK8sClusterJob(newClusterInfo, targetIP = null) {
       if (targetIP && node.ip !== targetIP) {
         continue;
       }
-      // // Skip nodes with the same version
-      // if (node.k8sVersion === newClusterInfo.version) {
-      //   console.log(`Node ${node.hostName} already at version ${newClusterInfo.version}, skipping upgrade.`);
-      //   continue;
-      // }
       // 优化后的版本解析函数（支持 v前缀 和 预发布标识）
       const parseVersion = (v) => {
         // 移除v前缀并截取预发布标识前的部分
@@ -540,12 +537,28 @@ async function upgradeK8sClusterJob(newClusterInfo, targetIP = null) {
         current.minor === target.minor &&
         current.patch === target.patch) {
         console.log(`[跳过] ${node.hostName}: 版本无变化 (${node.k8sVersion})`);
+        const skipReason = `[跳过] ${node.hostName}: 版本无变化 (${node.k8sVersion})`;
+        skippedNodes.push({
+          hostName: node.hostName,
+          ip: node.ip,
+          reason: skipReason,
+          currentVersion: node.k8sVersion,
+          targetVersion: newClusterInfo.version
+        });
         continue;
       }
 
       // 2. 检查主版本是否相同
       if (current.major !== target.major) {
         console.log(`[禁止] ${node.hostName}: 跨主版本升级禁止 (${current.major}.x → ${target.major}.x)`);
+        const skipReason = `[禁止] ${node.hostName}: 跨主版本升级禁止 (${current.major}.x → ${target.major}.x)`;
+        skippedNodes.push({
+          hostName: node.hostName,
+          ip: node.ip,
+          reason: skipReason,
+          currentVersion: node.k8sVersion,
+          targetVersion: newClusterInfo.version
+        });
         continue;
       }
 
@@ -553,12 +566,28 @@ async function upgradeK8sClusterJob(newClusterInfo, targetIP = null) {
       if (current.minor > target.minor ||
         (current.minor === target.minor && current.patch > target.patch)) {
         console.log(`[禁止] ${node.hostName}: 降级操作禁止 (${node.k8sVersion} → ${newClusterInfo.version})`);
+        const skipReason = `[禁止] ${node.hostName}: 降级操作禁止 (${node.k8sVersion} → ${newClusterInfo.version})`;
+        skippedNodes.push({
+          hostName: node.hostName,
+          ip: node.ip,
+          reason: skipReason,
+          currentVersion: node.k8sVersion,
+          targetVersion: newClusterInfo.version
+        });
         continue;
       }
 
       // 4. 检查次版本差
       if (target.minor - current.minor > 1) {
         console.log(`[禁止] ${node.hostName}: 必须按顺序升级，请先升级到 ${current.major}.${current.minor + 1}.x`);
+        const skipReason = `[禁止] ${node.hostName}: 必须按顺序升级，请先升级到 ${current.major}.${current.minor + 1}.x`;
+        skippedNodes.push({
+          hostName: node.hostName,
+          ip: node.ip,
+          reason: skipReason,
+          currentVersion: node.k8sVersion,
+          targetVersion: newClusterInfo.version
+        });
         continue;
       }
 
@@ -596,14 +625,15 @@ async function upgradeK8sClusterJob(newClusterInfo, targetIP = null) {
   } catch (error) {
     return {
       code: 50000,
-      msg: '添加升级任务失败',
-      status: "error"
+      msg: error.message,
+      status: '添加升级任务失败'
     };
   }
   return {
     code: 20000,
     msg: '任务已成功添加到队列',
-    status: "ok"
+    status: "ok",
+    details: skippedNodes,
   };
 }
 

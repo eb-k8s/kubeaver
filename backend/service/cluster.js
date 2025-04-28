@@ -6,10 +6,12 @@ const { getNodeStatus, getRedis } = require('../utils/getNodeStatus');
 const { createAnsibleQueue, getActiveJobs, getWaitingJobs, queues } = require('../utils/ansibleQueue');
 const { getNodeList } = require('./node')
 //redis一直处于连接
-const redis = new Redis({
-  port: 6379,
-  host: "127.0.0.1",
-});
+const redisConfig = {
+  host: process.env.REDIS_HOST, 
+  port: process.env.REDIS_PORT,
+};
+
+const redis = new Redis(redisConfig);
 
 async function initQueue() {
   const result = await getK8sCluster();
