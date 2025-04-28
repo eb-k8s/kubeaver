@@ -494,8 +494,8 @@ async function upgradeK8sClusterJob(newClusterInfo, targetIP = null) {
     console.error('从 Redis 获取数据时发生错误:', error.message || error);
     return {
       code: 50000,
-      msg: '获取集群信息失败',
-      status: "error"
+      msg: error.message,
+      status: '获取集群信息失败'
     };
   }
   //生成相应的host.yaml文件
@@ -506,7 +506,7 @@ async function upgradeK8sClusterJob(newClusterInfo, targetIP = null) {
     return {
       code: 50000,
       msg: error.message,
-      status: "error"
+      status: "生成hosts.yaml文件错误"
     };
   }
 
@@ -625,8 +625,8 @@ async function upgradeK8sClusterJob(newClusterInfo, targetIP = null) {
   } catch (error) {
     return {
       code: 50000,
-      msg: '添加升级任务失败',
-      status: "error"
+      msg: error.message,
+      status: '添加升级任务失败'
     };
   }
   return {

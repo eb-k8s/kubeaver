@@ -47,6 +47,11 @@ async function addHost(hostIP, hostPort, user, password) {
       status: "ok"
     };
   }
+  // 2. 确保本地 ~/.ssh 目录存在（解决 ssh-copy-id 的临时目录问题）
+  const localSSHDir = path.join(require('os').homedir(), '.ssh');
+  if (!fs.existsSync(localSSHDir)) {
+    fs.mkdirSync(localSSHDir, { mode: 0o700 }); // 权限设为 700
+  }
   const publicKeyPath = path.join(__dirname, '../ssh', 'id_rsa.pub');
   const sshCommand = `sshpass -p '${password}' ssh-copy-id -i ${publicKeyPath} -o StrictHostKeyChecking=no -p ${hostPort} ${user}@${hostIP}`;
   try {
