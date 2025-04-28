@@ -2,10 +2,11 @@ const { getK8sCluster } = require('../service/cluster');
 const { getNodeList } = require('../service/node');
 const Redis = require('ioredis');
 
-redisConfig = {
-  port: 6379,
-  host: "127.0.0.1",
+const redisConfig = {
+  host: process.env.REDIS_HOST, 
+  port: process.env.REDIS_PORT,
 };
+
 const redis = new Redis(redisConfig);
 
 function startScheduler() {
