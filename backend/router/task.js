@@ -139,7 +139,7 @@ router.delete('/resetK8sClusterJob', async (ctx) => {
 // })
 //集群升级
 router.put('/upgradeK8sClusterJob', async (ctx) => {
-  //curl -X PUT -H "Content-Type: application/json" http://10.1.70.162:8000/api/upgradeK8sClusterJob -d '{"id": "p1smtk0h","clusterName": "test","version": "v1.29.7", "ip": "10.1.69.236"}'
+  //curl -X PUT -H "Content-Type: application/json" http://10.1.70.162:8000/api/upgradeK8sClusterJob -d '{"id": "p1smtk0h","clusterName": "test","version": "v1.29.7","networkPlugin":"","ip": "10.1.69.236"}'
   const newClusterInfo = ctx.request.body;
   const targetIP = newClusterInfo.ip || null; // 获取 IP 参数，如果没有则为 null
 

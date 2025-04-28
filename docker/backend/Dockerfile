@@ -93,6 +93,9 @@ RUN source ~/.bashrc && pyenv rehash && pyenv global kubespray-${KUBESPRAY_VERSI
 
 # 设置回工作目录
 WORKDIR /root
+# 创建 .ssh 目录并设置权限（解决 ssh-copy-id 临时目录问题）
+RUN mkdir -p /root/.ssh && \
+    chmod 700 /root/.ssh
 
 RUN cp /root/backend/ansible/kubespray/ansible.cfg /root/.ansible.cfg
 RUN chmod 600 /root/backend/ssh/id_rsa
