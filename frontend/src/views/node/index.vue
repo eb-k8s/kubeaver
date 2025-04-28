@@ -716,7 +716,7 @@
             })(),
             lastJobStatus: (() => {
                 const statusMap = {
-                    worked: '已完成',
+                    worked: '成功',
                     failed: '失败',
                 };
                 return statusMap[node.lastJobStatus] || '暂无状态';
