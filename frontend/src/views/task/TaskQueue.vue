@@ -14,21 +14,6 @@
                         </div>
                         <a-table :data="task.tasks" :columns="columns" :loading="loading">
                             <template v-slot:progress="{ record }">
-                                <!-- <a-progress 
-                                    type="circle"
-                                    :percent="record.task_counts > 0 ? Number((Number(record.current_task) / Number(record.task_counts)).toFixed(2)) : 0" 
-                                /> -->
-                                <!-- <a-progress
-                                    type="circle"
-                                    :percent="
-                                        record.task_counts > 0
-                                        ? (record.status === '活跃中' &&
-                                            Number(((Number(record.current_task) / Number(record.task_counts)) * 100).toFixed(2)) === 100
-                                            ? 99
-                                            : Number(((Number(record.current_task) / Number(record.task_counts)) * 100).toFixed(2)))
-                                        : 0
-                                    "
-                                /> -->
                                 <template v-if="record.task_counts > 0">
                                     <a-progress
                                         type="circle"

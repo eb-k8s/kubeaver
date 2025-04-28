@@ -579,11 +579,9 @@
             resourceList.value.forEach(item => {
                 if (item.name === 'k8s_cache') {
                     k8sCache.value = item;
-                }
-                 else if (item.name === 'network_plugins') {
+                }else if (item.name === 'network_plugins') {
                     networkPlugins.value = item
-                }
-                 else if (item.name === 'repo_files') {
+                }else if (item.name === 'repo_files') {
                     repoFiles.value = item;
                 } 
             })
@@ -617,17 +615,77 @@
         }
     };
 
+    // const formattedPlugins = computed(() => {
+    //     if (!networkPlugins.value || !networkPlugins.value.children) return [];
+
+    //     return networkPlugins.value.children.flatMap(plugin => {
+    //         // 遍历所有版本
+    //         return (plugin.children || []).map(versionNode => {
+    //             const imagesNode = versionNode.children?.find(child => child.name === 'images');
+
+    //             return {
+    //                 name: plugin.name,           
+    //                 version: versionNode?.name,       
+    //                 images: imagesNode?.children || [],
+    //                 files: versionNode.children
+    //                     ?.filter(child => child.name !== 'images' && child.type === 'file') || []
+    //             };
+    //         });
+    //     });
+    // });
+
     const formattedPlugins = computed(() => {
         if (!networkPlugins.value || !networkPlugins.value.children) return [];
 
+        // 获取当前选择的 Kubernetes 版本
+        const k8sVersion = cluster.version;
+
+        // 解析版本号为数组 [major, minor, patch]
+        const parseVersion = (version: string) => {
+            const match = version.match(/^v?(\d+)\.(\d+)\.(\d+)/);
+            return match ? [parseInt(match[1]), parseInt(match[2]), parseInt(match[3])] : null;
+        };
+
+        const k8sVersionParsed = parseVersion(k8sVersion);
+
         return networkPlugins.value.children.flatMap(plugin => {
-            // 遍历所有版本
+            // 仅处理 Calico 插件
+            if (plugin.name.toLowerCase() === 'calico') {
+                return (plugin.children || []).filter(versionNode => {
+                    const calicoVersionParsed = parseVersion(versionNode.name); // 解析 Calico 版本
+
+                    if (!k8sVersionParsed || !calicoVersionParsed) return false;
+
+                    const [k8sMajor, k8sMinor] = k8sVersionParsed;
+                    const [, calicoMinor] = calicoVersionParsed;
+
+                    // 根据 Kubernetes 版本范围过滤 Calico 版本
+                    if (k8sMajor === 1 && k8sMinor >= 25 && k8sMinor <= 27) {
+                        return calicoMinor <= 25; // 1.25-1.27 的 k8s 只能用 3.25 及以下的 Calico
+                    } else if (k8sMajor === 1 && k8sMinor >= 28 && k8sMinor <= 30) {
+                        return calicoMinor >= 26; // 1.28-1.30 的 k8s 只能用 3.26 及以上的 Calico
+                    }
+                    return false; // 其他情况不显示
+                }).map(versionNode => {
+                    const imagesNode = versionNode.children?.find(child => child.name === 'images');
+
+                    return {
+                        name: plugin.name,
+                        version: versionNode?.name,
+                        images: imagesNode?.children || [],
+                        files: versionNode.children
+                            ?.filter(child => child.name !== 'images' && child.type === 'file') || []
+                    };
+                });
+            }
+
+            // 对于非 Calico 插件，直接返回所有版本
             return (plugin.children || []).map(versionNode => {
                 const imagesNode = versionNode.children?.find(child => child.name === 'images');
 
                 return {
-                    name: plugin.name,           
-                    version: versionNode?.name,       
+                    name: plugin.name,
+                    version: versionNode?.name,
                     images: imagesNode?.children || [],
                     files: versionNode.children
                         ?.filter(child => child.name !== 'images' && child.type === 'file') || []
@@ -635,7 +693,20 @@
             });
         });
     });
-   
+
+    // 监听 cluster.version 的变化
+    watch(
+        () => cluster.version,
+        (newVersion) => {
+            console.log('Kubernetes 版本切换为:', newVersion);
+            if (formattedPlugins.value.length) {
+            // 更新默认网络插件为第一个可用的插件
+            cluster.networkPlugin = `${formattedPlugins.value[0].name} - ${formattedPlugins.value[0].version}`;
+            } else {
+            cluster.networkPlugin = ''; // 如果没有可用插件，清空选择
+            }
+        }
+    );
     //获取主机列表
     const fetchHostList = async () => {
       try {
