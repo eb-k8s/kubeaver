@@ -14,21 +14,6 @@
                         </div>
                         <a-table :data="task.tasks" :columns="columns" :loading="loading">
                             <template v-slot:progress="{ record }">
-                                <!-- <a-progress 
-                                    type="circle"
-                                    :percent="record.task_counts > 0 ? Number((Number(record.current_task) / Number(record.task_counts)).toFixed(2)) : 0" 
-                                /> -->
-                                <!-- <a-progress
-                                    type="circle"
-                                    :percent="
-                                        record.task_counts > 0
-                                        ? (record.status === '活跃中' &&
-                                            Number(((Number(record.current_task) / Number(record.task_counts)) * 100).toFixed(2)) === 100
-                                            ? 99
-                                            : Number(((Number(record.current_task) / Number(record.task_counts)) * 100).toFixed(2)))
-                                        : 0
-                                    "
-                                /> -->
                                 <template v-if="record.task_counts > 0">
                                     <a-progress
                                         type="circle"
@@ -101,6 +86,7 @@
     const { loading, setLoading } = useLoading();
     const taskList = ref<any>();
     const webSocketVisible = ref(false);
+    const version = ref();
     const webSocketContent = ref<HTMLElement | null>(null);
     const defaultActiveKey = ref();
     const socket1 = ref(null);
@@ -108,6 +94,7 @@
     const modalWidth = ref(window.innerWidth * 0.6);
     const modalHeight = ref(window.innerHeight * 1); 
 
+    version.value = route.query.version;
 
     const onClickDetail = (record: any) => {
         webSocketVisible.value = true; 
@@ -128,6 +115,28 @@
         }
         return '';
     };
+
+    const extractMajorMinor = (version: string)=> {
+        const match = version.match(/(v?\d+\.\d+)/);
+        return match ? match[1] : '';
+    }
+
+    const getMappedK8sVersion = (version: string)=> {
+        try {
+            const majorMinor = extractMajorMinor(version); 
+            if (!majorMinor) return '';
+
+            const versionMapStr = localStorage.getItem('k8sVersionMap');
+            if (!versionMapStr) return '';
+            
+            const versionMap: Record<string, string> = JSON.parse(versionMapStr);
+            
+            return versionMap[majorMinor] || '';
+        } catch (err) {
+            console.error('解析版本映射失败:', err);
+            return '';
+        }
+    }
 
     const calculatePercent = (record: any): number => {
         
@@ -156,7 +165,8 @@
                 id: id.value,
                 taskName,
             };
-            const k8sVersion = getFirstK8sVersionFromStorage();
+            // const k8sVersion = getFirstK8sVersionFromStorage();
+            const k8sVersion = getMappedK8sVersion(version.value);
             const result: any = await stopTasks(data, k8sVersion);
             if(result.status === 'ok'){
                 Message.success("任务已终止！");
@@ -187,7 +197,8 @@
                 jobId: record.jobId,
                 taskName,
             };
-            const k8sVersion = getFirstK8sVersionFromStorage();
+            // const k8sVersion = getFirstK8sVersionFromStorage();
+            const k8sVersion = getMappedK8sVersion(version.value);
             const result: any = await removeWaitingTask(data, k8sVersion);
             if(result.status === 'ok'){
                 Message.success("任务已删除！");
@@ -218,7 +229,8 @@
                 jobId: record.jobId,
                 taskName,
             };
-            const k8sVersion = getFirstK8sVersionFromStorage();
+            // const k8sVersion = getFirstK8sVersionFromStorage();
+            const k8sVersion = getMappedK8sVersion(version.value);
             const result: any = await stopTask(data, k8sVersion);
             if(result.status === 'ok'){
                 Message.success("任务已终止！");

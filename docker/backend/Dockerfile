@@ -77,14 +77,6 @@ COPY --from=builder /usr/local /usr/local
 ENV PATH=${PATH}:/root/.pyenv/bin:/root/.pyenv/shims
 
 ENV PATH=$PATH:/root/backend/bin
-# 修改默认的 Redis 配置以使用新的数据存储路径
-# 创建 Redis 数据存储目录
-RUN yum -y install redis && \
-    yum -y install procps-ng
-ENV REDIS_DATA_DIR=/root/backend/data/redis
-RUN mkdir -p $REDIS_DATA_DIR && \
-    chown -R redis:redis $REDIS_DATA_DIR
-RUN sed -i "s|^dir .*|dir $REDIS_DATA_DIR|" /etc/redis/redis.conf
 
 # 设置node环境
 RUN echo 'export PATH="/usr/local/bin:$PATH"' >> ~/.bashrc 
@@ -101,11 +93,11 @@ RUN source ~/.bashrc && pyenv rehash && pyenv global kubespray-${KUBESPRAY_VERSI
 
 # 设置回工作目录
 WORKDIR /root
+# 创建 .ssh 目录并设置权限（解决 ssh-copy-id 临时目录问题）
+RUN mkdir -p /root/.ssh && \
+    chmod 700 /root/.ssh
 
 RUN cp /root/backend/ansible/kubespray/ansible.cfg /root/.ansible.cfg
 RUN chmod 600 /root/backend/ssh/id_rsa
-COPY start.sh /root/start.sh
 
-RUN chmod +x /root/start.sh
-
-CMD ["/root/start.sh"]
+CMD ["node", "/root/backend/app.js"]

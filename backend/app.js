@@ -31,6 +31,7 @@ app.use(router.routes()).use(router.allowedMethods());
 //     await next();
 //   }
 // });
+console.log(process.env.REDIS_HOST, process.env.REDIS_PORT);
 initOffline();
 //startFileWatcher();
 initQueue();

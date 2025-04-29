@@ -13,11 +13,12 @@ const { getRedis, getConfigFile, getNodeStatus } = require('../utils/getNodeStat
 const { offlinePackagesPath } = require('../utils/getOfflinePackage')
 //const k8s = require('@kubernetes/client-node');
 
-//redis一直处于连接
-const redis = new Redis({
-  port: 6379,
-  host: "127.0.0.1",
-});
+const redisConfig = {
+  host: process.env.REDIS_HOST, 
+  port: process.env.REDIS_PORT,
+};
+
+const redis = new Redis(redisConfig);
 
 //ansible做任务之前删除同名hostname，路径/tmp/hostname
 function deleteTmpHostnameSync(hostname) {
@@ -493,8 +494,8 @@ async function upgradeK8sClusterJob(newClusterInfo, targetIP = null) {
     console.error('从 Redis 获取数据时发生错误:', error.message || error);
     return {
       code: 50000,
-      msg: '获取集群信息失败',
-      status: "error"
+      msg: error.message,
+      status: '获取集群信息失败'
     };
   }
   //生成相应的host.yaml文件
@@ -505,7 +506,7 @@ async function upgradeK8sClusterJob(newClusterInfo, targetIP = null) {
     return {
       code: 50000,
       msg: error.message,
-      status: "error"
+      status: "生成hosts.yaml文件错误"
     };
   }
 
@@ -597,6 +598,8 @@ async function upgradeK8sClusterJob(newClusterInfo, targetIP = null) {
       let workDir = `${resultPackageData.kubesprayPath}/kubespray`
       let configFile = `@${resultPackageData.kubesprayPath}/config.yml`
       let offlineCacheDir = `${resultPackageData.offlinePackagePath}`
+      //新的网络插件处理
+      const [networkPlugin, networkVersion] = newClusterInfo.networkPlugin.split(' - ');
       //let localhostRepoPath = `${resultPackageData.offlinePackagePath}/repo_files`
       const playbook = {
         id: newClusterInfo.id,
@@ -612,8 +615,8 @@ async function upgradeK8sClusterJob(newClusterInfo, targetIP = null) {
         offlineCacheDir: offlineCacheDir,
         kubeVersion: newClusterInfo.version,
         imageArch: resultPackageData.imageArch,
-        networkPlugin: resultData.networkPlugin,
-        networkVersion: resultData.networkVersion,
+        networkPlugin: networkPlugin,
+        networkVersion: networkVersion,
         workDir: workDir,
         configFile: configFile,
       }
@@ -624,8 +627,8 @@ async function upgradeK8sClusterJob(newClusterInfo, targetIP = null) {
   } catch (error) {
     return {
       code: 50000,
-      msg: '添加升级任务失败',
-      status: "error"
+      msg: error.message,
+      status: '添加升级任务失败'
     };
   }
   return {
