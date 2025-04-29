@@ -172,11 +172,31 @@
                     </a-select>
                 </a-form-item>
             </a-form>
+            <a-form :model="cluster" style="margin-top: 20px;">
+                <a-form-item
+                    label="网络插件："
+                    field="formattedPlugins"
+                    :rules="[{ required: true, message: '请选择网络插件' }]"
+                    >
+                    <a-select
+                        v-model="cluster.networkPlugins"
+                        class="select-input"
+                        placeholder="请选择网络插件"
+                        style="width: 400px;"
+                    >
+                        <a-option
+                            v-for="plugin in formattedPlugins" :key="plugin.name + plugin.version"
+                        >
+                        {{`${plugin.name} - ${plugin.version}`}}
+                        </a-option>
+                    </a-select>
+                </a-form-item>
+            </a-form>
         </a-modal>
     </div>
 </template>
 <script lang="ts" setup>
-    import { ref, onMounted, reactive } from 'vue';
+    import { ref, onMounted, reactive, computed } from 'vue';
     import router from '@/router';
     import useLoading from '@/hooks/loading';
     import { getResources } from '@/api/resources';
@@ -201,10 +221,26 @@
     const id = ref();
     const k8sLogos = ref({});
     const k8sCache = ref();
+    const networkPlugins = ref();
+    const originalPlugin = ref();
     const cluster = reactive({
         version: '',
+        networkPlugins: ''
     });
     const name = ref();
+
+    // 比较版本号的工具函数
+    const compareVersions1 = (version1: string, version2: string) => {
+        const v1 = version1.replace('v', '').split('.').map(Number);
+        const v2 = version2.replace('v', '').split('.').map(Number);
+        for (let i = 0; i < Math.max(v1.length, v2.length); i++) {
+            const num1 = v1[i] || 0;
+            const num2 = v2[i] || 0;
+            if (num1 > num2) return 1;
+            if (num1 < num2) return -1;
+        }
+        return 0;
+    };
 
     const getFirstK8sVersionFromStorage = (key = 'k8sVersionList'): string => {
         const versionArrayStr = localStorage.getItem(key);
@@ -284,6 +320,8 @@
             result.data.forEach(item => {
                 if (item.name === 'k8s_cache') {
                     k8sCache.value = item
+                }else if (item.name === 'network_plugins') {
+                    networkPlugins.value = item
                 } 
             })
         } catch (err) {
@@ -292,6 +330,67 @@
             setLoading(false);
         }
     };
+
+    const formattedPlugins = computed(() => {
+        if (!networkPlugins.value || !networkPlugins.value.children) return [];
+
+        // 获取当前选择的 Kubernetes 版本
+        const k8sVersion = cluster.version;
+
+        // 获取当前集群的原有网络插件
+        if(!originalPlugin.value){
+            return;
+        }
+        const [originalType, originalVersion] = originalPlugin.value.split(' - ');
+        
+        // 解析版本号为数组 [major, minor, patch]
+        const parseVersion = (version: string) => {
+            const match = version.match(/^v?(\d+)\.(\d+)\.(\d+)/);
+            return match ? [parseInt(match[1]), parseInt(match[2]), parseInt(match[3])] : null;
+        };
+
+        const k8sVersionParsed = parseVersion(k8sVersion);
+
+        return networkPlugins.value.children.flatMap(plugin => {
+        // 仅保留与原有插件类型相同的插件
+        if (plugin.name.toLowerCase() === originalType.toLowerCase()) {
+            return (plugin.children || []).filter(versionNode => {
+                const pluginVersion = versionNode.name; // 示例: "v0.23.0"
+                const pluginVersionParsed = parseVersion(pluginVersion);
+
+                if (!pluginVersionParsed) return false;
+
+                // 如果是 calico 插件，额外根据 Kubernetes 版本范围过滤
+                if (plugin.name.toLowerCase() === 'calico' && k8sVersionParsed) {
+                    const [k8sMajor, k8sMinor] = k8sVersionParsed;
+                    const [calicoMajor, calicoMinor] = pluginVersionParsed;
+
+                    if (k8sMajor === 1 && k8sMinor >= 25 && k8sMinor <= 27) {
+                        return calicoMajor === 3 && calicoMinor <= 25; // 1.25-1.27 的 k8s 只能用 3.25 及以下的 calico
+                    } else if (k8sMajor === 1 && k8sMinor >= 28 && k8sMinor <= 30) {
+                        return calicoMajor === 3 && calicoMinor >= 26; // 1.28-1.30 的 k8s 只能用 3.26 及以上的 calico
+                    }
+                    return false; 
+                }
+
+                // 对于非 calico 插件，保留原有及比原有的高的
+                return compareVersions(pluginVersion, originalVersion) >= 0;
+            }).map(versionNode => {
+                const imagesNode = versionNode.children?.find(child => child.name === 'images');
+
+                return {
+                    name: plugin.name,
+                    version: versionNode?.name,
+                    images: imagesNode?.children || [],
+                    files: versionNode.children
+                        ?.filter(child => child.name !== 'images' && child.type === 'file') || []
+                };
+            });
+        }
+
+        return []; // 其他类型的插件不保留
+        });
+    });
 
     // 创建集群
     const handleCreateCluster = async () => {
@@ -302,14 +401,6 @@
     const handleRefresh = async () =>{
         fetchClusterList();
     }
-
-    // // 查看集群的详情
-    // const onClickView = (record: { clusterName: string; id: string; version: string; master1: string; upgradeVersion: string }) => {
-    //     router.push({
-    //         path: `/cluster/detail/${record.clusterName}`,
-    //         query: { id: record.id, clusterName: record.clusterName, version: record.version, master1: record.master1, upgradeVersion: cluster.version }
-    //     });
-    // };
 
     const onClickView = (record: { clusterName: string; id: string; version: string; master1: string; upgradeVersion?: string }) => {
         const query: any = {
@@ -359,6 +450,7 @@
         upgradeVisible.value = true;
         id.value = record.id;
         clusterName.value = record.clusterName;
+        originalPlugin.value = record.networkPlugin;
 
         const currentVersionParts = record.version.replace('v', '').split('.').map(Number);
 
@@ -382,8 +474,8 @@
                 )
             );
         });
+        cluster.networkPlugins = '';
     };
-
 
     // 处理升级时的离线包
     const hasHigherVersion = (record: any) => {
@@ -393,7 +485,7 @@
 
         return k8sCache.value.children.some((item: any) => {
             if (item?.name) {
-                return compareVersions(item.name, record.version) === 1;
+                return compareVersions1(item.name, record.version) === 1;
             }
             return false;
         });
@@ -407,6 +499,7 @@
             id : id.value,
             clusterName: clusterName.value,
             version: cluster.version,
+            networkPlugin: cluster.networkPlugins,
         }
         if(cluster.version === ''){
             Message.error("请选择集群版本");
