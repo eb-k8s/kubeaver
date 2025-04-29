@@ -544,7 +544,8 @@
                 id : id.value,
                 ip: nodeip.value
             };
-            const k8sVersion = getFirstK8sVersionFromStorage();
+            // const k8sVersion = getFirstK8sVersionFromStorage();
+            const k8sVersion = getMappedK8sVersion(version.value);
             const result: any = await deleteNode(data, k8sVersion);
             if(result.status === 'ok'){
                 Message.success("节点删除成功！");
@@ -603,7 +604,8 @@
                     ...(Array.isArray(cluster.workerHosts) ? cluster.workerHosts : [])
                 ]
             };
-            const k8sVersion = getFirstK8sVersionFromStorage();
+            // const k8sVersion = getFirstK8sVersionFromStorage();
+            const k8sVersion = getMappedK8sVersion(version.value);
             const result: any = await addNode(data, k8sVersion);
             if(result.status === 'ok'){
                 Message.success("节点添加成功！");
@@ -628,7 +630,8 @@
                 id : id.value,
                 ip: nodeip.value
             };
-            const k8sVersion = getFirstK8sVersionFromStorage();
+            // const k8sVersion = getFirstK8sVersionFromStorage();
+            const k8sVersion = getMappedK8sVersion(version.value);
             const result: any = await removeNode(data, k8sVersion);
             if(result.status === 'ok'){
                 Message.info("节点正在移除中，请稍后......");
@@ -716,7 +719,7 @@
             })(),
             lastJobStatus: (() => {
                 const statusMap = {
-                    worked: '已完成',
+                    worked: '成功',
                     failed: '失败',
                 };
                 return statusMap[node.lastJobStatus] || '暂无状态';
