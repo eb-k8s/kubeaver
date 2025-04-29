@@ -851,7 +851,15 @@ async function removeAllJobs(id, taskName) {
   // 终止所有该类型的任务
   let queueId = `${id}_${taskName}`;
   if (!queues[queueId]) {
-    throw new Error(`QueueID ${queueId} 不存在.`);
+    const clusterKey = `k8s_cluster:${id}:baseInfo`;
+    let clusterInfo
+    try {
+      clusterInfo = await redis.hgetall(clusterKey);
+    } catch (error) {
+      console.log(error)
+    }
+    await createAnsibleQueue(id, parseInt(clusterInfo.taskNum, 10));
+    console.log(`QueueID ${queueId} 不存在.`);
   }
   try {
     // 获取活跃的任务，终止

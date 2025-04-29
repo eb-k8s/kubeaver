@@ -598,6 +598,8 @@ async function upgradeK8sClusterJob(newClusterInfo, targetIP = null) {
       let workDir = `${resultPackageData.kubesprayPath}/kubespray`
       let configFile = `@${resultPackageData.kubesprayPath}/config.yml`
       let offlineCacheDir = `${resultPackageData.offlinePackagePath}`
+      //新的网络插件处理
+      const [networkPlugin, networkVersion] = newClusterInfo.networkPlugin.split(' - ');
       //let localhostRepoPath = `${resultPackageData.offlinePackagePath}/repo_files`
       const playbook = {
         id: newClusterInfo.id,
@@ -613,8 +615,8 @@ async function upgradeK8sClusterJob(newClusterInfo, targetIP = null) {
         offlineCacheDir: offlineCacheDir,
         kubeVersion: newClusterInfo.version,
         imageArch: resultPackageData.imageArch,
-        networkPlugin: resultData.networkPlugin,
-        networkVersion: resultData.networkVersion,
+        networkPlugin: networkPlugin,
+        networkVersion: networkVersion,
         workDir: workDir,
         configFile: configFile,
       }

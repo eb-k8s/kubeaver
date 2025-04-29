@@ -597,6 +597,25 @@
         }
     };
 
+
+    // const formattedPlugins = computed(() => {
+    //     if (!networkPlugins.value || !networkPlugins.value.children) return [];
+
+    //     return networkPlugins.value.children.flatMap(plugin => {
+    //         // 遍历所有版本
+    //         return (plugin.children || []).map(versionNode => {
+    //             const imagesNode = versionNode.children?.find(child => child.name === 'images');
+
+    //             return {
+    //                 name: plugin.name,           
+    //                 version: versionNode?.name,       
+    //                 images: imagesNode?.children || [],
+    //                 files: versionNode.children
+    //                     ?.filter(child => child.name !== 'images' && child.type === 'file') || []
+    //             };
+    //         });
+    //     });
+    // });
     const formattedPlugins = computed(() => {
         if (!networkPlugins.value || !networkPlugins.value.children) return [];
 
