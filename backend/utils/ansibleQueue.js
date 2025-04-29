@@ -6,7 +6,8 @@ const fs = require('fs');
 
 const { getHostsYamlFile } = require('./getHostsYamlFile');
 const { getRedis, getConfigFile, getNodeStatus } = require('./getNodeStatus');
-const { offlinePackagesPath } = require('./getOfflinePackage')
+const { offlinePackagesPath } = require('./getOfflinePackage');
+const { getDatabaseByK8sVersion } = require('./getDatabase');
 const { kubeadminDB } = require('./db')
 // Redis 配置
 const redisConfig = {
@@ -79,7 +80,14 @@ const runningProcesses = {};
 
 const queues = {};
 
-async function createAnsibleQueue(baseQueueId, concurrency) {
+async function createAnsibleQueue(baseQueueId, concurrency, k8sVersion) {
+  console.log(k8sVersion)
+  const dbNumber = await getDatabaseByK8sVersion(k8sVersion)
+  // 深拷贝全局配置并覆盖 db
+  const dynamicRedisConfig = {
+    ...redisConfig, // 展开原有属性
+    db: dbNumber,   // 覆盖 db
+  };
   const queueConfigs = [
     { name: 'initCluster', processFunction: processInitCluster, taskNum: 5 },
     { name: 'addNode', processFunction: processAddNode, taskNum: concurrency },
@@ -98,7 +106,7 @@ async function createAnsibleQueue(baseQueueId, concurrency) {
       delete queues[queueId]; // 删除旧的队列实例
     }
     const queue = new Bull(queueId, {
-      redis: redisConfig,
+      redis: dynamicRedisConfig,
       defaultJobOptions: {
         attempts: 1,
         removeOnComplete: false,
@@ -714,7 +722,7 @@ async function processResetCluster(job) {
       const output = data.toString();
       const taskInfoRegex = /{'current_task': (\d+), 'current_stage': '(\w+)', 'task_stage_counts': (\d+), 'current_task_time': ([\d.]+), 'task_stage_time': ([\d.]+), 'current_stage_task': (\d+)}/g;
       const resetRegex = /\[{'name': 'reset', 'time': [\d.]+}\]/g;
-      const { filteredOutput, resetData } = filterAndProcessOutput(output, taskInfoRegex, resetRegex, 31, job, redis, publishTaskOutput);
+      const { filteredOutput, resetData } = filterAndProcessOutput(output, taskInfoRegex, resetRegex, 65, job, redis, publishTaskOutput);
       redis.hget(nodeKey, 'stdout', (err, existingOutput) => {
         if (err) {
           console.error('Error retrieving existing output from Redis:', err);
@@ -763,14 +771,14 @@ async function processResetCluster(job) {
 async function addTaskToQueue(id, taskName, playbook) {
   const queueId = `${id}_${taskName}`;
   if (!queues[queueId]) {
-    const clusterKey = `k8s_cluster:${id}:baseInfo`;
-    let clusterInfo
-    try {
-      clusterInfo = await redis.hgetall(clusterKey);
-    } catch (error) {
-      console.log(error)
-    }
-    await createAnsibleQueue(id, parseInt(clusterInfo.taskNum, 10));
+    // const clusterKey = `k8s_cluster:${id}:baseInfo`;
+    // let clusterInfo
+    // try {
+    //   clusterInfo = await redis.hgetall(clusterKey);
+    // } catch (error) {
+    //   console.log(error)
+    // }
+    // await createAnsibleQueue(id, parseInt(clusterInfo.taskNum, 10));
     console.log(`QueueID ${queueId} 不存在.`);
     // throw new Error(`QueueID ${queueId} 不存在.`);
   }
