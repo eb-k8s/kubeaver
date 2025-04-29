@@ -1,0 +1,8 @@
+# 该配置文件用于标注bull分库
+database_mapping:
+  - min_version: "v1.25"
+    max_version: "v1.27"
+    database: "1"
+  - min_version: "v1.28"
+    max_version: "v1.30"
+    database: "2"

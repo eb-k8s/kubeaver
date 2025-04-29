@@ -103,6 +103,7 @@ router.get('/k8sClusterTask', async (ctx) => {
 
 //重置集群
 router.delete('/resetK8sClusterJob', async (ctx) => {
+  console.log('重置集群接口被调用');
   //curl -X DELETE "http://10.1.35.91:8000/resetK8sClusterJob?id=w72zopr3"
   try {
     const { id } = ctx.request.query;
