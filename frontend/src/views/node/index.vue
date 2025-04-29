@@ -544,8 +544,7 @@
                 id : id.value,
                 ip: nodeip.value
             };
-            // const k8sVersion = getFirstK8sVersionFromStorage();
-            const k8sVersion = getMappedK8sVersion(version.value);
+            const k8sVersion = getFirstK8sVersionFromStorage();
             const result: any = await deleteNode(data, k8sVersion);
             if(result.status === 'ok'){
                 Message.success("节点删除成功！");
@@ -604,8 +603,7 @@
                     ...(Array.isArray(cluster.workerHosts) ? cluster.workerHosts : [])
                 ]
             };
-            // const k8sVersion = getFirstK8sVersionFromStorage();
-            const k8sVersion = getMappedK8sVersion(version.value);
+            const k8sVersion = getFirstK8sVersionFromStorage();
             const result: any = await addNode(data, k8sVersion);
             if(result.status === 'ok'){
                 Message.success("节点添加成功！");
