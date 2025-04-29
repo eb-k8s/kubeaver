@@ -36,6 +36,13 @@ export default mergeConfig(
         //   ws: true,
         //   rewrite: (path) => path.replace(/^\/ws/, '/'),
         // },
+        '/v125/ws/': {
+          target: 'http://127.0.0.1:8000',
+          changeOrigin: true,
+          secure: false,
+          ws: true,
+          rewrite: (path) => path.replace(/^\/v125\/ws/, '/'),
+        },
         '/v128/ws/': {
           target: 'http://127.0.0.1:8000',
           changeOrigin: true,
