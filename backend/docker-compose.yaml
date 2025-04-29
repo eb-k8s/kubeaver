@@ -2,7 +2,7 @@
 #version: '3'
 #  
 #  # services 部分定义了要启动的服务
-services:
+services: 
   registry:
     image: registry:2
     container_name: registry_dev

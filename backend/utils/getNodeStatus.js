@@ -6,10 +6,12 @@ const yaml = require('js-yaml');
 const { exec } = require('child_process');
 const { getHostsYamlFile } = require('./getHostsYamlFile');
 
-const redis = new Redis({
-  port: 6379,
-  host: "127.0.0.1",
-});
+const redisConfig = {
+  host: process.env.REDIS_HOST, 
+  port: process.env.REDIS_PORT,
+};
+
+const redis = new Redis(redisConfig);
 
 async function getRedis(id) {
   const clusterKey = `k8s_cluster:${id}:baseInfo`;
@@ -93,7 +95,7 @@ async function getConfigFile(id, hostPath, masterIP) {
   try {
     await new Promise((resolve, reject) => {
       exec(ansibleCommand, (error, stdout, stderr) => {
-        console.log(stdout)
+        // console.log(stdout)
         if (error) {
           //console.log("config文件不存在")
           return reject(`执行命令时出错: ${error.message}`);
@@ -105,7 +107,7 @@ async function getConfigFile(id, hostPath, masterIP) {
       });
     });
   } catch (error) {
-    console.error('执行命令时出错:', error.message || '配置文件不存在');
+    //console.error('执行命令时出错:', error.message || '配置文件不存在');
     try {
       fs.rmSync(tmpDir, { recursive: true, force: true });
     } catch (cleanupError) {
@@ -143,7 +145,7 @@ async function getConfigFile(id, hostPath, masterIP) {
       //console.log('配置文件已成功存储到 Redis！');
     });
   } catch (error) {
-    console.error('读取配置文件时发生错误:', error.message || '配置文件不存在');
+    //console.error('读取配置文件时发生错误:', error.message || '配置文件不存在');
     return;
   }
 }
