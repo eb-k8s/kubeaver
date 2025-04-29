@@ -25,25 +25,7 @@ async function initQueue() {
         status: "error"
       };
     }
-    await createAnsibleQueue(baseQueueId, parseInt(item.taskNum, 10));
-    // 检查队列是否已创建
-    const taskNames = ["initCluster", "addNode", "resetCluster", "upgradeCluster", "resetNode"];
-    for (const taskName of taskNames) {
-      const queueId = `${baseQueueId}_${taskName}`;
-      if (!queues[queueId]) {
-        console.error(`队列 ${queueId} 未成功创建。`);
-        // Retry logic
-        let retries = 3;
-        while (retries > 0 && !queues[queueId]) {
-          console.log(`重试创建队列 ${queueId}，剩余尝试次数: ${retries}`);
-          await createAnsibleQueue(baseQueueId, parseInt(item.taskNum, 10));
-          retries--;
-        }
-        if (!queues[queueId]) {
-          console.error(`队列 ${queueId} 创建失败，已达到最大重试次数。`);
-        }
-      }
-    }
+    await createAnsibleQueue(baseQueueId, parseInt(item.taskNum, 10), item.version);
   }
 }
 
