@@ -84,7 +84,7 @@ async function getK8sCluster() {
         try {
           activeJobsData = await getActiveJobs(queueId);
         } catch (error) {
-          //console.error(`Error retrieving active jobs for queue ${queueId}:`, error);
+          console.error(`Error retrieving active jobs for queue ${queueId}:`, error);
           activeJobsData = [];
         }
 
@@ -174,7 +174,7 @@ async function createK8sCluster(clusterInfo) {
         return {
           code: 10001,
           status: "error",
-          message: "集群名称已经存在！"
+          msg: "集群名称已经存在！"
         };
       }
     }
@@ -222,7 +222,7 @@ async function createK8sCluster(clusterInfo) {
     return {
       code: 50000,
       status: error,
-      message: error.message
+      msg: error.message
     }
   }
 }
@@ -253,7 +253,7 @@ async function updateK8sCluster(clusterInfo) {
       return {
         code: 50000,
         status: "error",
-        message: "删除hosts失败。"
+        msg: "删除hosts失败。"
       };
     }
   }
@@ -270,7 +270,7 @@ async function updateK8sCluster(clusterInfo) {
         return {
           code: 10001,
           status: "error",
-          message: "集群名称已经存在，请重新修改集群名称。"
+          msg: "集群名称已经存在，请重新修改集群名称。"
         };
       }
     }
@@ -314,7 +314,7 @@ async function updateK8sCluster(clusterInfo) {
     return {
       code: 50000,
       status: error,
-      message: error.message
+      msg: error.message
     }
   }
 }
@@ -394,7 +394,7 @@ async function getK8sConfigFile(id) {
     console.error(`从 Redis 获取配置文件时出错: ${error.message}`);
     return {
       code: 50000,
-      message: error.message,
+      msg: error.message,
       status: error,
     };
   }

@@ -68,7 +68,7 @@ ARG KUBESPRAY_VERSION
 ENV KUBESPRAY_VERSION=${KUBESPRAY_VERSION}
 # 设置工作目录
 WORKDIR /root
-RUN yum -y install openssh-clients rsync iputils
+RUN yum -y install openssh-clients rsync iputils  procps-ng
 # 从构建阶段复制所需文件
 COPY --from=builder /root/ /root/
 #COPY --from=builder /root/.pyenv /root/.pyenv
