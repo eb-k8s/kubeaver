@@ -622,7 +622,7 @@ async function upgradeK8sClusterJob(newClusterInfo, targetIP = null) {
         workDir: workDir,
         configFile: configFile,
       }
-      await addTaskToQueue(newClusterInfo.id, 'upgradeCluster', playbook);
+      await addTaskToQueue(newClusterInfo.id, 'upgradeCluster', playbook, newClusterInfo.version);
       //}
 
     }
