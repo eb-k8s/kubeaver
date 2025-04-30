@@ -84,7 +84,7 @@ async function getK8sCluster() {
         try {
           activeJobsData = await getActiveJobs(queueId);
         } catch (error) {
-          console.error(`Error retrieving active jobs for queue ${queueId}:`, error);
+          //console.error(`Error retrieving active jobs for queue ${queueId}:`, error);
           activeJobsData = [];
         }
 
@@ -195,7 +195,9 @@ async function createK8sCluster(clusterInfo) {
       'updateTime', createTime,
       'master1', clusterInfo.hosts[0].hostName,
     );
-    initQueue(); //初始化操作同步进行
+    //initQueue(); //初始化操作同步进行
+    //在不同库创建相应的队列
+    await createAnsibleQueue(clusterKey, parseInt(clusterInfo.taskNum, 10), clusterInfo.version);
     //目前先增加主机数据
     for (const newNode of clusterInfo.hosts) {
       const hostsNodeKey = `k8s_cluster:${clusterKey}:hosts:${newNode.ip}`;
@@ -285,7 +287,8 @@ async function updateK8sCluster(clusterInfo) {
       'updateTime', updateTime,
       'master1', clusterInfo.hosts[0].hostName,
     );
-    initQueue();
+    //initQueue();
+    await createAnsibleQueue(clusterKey, parseInt(clusterInfo.taskNum, 10), clusterInfo.version);
     //目前先增加主机数据
     for (const newNode of clusterInfo.hosts) {
       const hostsNodeKey = `k8s_cluster:${clusterInfo.id}:hosts:${newNode.ip}`;
