@@ -94,7 +94,10 @@
                             </a-button>
                         </template>
                         <template v-else-if="record.role === 'node'">
-                            <a-button v-if="record.status === 'Unknown' && record.activeJobType === '暂无任务' && isMasterNotReadyAndDeploying" type="text" size="small" @click="onClickJoinNode(record)">
+                            <!-- <a-button v-if="record.status === 'Unknown' && record.activeJobType === '暂无任务' && isMasterNotReadyAndDeploying" type="text" size="small" @click="onClickJoinNode(record)">
+                                加入
+                            </a-button> -->
+                            <a-button v-if="record.status === 'Unknown' && record.activeJobType === '暂无任务' && isMasterRunning" type="text" size="small" @click="onClickJoinNode(record)">
                                 加入
                             </a-button>
                             <a-button v-if="record.status === 'Unknown' && record.activeJobType === '暂无任务'" type="text" size="small" @click="onClickDelete(record)">
@@ -243,6 +246,10 @@
     master1.value = route.query.master1;
     upgradeVersion.value = route.query.upgradeVersion;
 
+    const isMasterRunning = computed(() => {
+        return nodeList.value && nodeList.value.some(node => node.role === 'master' && node.activeStatus === '运行中');
+    });
+
     const getFirstK8sVersionFromStorage = (key = 'k8sVersionList'): string => {
         const versionArrayStr = localStorage.getItem(key);
         if (versionArrayStr) {
@@ -260,15 +267,24 @@
 
     const getMappedK8sVersion = (version: string)=> {
         try {
+            const majorMinor = extractMajorMinor(version); 
+            if (!majorMinor) return '';
+
             const versionMapStr = localStorage.getItem('k8sVersionMap');
             if (!versionMapStr) return '';
-
+            
             const versionMap: Record<string, string> = JSON.parse(versionMapStr);
-            return versionMap[version] || '';
+            
+            return versionMap[majorMinor] || '';
         } catch (err) {
             console.error('解析版本映射失败:', err);
             return '';
         }
+    }
+
+    const extractMajorMinor = (version: string)=> {
+        const match = version.match(/(v?\d+\.\d+)/);
+        return match ? match[1] : '';
     }
 
     const hosts = computed(() => {
@@ -361,6 +377,7 @@
                 hosts: [node.value],
             };
             const k8sVersion = getMappedK8sVersion(version.value);
+            console.log(k8sVersion);
             if(nodeRole.value === 'master'){
                 const result: any = await deployCluster(data, k8sVersion);
                 if(result.status === 'ok'){
@@ -490,7 +507,6 @@
         joinVisible.value = true;
         node.value = record;
         name.value = record.hostName;
-        // console.log(node.value);
     }
 
     const onClickJoinMaster = async (record: any) => {
@@ -544,8 +560,7 @@
                 id : id.value,
                 ip: nodeip.value
             };
-            // const k8sVersion = getFirstK8sVersionFromStorage();
-            const k8sVersion = getMappedK8sVersion(version.value);
+            const k8sVersion = getFirstK8sVersionFromStorage();
             const result: any = await deleteNode(data, k8sVersion);
             if(result.status === 'ok'){
                 Message.success("节点删除成功！");
@@ -604,8 +619,7 @@
                     ...(Array.isArray(cluster.workerHosts) ? cluster.workerHosts : [])
                 ]
             };
-            // const k8sVersion = getFirstK8sVersionFromStorage();
-            const k8sVersion = getMappedK8sVersion(version.value);
+            const k8sVersion = getFirstK8sVersionFromStorage();
             const result: any = await addNode(data, k8sVersion);
             if(result.status === 'ok'){
                 Message.success("节点添加成功！");

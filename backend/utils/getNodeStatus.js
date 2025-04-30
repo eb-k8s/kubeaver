@@ -160,7 +160,7 @@ async function getNodeStatus(id, hostName, hostPath, masterIP) {
       await getConfigFile(id, hostPath, masterIP);
       configContent = await redis.get(configHashKey);
       if (!configContent) {
-        console.error(`获取集群${id}配置文件失败`);
+        //console.error(`获取集群${id}配置文件失败`);
         //return "Unknown";
         return { status: "Unknown", version: "Unknown" };
       }
