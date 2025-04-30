@@ -768,22 +768,53 @@ async function processResetCluster(job) {
   });
 }
 
-async function addTaskToQueue(id, taskName, playbook, k8sVersion) {
+async function addTaskToQueue(id, taskName, playbook, oldK8sVersion, k8sVersion) {
   const queueId = `${id}_${taskName}`;
-  if (!queues[queueId] && k8sVersion) {
+  if (oldK8sVersion) {
+    console.log(`k8sVersion 发生变化，创建新的队列 ${queueId}`);
+    const dbNumber = await getDatabaseByK8sVersion(oldK8sVersion)
+    if (dbNumber) {
+      await redis.select(dbNumber);
+      console.log(`已切换到数据库 ${dbNumber}`);
+
+      // 2. 构造匹配模式（如 bull:123*:*）
+      const bullHashPattern = `bull:${id}*:*`;
+      
+      // 3. 扫描并删除所有匹配的 key
+      let cursor = '0';
+      do {
+        // 使用 SCAN 迭代查找所有匹配的 key
+        const reply = await redis.scan(
+          cursor,
+          'MATCH', bullHashPattern,
+          'COUNT', 100 // 每次扫描 100 个 key
+        );
+        cursor = reply[0]; // 新的游标位置
+        const keysToDelete = reply[1]; // 匹配到的 keys
+        
+        // 批量删除（如果找到 key）
+        if (keysToDelete.length > 0) {
+          await redis.del(...keysToDelete);
+          console.log(`已删除旧队列 keys: ${keysToDelete.join(', ')}`);
+        }
+      } while (cursor !== '0'); // 直到遍历完所有 key
+    }
+  }
+  if(k8sVersion){
+    await redis.select(0);
     const clusterKey = `k8s_cluster:${id}:baseInfo`;
     let clusterInfo;
-    
     try {
       clusterInfo = await redis.hgetall(clusterKey);
     } catch (error) {
       console.log(error);
     }
-    
+    console.log("需要在新库中创建QueueID")
     await createAnsibleQueue(id, parseInt(clusterInfo.taskNum, 10), k8sVersion);
     console.log(`QueueID ${queueId} 不存在，但已创建新队列（因为提供了k8sVersion）`);
-  } else if (!queues[queueId]) {
-    console.log(`QueueID ${queueId} 不存在且未提供k8sVersion，无法创建队列`);
+  }
+  if (!queues[queueId]) {
+    console.log(`QueueID ${queueId} 不存在,无法创建队列`);
     // throw new Error(`QueueID ${queueId} 不存在.`);
   }
   //updateQueueConcurrency(queueId, taskNum)
