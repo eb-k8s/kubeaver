@@ -768,18 +768,22 @@ async function processResetCluster(job) {
   });
 }
 
-async function addTaskToQueue(id, taskName, playbook) {
+async function addTaskToQueue(id, taskName, playbook, k8sVersion) {
   const queueId = `${id}_${taskName}`;
-  if (!queues[queueId]) {
-    // const clusterKey = `k8s_cluster:${id}:baseInfo`;
-    // let clusterInfo
-    // try {
-    //   clusterInfo = await redis.hgetall(clusterKey);
-    // } catch (error) {
-    //   console.log(error)
-    // }
-    // await createAnsibleQueue(id, parseInt(clusterInfo.taskNum, 10));
-    console.log(`QueueID ${queueId} 不存在.`);
+  if (!queues[queueId] && k8sVersion) {
+    const clusterKey = `k8s_cluster:${id}:baseInfo`;
+    let clusterInfo;
+    
+    try {
+      clusterInfo = await redis.hgetall(clusterKey);
+    } catch (error) {
+      console.log(error);
+    }
+    
+    await createAnsibleQueue(id, parseInt(clusterInfo.taskNum, 10), k8sVersion);
+    console.log(`QueueID ${queueId} 不存在，但已创建新队列（因为提供了k8sVersion）`);
+  } else if (!queues[queueId]) {
+    console.log(`QueueID ${queueId} 不存在且未提供k8sVersion，无法创建队列`);
     // throw new Error(`QueueID ${queueId} 不存在.`);
   }
   //updateQueueConcurrency(queueId, taskNum)
