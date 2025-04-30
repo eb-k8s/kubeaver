@@ -32,6 +32,8 @@
       {%- elif ansible_os_family == "Debian" -%}
       networking
       {%- endif %}
+    HOST_IP: "{{ lookup('env', 'HOST_IP') }}"
+    HOST_NAME: "{{ lookup('env', 'HOST_NAME') }}"
   pre_tasks:
     - name: Ensure hostname mapping exists in /etc/hosts
       lineinfile:
@@ -39,6 +41,19 @@
         regexp: '^127\.0\.0\.1\s+{{ inventory_hostname }}$'
         line: '127.0.0.1 {{ inventory_hostname }}'
         state: present
+    - name: Add host entry to /etc/hosts for UseDNS
+      lineinfile:
+        path: /etc/hosts
+        line: "{{ HOST_IP }} {{ HOST_NAME }}"
+        state: present
+      register: add_host_entry
+
+    - name: Remove the ansible_host file if the previous task changed something
+      file:
+        path: ~/.ssh/ansible-{{ ansible_host }}
+        state: absent
+      delegate_to: localhost
+      when: add_host_entry.changed
   environment: "{{ proxy_disable_env }}"
   roles:
     - { role: kubespray-defaults}
