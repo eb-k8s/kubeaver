@@ -353,6 +353,28 @@
         }
         return '';
     };
+
+    const getMappedK8sVersion = (version: string)=> {
+        try {
+            const majorMinor = extractMajorMinor(version); 
+            if (!majorMinor) return '';
+
+            const versionMapStr = localStorage.getItem('k8sVersionMap');
+            if (!versionMapStr) return '';
+            
+            const versionMap: Record<string, string> = JSON.parse(versionMapStr);
+            
+            return versionMap[majorMinor] || '';
+        } catch (err) {
+            console.error('解析版本映射失败:', err);
+            return '';
+        }
+    }
+
+    const extractMajorMinor = (version: string)=> {
+        const match = version.match(/(v?\d+\.\d+)/);
+        return match ? match[1] : '';
+    }
     
     const hosts = computed(() => {
         return [
@@ -551,7 +573,7 @@
 
         try {
             setLoading(true);
-            const k8sVersion = getFirstK8sVersionFromStorage();
+            const k8sVersion = getMappedK8sVersion(data.version);
             const result: any = await createCluster(data,k8sVersion);
             if (result.status === 'ok') {
                 Message.success("集群创建成功！");

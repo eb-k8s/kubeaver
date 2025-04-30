@@ -175,7 +175,7 @@
             <a-form :model="cluster" style="margin-top: 20px;">
                 <a-form-item
                     label="网络插件："
-                    field="formattedPlugins"
+                    field="networkPlugins"
                     :rules="[{ required: true, message: '请选择网络插件' }]"
                     >
                     <a-select
@@ -503,6 +503,10 @@
         }
         if(cluster.version === ''){
             Message.error("请选择集群版本");
+            return;
+        }
+        if (!cluster.networkPlugins) {
+            Message.error("请选择网络插件");
             return;
         }
         const k8sVersion = getMappedK8sVersion(data.version);

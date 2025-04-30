@@ -414,6 +414,28 @@
         ];
     });
 
+    const getMappedK8sVersion = (version: string)=> {
+        try {
+            const majorMinor = extractMajorMinor(version); 
+            if (!majorMinor) return '';
+
+            const versionMapStr = localStorage.getItem('k8sVersionMap');
+            if (!versionMapStr) return '';
+            
+            const versionMap: Record<string, string> = JSON.parse(versionMapStr);
+            
+            return versionMap[majorMinor] || '';
+        } catch (err) {
+            console.error('解析版本映射失败:', err);
+            return '';
+        }
+    }
+
+    const extractMajorMinor = (version: string)=> {
+        const match = version.match(/(v?\d+\.\d+)/);
+        return match ? match[1] : '';
+    }
+
     const filteredControlPlaneHosts = computed(() => {
         return hostList.value.filter((host) => {
             const osName = host.os.split(' ')[0]; 
@@ -597,25 +619,6 @@
         }
     };
 
-
-    // const formattedPlugins = computed(() => {
-    //     if (!networkPlugins.value || !networkPlugins.value.children) return [];
-
-    //     return networkPlugins.value.children.flatMap(plugin => {
-    //         // 遍历所有版本
-    //         return (plugin.children || []).map(versionNode => {
-    //             const imagesNode = versionNode.children?.find(child => child.name === 'images');
-
-    //             return {
-    //                 name: plugin.name,           
-    //                 version: versionNode?.name,       
-    //                 images: imagesNode?.children || [],
-    //                 files: versionNode.children
-    //                     ?.filter(child => child.name !== 'images' && child.type === 'file') || []
-    //             };
-    //         });
-    //     });
-    // });
     const formattedPlugins = computed(() => {
         if (!networkPlugins.value || !networkPlugins.value.children) return [];
 
@@ -809,7 +812,7 @@
        
         try{
             setLoading(true);
-            const k8sVersion = getFirstK8sVersionFromStorage();
+            const k8sVersion = getMappedK8sVersion(data.version);
             const result: any = await editCluster(data, k8sVersion);
             if(result.status === 'ok'){
                 Message.success("编辑成功！")
