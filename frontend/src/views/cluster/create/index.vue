@@ -61,7 +61,7 @@
                                         <a-option
                                             v-for="plugin in formattedPlugins" :key="plugin.name + plugin.version"
                                         >
-                                            {{`${plugin.name}-${plugin.version}`}}
+                                            {{`${plugin.name} - ${plugin.version}`}}
                                         </a-option>
                                     </a-select>
                                 </a-form-item>
