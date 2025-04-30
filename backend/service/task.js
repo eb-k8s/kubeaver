@@ -133,7 +133,7 @@ async function addK8sMasterJob(clusterInfo) {
           workDir: workDir,
           configFile: configFile,
         }
-        await addTaskToQueue(id, 'initCluster', playbook, node.ip);
+        await addTaskToQueue(id, 'initCluster', playbook);
       }
       if (node.role === "node") {
         let taskName = `addNode`
@@ -622,7 +622,7 @@ async function upgradeK8sClusterJob(newClusterInfo, targetIP = null) {
         workDir: workDir,
         configFile: configFile,
       }
-      await addTaskToQueue(newClusterInfo.id, 'upgradeCluster', playbook, newClusterInfo.version);
+      await addTaskToQueue(newClusterInfo.id, 'upgradeCluster', playbook, resultData.k8sVersion,newClusterInfo.version);
       //}
 
     }
