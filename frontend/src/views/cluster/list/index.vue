@@ -774,6 +774,11 @@
     //     slotName: 'activeTask',
     // },
     {
+        title: '任务状态',
+        dataIndex: 'taskProcess', 
+        slotName: 'taskProcess',
+    },
+    {
         title: '创建时间',
         dataIndex: 'createTime',
     },

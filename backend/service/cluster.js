@@ -3,7 +3,7 @@ const Redis = require('ioredis');
 const fs = require('fs');
 const path = require('path');
 const { getNodeStatus, getRedis } = require('../utils/getNodeStatus');
-const { createAnsibleQueue, getActiveJobs, getWaitingJobs, queues } = require('../utils/ansibleQueue');
+const { createAnsibleQueue, queues } = require('../utils/ansibleQueue');
 const { getNodeList } = require('./node')
 const { getDatabaseByK8sVersion } = require('../utils/getDatabase');
 //redis一直处于连接
@@ -291,7 +291,7 @@ async function updateK8sCluster(clusterInfo) {
       'master1', clusterInfo.hosts[0].hostName,
     );
     //initQueue();
-    await createAnsibleQueue(clusterKey, parseInt(clusterInfo.taskNum, 10), clusterInfo.version);
+    await createAnsibleQueue(clusterInfo.id, parseInt(clusterInfo.taskNum, 10), clusterInfo.version);
     //目前先增加主机数据
     for (const newNode of clusterInfo.hosts) {
       const hostsNodeKey = `k8s_cluster:${clusterInfo.id}:hosts:${newNode.ip}`;
