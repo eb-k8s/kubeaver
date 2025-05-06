@@ -93,11 +93,13 @@
     const socket2 = ref(null);
     const modalWidth = ref(window.innerWidth * 0.6);
     const modalHeight = ref(window.innerHeight * 1); 
+    const nodeVersion = ref();
 
     version.value = route.query.version;
 
     const onClickDetail = (record: any) => {
         webSocketVisible.value = true; 
+        nodeVersion.value = record.k8sVersion;
         openWebSocketModal(record);
     };
 
@@ -268,7 +270,7 @@
     const openWebSocketModal = async (task) => {
     webSocketVisible.value = true;
     // const socketUrl = `ws://10.1.35.91:8000/websocket/${id.value}/${task.ip}/${task.timestamp}`;
-    const k8sVersion = getFirstK8sVersionFromStorage();
+    const k8sVersion = getMappedK8sVersion(nodeVersion.value);
     const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
     const socketUrl = `${protocol}${window.location.host}/${k8sVersion}/ws/websocket/${id.value}/${task.ip}/${task.timestamp}`;
 
@@ -320,7 +322,7 @@
         // socket2.value = createWebSocket(`ws://10.1.35.91:8000/activeTasks/${id}`, (event) => {
         //    handleTaskListMessage(event.data);
         // });
-        const k8sVersion = getFirstK8sVersionFromStorage();
+        const k8sVersion = getMappedK8sVersion(version.value);
         const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
         socket2.value = createWebSocket(`${protocol}${window.location.host}/${k8sVersion}/ws/activeTasks/${id}`, (event) => {
           handleTaskListMessage(event.data);
