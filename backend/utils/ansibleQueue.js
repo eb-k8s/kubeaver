@@ -164,6 +164,7 @@ async function createAnsibleQueue(baseQueueId, concurrency, k8sVersion) {
           'updateTime', updateTime
         );
         await redis.hset(baseHashKey,
+          'taskProcess','Unknown',
           'status', result.status,
           'clusterId', clusterId,//用于sql数据库
           'updateTime', updateTime
@@ -212,6 +213,7 @@ async function createAnsibleQueue(baseQueueId, concurrency, k8sVersion) {
           const baseHashKey = `k8s_cluster:${job.data.playbook.id}:baseInfo`;
           //const clusterInfo = await redis.hgetall(baseHashKey);
           await redis.hset(baseHashKey,
+            'taskProcess','Unknown',
             'status', masterResult.status,//集群实际状态
             'updateTime', updateTime
           );
@@ -239,6 +241,7 @@ async function createAnsibleQueue(baseQueueId, concurrency, k8sVersion) {
           const baseHashKey = `k8s_cluster:${job.data.playbook.id}:baseInfo`;
           const masterStatusData = await getNodeStatus(job.data.playbook.id, job.data.playbook.hostName, job.data.playbook.hostsPath, job.data.playbook.ip);
           await redis.hset(baseHashKey,
+            'taskProcess','Unknown',
             'clusterName', job.data.playbook.clusterName,
             'version', job.data.playbook.version,
             'status', masterStatusData.status,
@@ -288,6 +291,7 @@ async function createAnsibleQueue(baseQueueId, concurrency, k8sVersion) {
         const k8sInfo = await getNodeStatus(job.data.playbook.id, job.data.playbook.hostName, job.data.playbook.hostsPath, job.data.playbook.ip);
         await redis.hset(baseHashKey,
           'status', k8sInfo.status,
+          'taskProcess','Unknown',
           'updateTime', updateTime
         )
         const nodeKey = `k8s_cluster:${job.data.playbook.id}:hosts:${job.data.playbook.ip}`;
@@ -419,6 +423,7 @@ async function processInitCluster(job) {
           'task', job.data.playbook.taskName,
           'ip', job.data.playbook.ip,
           'role', job.data.playbook.role,
+          'k8sVersion',job.data.playbook.kubeVersion,
           'hostName', job.data.playbook.hostName,
           'stdout', newOutput,
           'processedOn', job.processedOn,
@@ -508,7 +513,7 @@ async function processAddNode(job) {
           return;
         }
         let newOutput = existingOutput ? existingOutput + filteredOutput : filteredOutput;
-        redis.hset(nodeKey, 'jobKey', job.data.playbook.taskId, 'jobID', job.id, 'processedOn', job.processedOn, 'task', job.data.playbook.taskName, 'ip', job.data.playbook.ip, 'role', job.data.playbook.role, 'hostName', job.data.playbook.hostName, 'stdout', newOutput, 'status', 'working', 'createTime', createTime, 'statistics', resetData);
+        redis.hset(nodeKey, 'jobKey', job.data.playbook.taskId, 'jobID', job.id, 'processedOn', job.processedOn, 'task', job.data.playbook.taskName, 'ip', job.data.playbook.ip, 'role', job.data.playbook.role, 'hostName', job.data.playbook.hostName, 'k8sVersion',job.data.playbook.kubeVersion,'stdout', newOutput, 'status', 'working', 'createTime', createTime, 'statistics', resetData);
         // 发布更新到 Redis
         publishTaskOutput(nodeKey, newOutput);
       });
@@ -584,7 +589,7 @@ async function processUpgradeCluster(job) {
           return;
         }
         let newOutput = existingOutput ? existingOutput + filteredOutput : filteredOutput;
-        redis.hset(nodeKey, 'jobKey', job.data.playbook.taskId, 'jobID', job.id, 'processedOn', job.processedOn, 'task', job.data.playbook.taskName, 'ip', job.data.playbook.ip, 'role', job.data.playbook.role, 'stdout', newOutput, 'status', 'working', 'createTime', createTime, 'statistics', resetData);
+        redis.hset(nodeKey, 'jobKey', job.data.playbook.taskId, 'jobID', job.id, 'processedOn', job.processedOn, 'task', job.data.playbook.taskName, 'ip', job.data.playbook.ip, 'role', job.data.playbook.role, 'k8sVersion',job.data.playbook.kubeVersion,'stdout', newOutput, 'status', 'working', 'createTime', createTime, 'statistics', resetData);
         publishTaskOutput(nodeKey, newOutput);
       });
     });
@@ -658,7 +663,7 @@ async function processResetNode(job) {
           return;
         }
         let newOutput = existingOutput ? existingOutput + filteredOutput : filteredOutput;
-        redis.hset(nodeKey, 'jobKey', job.data.playbook.taskId, 'jobID', job.id, 'processedOn', job.processedOn, 'task', job.data.playbook.taskName, 'ip', job.data.playbook.ip, 'role', job.data.playbook.role, 'stdout', newOutput, 'status', 'working', 'createTime', createTime, 'statistics', resetData);
+        redis.hset(nodeKey, 'jobKey', job.data.playbook.taskId, 'jobID', job.id, 'processedOn', job.processedOn, 'task', job.data.playbook.taskName, 'ip', job.data.playbook.ip, 'role', job.data.playbook.role, 'k8sVersion',job.data.playbook.kubeVersion,'stdout', newOutput, 'status', 'working', 'createTime', createTime, 'statistics', resetData);
         // 发布更新到 Redis
         publishTaskOutput(nodeKey, newOutput);
       });
@@ -729,7 +734,7 @@ async function processResetCluster(job) {
           return;
         }
         let newOutput = existingOutput ? existingOutput + filteredOutput : filteredOutput;
-        redis.hset(nodeKey, 'jobKey', job.data.playbook.taskId, 'jobID', job.id, 'processedOn', job.processedOn, 'task', job.data.playbook.taskName, 'ip', job.data.playbook.ip, 'role', job.data.playbook.role, 'stdout', newOutput, 'status', 'working', 'createTime', createTime, 'statistics', resetData);
+        redis.hset(nodeKey, 'jobKey', job.data.playbook.taskId, 'jobID', job.id, 'processedOn', job.processedOn, 'task', job.data.playbook.taskName, 'ip', job.data.playbook.ip, 'role', job.data.playbook.role,'k8sVersion',job.data.playbook.kubeVersion, 'stdout', newOutput, 'status', 'working', 'createTime', createTime, 'statistics', resetData);
         publishTaskOutput(nodeKey, newOutput);
       });
     });
@@ -820,8 +825,11 @@ async function addTaskToQueue(id, taskName, playbook, oldK8sVersion, k8sVersion)
   //updateQueueConcurrency(queueId, taskNum)
   //console.log(queues[queueId])
   await queues[queueId].add(taskName, { playbook });
+  await redis.select(0);
   //更新redi数据中节点信息的当前执行的是什么任务
   await updateNodeStatus(id, playbook.ip, taskName)
+  //更新集群部署状态
+  await updateClusterStatus(id,taskName)
 }
 
 async function updateNodeStatus(id, ip, taskName) {
@@ -845,12 +853,39 @@ async function updateNodeStatus(id, ip, taskName) {
   }
   // 设置 activeJob 为当前任务名称
   const activeJobType = taskName;
-
   await redis.hset(nodeKey,
     'activeStatus', activeStatus,
     'activeJobType', activeJobType,
     'updateTime', Date.now()
   );
+}
+
+async function updateClusterStatus(id, taskName) {
+  const clusterKey = `k8s_cluster:${id}:baseInfo`;
+  let statusValue;
+
+  // 根据taskName确定要更新的状态值
+  switch (taskName) {
+    case 'initCluster':
+      statusValue = 'deploying';
+      break;
+    case 'resetCluster':
+      statusValue = 'resetting';
+      break;
+    case 'upgradeCluster':
+      statusValue = 'upgrading';
+      break;
+    default:
+      statusValue = 'unknown';
+  }
+  try {
+    // 更新哈希中的taskProcess字段
+    await redis.select(0);
+    await redis.hset(clusterKey, 'taskProcess', statusValue);
+  } catch (error) {
+    console.error(`Error updating cluster status for ${clusterKey}:`, error);
+    throw error;
+  }
 }
 
 //获取等待中的job
@@ -866,6 +901,7 @@ async function getWaitingJobs(queueId) {
       taskId: job.data.playbook.taskId,
       ip: job.data.playbook.ip,
       role: job.data.playbook.role,
+      k8sVersion:job.data.playbook.kubeVersion,
       hostName: job.data.playbook.hostName,
       timestamp: job.timestamp,
     }));
@@ -887,6 +923,7 @@ async function getActiveJobs(queueId) {
       taskName: job.data.playbook.taskName,
       taskId: job.data.playbook.taskId,
       ip: job.data.playbook.ip,
+      k8sVersion:job.data.playbook.kubeVersion,
       role: job.data.playbook.role,
       hostName: job.data.playbook.hostName,
       timestamp: job.timestamp,
