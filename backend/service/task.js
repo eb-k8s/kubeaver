@@ -490,6 +490,7 @@ async function getK8sClusterTaskList(id) {
 async function upgradeK8sClusterJob(newClusterInfo, targetIP = null) {
   let resultData
   let skippedNodes = []; // 新增：用于收集被跳过的节点信息
+
   try {
     resultData = await getRedis(newClusterInfo.id)
   } catch (error) {
@@ -544,6 +545,10 @@ async function upgradeK8sClusterJob(newClusterInfo, targetIP = null) {
   if(newClusterInfo.version){
     await redis.select(0);
     const clusterKey = `k8s_cluster:${newClusterInfo.id}:baseInfo`;
+    await redis.hset(clusterKey,
+      'upgradeK8sVersion', newClusterInfo.version,
+      'updateTime', Date.now()
+    );
     let clusterInfo;
     try {
       clusterInfo = await redis.hgetall(clusterKey);
