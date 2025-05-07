@@ -87,6 +87,7 @@
     const taskList = ref<any>();
     const webSocketVisible = ref(false);
     const version = ref();
+    const upgradeVersion = ref();
     const webSocketContent = ref<HTMLElement | null>(null);
     const defaultActiveKey = ref();
     const socket1 = ref(null);
@@ -96,6 +97,7 @@
     const nodeVersion = ref();
 
     version.value = route.query.version;
+    upgradeVersion.value = route.query.upgradeVersion;
 
     const onClickDetail = (record: any) => {
         webSocketVisible.value = true; 
@@ -270,7 +272,13 @@
     const openWebSocketModal = async (task) => {
     webSocketVisible.value = true;
     // const socketUrl = `ws://10.1.35.91:8000/websocket/${id.value}/${task.ip}/${task.timestamp}`;
-    const k8sVersion = getMappedK8sVersion(nodeVersion.value);
+    let k8sVersion: any;
+    if(upgradeVersion.value){
+      k8sVersion = getMappedK8sVersion(upgradeVersion.value);
+    }else{
+      k8sVersion = getMappedK8sVersion(nodeVersion.value);  
+    }
+    
     const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
     const socketUrl = `${protocol}${window.location.host}/${k8sVersion}/ws/websocket/${id.value}/${task.ip}/${task.timestamp}`;
 
@@ -322,7 +330,12 @@
         // socket2.value = createWebSocket(`ws://10.1.35.91:8000/activeTasks/${id}`, (event) => {
         //    handleTaskListMessage(event.data);
         // });
-        const k8sVersion = getMappedK8sVersion(version.value);
+        let k8sVersion: any;
+        if(upgradeVersion.value){
+          k8sVersion = getMappedK8sVersion(upgradeVersion.value);
+        }else{
+          k8sVersion = getMappedK8sVersion(version.value);  
+        }
         const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
         socket2.value = createWebSocket(`${protocol}${window.location.host}/${k8sVersion}/ws/activeTasks/${id}`, (event) => {
           handleTaskListMessage(event.data);

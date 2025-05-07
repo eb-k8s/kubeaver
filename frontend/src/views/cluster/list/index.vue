@@ -161,7 +161,7 @@
                                 重置
                             </a-button>
                             <a-button 
-                                v-if="record.status === 'Unknown' && record.taskProcess !== 'Unknown'" 
+                                v-if="record.status === 'Unknown' && record.taskProcess === 'Unknown'" 
                                 type="text" 
                                 size="small" 
                                 @click="onClickDeleteBeforeDeploy(record)">
@@ -768,10 +768,15 @@
         dataIndex: 'status',
         slotName: 'status',
     },
+    // {
+    //     title: '活跃任务',
+    //     dataIndex: 'activeTask', 
+    //     slotName: 'activeTask',
+    // },
     {
-        title: '活跃任务',
-        dataIndex: 'activeTask', 
-        slotName: 'activeTask',
+        title: '任务状态',
+        dataIndex: 'taskProcess', 
+        slotName: 'taskProcess',
     },
     {
         title: '创建时间',
