@@ -14,23 +14,6 @@ const redisConfig = {
 
 const redis = new Redis(redisConfig);
 
-async function initQueue() {
-  const result = await getK8sCluster();
-  for (const item of result.data) {
-    const baseQueueId = item.id;
-    if (!item.taskNum) {
-      console.error(`未设置并发数: ${baseQueueId}`);
-      return {
-        code: 40000,
-        msg: `未设置并发数: ${baseQueueId}`,
-        status: "error"
-      };
-    }
-    await createAnsibleQueue(baseQueueId, parseInt(item.taskNum, 10), item.version);
-  }
-}
-
-
 //查找具体的某个任务的哈希值,prefix 'k8s_cluster:test:tasks:' suffix  '123456789'  
 async function findHashKeys(prefix, suffix) {
   const nodekey = []; // 存储找到的哈希键
@@ -479,7 +462,6 @@ async function getK8sConfigFile(id) {
 
 
 module.exports = {
-  initQueue,
   getK8sCluster,
   createK8sCluster,
   updateK8sCluster,

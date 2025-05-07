@@ -639,7 +639,6 @@ async function processResetNode(job) {
       '-e', `node=${job.data.playbook.hostName}`,
       '-e', 'reset_cluster=false',
     ]
-    console.log("移除节点" + args)
     let workDir = job.data.playbook.workDir
     const ansibleProcess = spawn('ansible-playbook', args, {
       cwd: workDir, // 设置工作目录
@@ -775,7 +774,7 @@ async function addTaskToQueue(id, taskName, playbook, oldK8sVersion, k8sVersion)
   const queueId = `${id}_${taskName}`;
   if (!queues[queueId]) {
     console.log(`QueueID ${queueId} 不存在,无法创建队列`);
-    // throw new Error(`QueueID ${queueId} 不存在.`);
+    throw new Error(`QueueID ${queueId} 不存在.`);
   }
   //updateQueueConcurrency(queueId, taskNum)
   //console.log(queues[queueId])
@@ -895,17 +894,6 @@ async function getActiveJobs(queueId) {
 async function removeAllJobs(id, taskName) {
   // 终止所有该类型的任务
   let queueId = `${id}_${taskName}`;
-  if (!queues[queueId]) {
-    const clusterKey = `k8s_cluster:${id}:baseInfo`;
-    let clusterInfo
-    try {
-      clusterInfo = await redis.hgetall(clusterKey);
-    } catch (error) {
-      console.log(error)
-    }
-    await createAnsibleQueue(id, parseInt(clusterInfo.taskNum, 10));
-    console.log(`QueueID ${queueId} 不存在.`);
-  }
   try {
     // 获取活跃的任务，终止
     const activeJobs = await getActiveJobs(queueId);
@@ -950,7 +938,6 @@ async function stopAnsibleQueue(id, jobId, taskName) {
   const jobExists = activeJobs.some(job => job.jobId === jobId);
   if (jobExists) {
     const processKey = `${jobId}:${queueId}`;
-    console.log(runningProcesses[processKey].pid)
     const processToKill = runningProcesses[processKey];
     if (processToKill) {
       //processToKill.kill('SIGKILL'); // 发送终止信号
