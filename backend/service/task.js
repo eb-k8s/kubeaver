@@ -358,7 +358,6 @@ async function stopK8sClusterJob(parameter) {
 
 //重置集群任务
 async function resetK8sClusterJob(id) {
-  console.log("重置集群任务")
   let resultData
   let hostsPath
   try {
@@ -408,7 +407,6 @@ async function resetK8sClusterJob(id) {
       hostsPath: hostsPath,
       workDir: workDir,
     }
-    console.log("重置集群任务添加到队列----------------", node.hostName)
     await addTaskToQueue(id, 'resetCluster', playbook);
   }
   return {

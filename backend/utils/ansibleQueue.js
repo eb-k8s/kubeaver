@@ -199,6 +199,11 @@ async function createAnsibleQueue(baseQueueId, concurrency, k8sVersion) {
           'k8sVersion', 'Unknown',
           'updateTime', updateTime
         );
+        const baseHashKey = `k8s_cluster:${job.data.playbook.id}:baseInfo`;
+        await redis.hset(baseHashKey,
+          'taskProcess','Unknown',
+          'updateTime', updateTime
+        )
       }
       if (job.name == 'resetCluster') {
         //如果master reset成功之后集群部署状态NotDeploy
@@ -328,6 +333,11 @@ async function createAnsibleQueue(baseQueueId, concurrency, k8sVersion) {
           'status', k8sInfo.status,
           'updateTime', updateTime
         );
+        const baseHashKey = `k8s_cluster:${job.data.playbook.id}:baseInfo`;
+        await redis.hset(baseHashKey,
+          'taskProcess','Unknown',
+          'updateTime', updateTime
+        )
       }
       if (job.name == 'resetCluster') {
         const nodeKey = `k8s_cluster:${job.data.playbook.id}:hosts:${job.data.playbook.ip}`;
@@ -344,6 +354,7 @@ async function createAnsibleQueue(baseQueueId, concurrency, k8sVersion) {
         const baseHashKey = `k8s_cluster:${job.data.playbook.id}:baseInfo`;
         const status = await getNodeStatus(job.data.playbook.id, job.data.playbook.hostName, job.data.playbook.hostsPath, job.data.playbook.ip);
         await redis.hset(baseHashKey,
+          'taskProcess','Unknown',
           'status', status,
           'updateTime', updateTime
         );
