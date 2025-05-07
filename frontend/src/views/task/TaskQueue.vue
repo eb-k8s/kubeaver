@@ -320,10 +320,10 @@
     };
 
     const handleWebSocketCancel = () => {
-    webSocketVisible.value = false;
-    if (socket1.value) {
-        socket1.value.close();
-    }
+        webSocketVisible.value = false;
+        if (socket1.value) {
+            socket1.value.close();
+        }
     };
 
     const connectWebSocket = (id) => {
