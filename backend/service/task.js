@@ -5,6 +5,8 @@ const os = require('os');
 const path = require('path');
 const yaml = require('js-yaml');
 const Redis = require('ioredis');
+const { getDatabaseByK8sVersion } = require('../utils/getDatabase');
+const { createAnsibleQueue} = require('../utils/ansibleQueue');
 
 //const wss = new WebSocket.Server({ port: 8800 });
 const { addTaskToQueue, stopAnsibleQueue, getWaitingJobs, getActiveJobs, removeAllJobs, removeWaitingJobs } = require('../utils/ansibleQueue');
@@ -133,7 +135,7 @@ async function addK8sMasterJob(clusterInfo) {
           workDir: workDir,
           configFile: configFile,
         }
-        await addTaskToQueue(id, 'initCluster', playbook, node.ip);
+        await addTaskToQueue(id, 'initCluster', playbook);
       }
       if (node.role === "node") {
         let taskName = `addNode`
@@ -356,7 +358,6 @@ async function stopK8sClusterJob(parameter) {
 
 //重置集群任务
 async function resetK8sClusterJob(id) {
-  console.log("重置集群任务")
   let resultData
   let hostsPath
   try {
@@ -406,7 +407,6 @@ async function resetK8sClusterJob(id) {
       hostsPath: hostsPath,
       workDir: workDir,
     }
-    console.log("重置集群任务添加到队列----------------", node.hostName)
     await addTaskToQueue(id, 'resetCluster', playbook);
   }
   return {
@@ -490,6 +490,7 @@ async function getK8sClusterTaskList(id) {
 async function upgradeK8sClusterJob(newClusterInfo, targetIP = null) {
   let resultData
   let skippedNodes = []; // 新增：用于收集被跳过的节点信息
+
   try {
     resultData = await getRedis(newClusterInfo.id)
   } catch (error) {
@@ -511,7 +512,51 @@ async function upgradeK8sClusterJob(newClusterInfo, targetIP = null) {
       status: "生成hosts.yaml文件错误"
     };
   }
+  //resultData.k8sVersion,newClusterInfo.version
+  if (resultData.k8sVersion) {
+    const dbNumber = await getDatabaseByK8sVersion(resultData.k8sVersion)
+    if (dbNumber) {
+      await redis.select(dbNumber);
+      console.log(`已切换到数据库 ${dbNumber}`);
+      // 2. 构造匹配模式（如 bull:123*:*）
+      const bullHashPattern = `bull:${newClusterInfo.id}*:*`;
+      
+      // 3. 扫描并删除所有匹配的 key
+      let cursor = '0';
+      do {
+        // 使用 SCAN 迭代查找所有匹配的 key
+        const reply = await redis.scan(
+          cursor,
+          'MATCH', bullHashPattern,
+          'COUNT', 100 // 每次扫描 100 个 key
+        );
+        cursor = reply[0]; // 新的游标位置
+        const keysToDelete = reply[1]; // 匹配到的 keys
+        
+        // 批量删除（如果找到 key）
+        if (keysToDelete.length > 0) {
+          await redis.del(...keysToDelete);
+          console.log(`已删除旧队列 keys: ${keysToDelete.join(', ')}`);
+        }
+      } while (cursor !== '0'); // 直到遍历完所有 key
+    }
 
+  }
+  if(newClusterInfo.version){
+    await redis.select(0);
+    const clusterKey = `k8s_cluster:${newClusterInfo.id}:baseInfo`;
+    await redis.hset(clusterKey,
+      'upgradeK8sVersion', newClusterInfo.version,
+      'updateTime', Date.now()
+    );
+    let clusterInfo;
+    try {
+      clusterInfo = await redis.hgetall(clusterKey);
+    } catch (error) {
+      console.log(error);
+    }
+    await createAnsibleQueue(newClusterInfo.id, parseInt(clusterInfo.taskNum, 10), newClusterInfo.version);
+  }
   try {
     for (const node of resultData.hosts) {
       //if (node.role === "master") {
@@ -622,7 +667,7 @@ async function upgradeK8sClusterJob(newClusterInfo, targetIP = null) {
         workDir: workDir,
         configFile: configFile,
       }
-      await addTaskToQueue(newClusterInfo.id, 'upgradeCluster', playbook, newClusterInfo.version);
+      await addTaskToQueue(newClusterInfo.id, 'upgradeCluster', playbook);
       //}
 
     }

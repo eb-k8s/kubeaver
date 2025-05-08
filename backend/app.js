@@ -2,7 +2,7 @@ const Koa = require('koa');
 const websockify = require('koa-websocket');
 const bodyParser = require('koa-bodyparser');
 const app = websockify(new Koa());
-const { initQueue } = require('./service/cluster');
+const { initQueue } = require('./utils/initQueue');
 const { startScheduler } = require('./utils/scheduler');
 const { startFileWatcher, initOffline } = require('./utils/fileWatcher');
 const serve = require('koa-static');
@@ -31,7 +31,7 @@ app.use(router.routes()).use(router.allowedMethods());
 //     await next();
 //   }
 // });
-console.log(process.env.REDIS_HOST, process.env.REDIS_PORT);
+//console.log(process.env.REDIS_HOST, process.env.REDIS_PORT);
 initOffline();
 //startFileWatcher();
 initQueue();

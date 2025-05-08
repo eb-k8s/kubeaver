@@ -3,6 +3,8 @@ database_mapping:
   - min_version: "v1.25"
     max_version: "v1.27"
     database: "1"
+    kubespray_version: "v2.23.3"
   - min_version: "v1.28"
     max_version: "v1.30"
     database: "2"
+    kubespray_version: "v2.26.0"
