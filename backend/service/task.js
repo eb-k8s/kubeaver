@@ -547,6 +547,7 @@ async function upgradeK8sClusterJob(newClusterInfo, targetIP = null) {
     const clusterKey = `k8s_cluster:${newClusterInfo.id}:baseInfo`;
     await redis.hset(clusterKey,
       'upgradeK8sVersion', newClusterInfo.version,
+      'upgradeNetworkPlugin',newClusterInfo.networkPlugin,
       'updateTime', Date.now()
     );
     let clusterInfo;
