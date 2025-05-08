@@ -170,7 +170,7 @@ async function createAnsibleQueue(baseQueueId, concurrency, k8sVersion) {
         let allJobsEmpty = true; // 初始假设所有任务都为空
         
         for (const taskName of taskNames) {
-          const queueId = `${job.data.playbook.taskId}_${taskName}`;
+          const queueId = `${job.data.playbook.id}_${taskName}`;
           const activeJobs = await getActiveJobs(queueId); // 获取当前任务的活跃作业
           
           if (activeJobs.length > 0) { // 如果当前任务有活跃作业
@@ -212,7 +212,7 @@ async function createAnsibleQueue(baseQueueId, concurrency, k8sVersion) {
         let allJobsEmpty = true; // 初始假设所有任务都为空
         
         for (const taskName of taskNames) {
-          const queueId = `${job.data.playbook.taskId}_${taskName}`;
+          const queueId = `${job.data.playbook.id}_${taskName}`;
           const activeJobs = await getActiveJobs(queueId); 
           
           if (activeJobs.length > 0) { // 如果当前任务有活跃作业
