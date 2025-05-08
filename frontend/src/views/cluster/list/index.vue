@@ -76,7 +76,7 @@
                                 justify-items: start;
                             "
                         >
-                            <a-button 
+                            <!-- <a-button 
                                 v-if="isActiveTaskEmpty(record.activeTask) && record.status === 'Ready' && hasHigherVersion(record)" 
                                 type="text" 
                                 size="small" 
@@ -120,6 +120,55 @@
                             </a-button>
                             <a-button 
                                 v-if="record.status === 'Ready' && isActiveTaskEmpty(record.activeTask)" 
+                                type="text" 
+                                size="small" 
+                                @click="onClickDownloadConfig(record)">
+                                证书下载
+                            </a-button> -->
+                            <a-button 
+                                v-if="record.taskProcess === 'Unknown' && record.status === 'Ready' && hasHigherVersion(record)" 
+                                type="text" 
+                                size="small" 
+                                @click="onClickUpgrade(record)">
+                                升级
+                            </a-button>
+                            <a-button 
+                                v-if="record.status === 'Ready' && record.taskProcess === 'Unknown'" 
+                                type="text" 
+                                size="small" 
+                                @click="handleLink(record)">
+                                容器云
+                            </a-button>
+                            <a-button 
+                                v-if="record.taskProcess === 'Unknown' && record.status === 'Unknown'" 
+                                type="text" 
+                                size="small" 
+                                @click="onClickDeploy(record)">
+                                部署
+                            </a-button>
+                            <a-button 
+                                v-if="record.status === 'Unknown' && record.taskProcess === 'Unknown'" 
+                                type="text" 
+                                size="small" 
+                                @click="onClickEdit(record)">
+                                编辑
+                            </a-button>
+                            <a-button 
+                                v-if="record.taskProcess === 'Unknown' && record.status !== 'Unknown'" 
+                                type="text" 
+                                size="small" 
+                                @click="onClickReset(record)">
+                                重置
+                            </a-button>
+                            <a-button 
+                                v-if="record.status === 'Unknown' && record.taskProcess == 'Unknown'" 
+                                type="text" 
+                                size="small" 
+                                @click="onClickDeleteBeforeDeploy(record)">
+                                删除
+                            </a-button>
+                            <a-button 
+                                v-if="record.status === 'Ready' && record.taskProcess === 'Unknown'" 
                                 type="text" 
                                 size="small" 
                                 @click="onClickDownloadConfig(record)">
@@ -719,10 +768,15 @@
         dataIndex: 'status',
         slotName: 'status',
     },
+    // {
+    //     title: '活跃任务',
+    //     dataIndex: 'activeTask', 
+    //     slotName: 'activeTask',
+    // },
     {
-        title: '活跃任务',
-        dataIndex: 'activeTask', 
-        slotName: 'activeTask',
+        title: '任务状态',
+        dataIndex: 'taskProcess', 
+        slotName: 'taskProcess',
     },
     {
         title: '创建时间',
