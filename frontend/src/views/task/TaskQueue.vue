@@ -103,7 +103,6 @@
     })
 
     const onClickDetail = (record: any) => {
-        console.log(record)
         webSocketVisible.value = true; 
         nodeVersion.value = record.k8sVersion;
         openWebSocketModal(record);
