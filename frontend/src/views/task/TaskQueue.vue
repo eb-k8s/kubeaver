@@ -97,7 +97,6 @@
     const nodeVersion = ref();
 
     version.value = route.query.version;
-    upgradeVersion.value = route.query.upgradeVersion;
 
     const props = defineProps({
         upgradeK8sVersion: String,
@@ -282,7 +281,7 @@
     if(task.taskName === '升级集群' && props.upgradeK8sVersion){
       k8sVersion = getMappedK8sVersion(props.upgradeK8sVersion);
     }else{
-      k8sVersion = getMappedK8sVersion(nodeVersion.value);  
+      k8sVersion = getMappedK8sVersion(version.value);  
     }
     console.log(k8sVersion);
     const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
