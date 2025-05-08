@@ -161,7 +161,7 @@
                                 重置
                             </a-button>
                             <a-button 
-                                v-if="record.status === 'Unknown' && record.taskProcess == 'Unknown'" 
+                                v-if="record.status === 'Unknown' && record.taskProcess === 'Unknown'" 
                                 type="text" 
                                 size="small" 
                                 @click="onClickDeleteBeforeDeploy(record)">
