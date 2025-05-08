@@ -276,8 +276,6 @@
     };
 
     const openWebSocketModal = async (task) => {
-    console.log(task);
-        
     webSocketVisible.value = true;
     // const socketUrl = `ws://10.1.35.91:8000/websocket/${id.value}/${task.ip}/${task.timestamp}`;
     let k8sVersion: any;
