@@ -233,6 +233,10 @@
     const upgradeVersion = ref();
     const clusterName = ref();
     const master1 = ref();
+    const props = defineProps({
+        upgradeK8sVersion: String,
+        upgradeNetworkPlugin: String,
+    })
     const cluster = reactive({
         id: '',
         controlPlaneHosts: [] as Array<{ ip: string; hostName: string; role: string; os: string }>,
@@ -537,10 +541,12 @@
         const data = {
             id : id.value,
             clusterName: clusterName.value,
-            version: version.value,
+            version: props.upgradeK8sVersion,
             ip: record.ip,
+            networkPlugin: props.upgradeNetworkPlugin
         }
-        const k8sVersion = getMappedK8sVersion(upgradeVersion.value);
+        console.log(props.upgradeNetworkPlugin);
+        const k8sVersion = getMappedK8sVersion(props.upgradeK8sVersion);
         const result: any = await upgradeCluster(data, k8sVersion);
         if(result.status === 'ok'){
             Message.info("节点正在升级,请稍后......");

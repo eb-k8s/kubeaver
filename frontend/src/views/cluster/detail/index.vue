@@ -207,11 +207,11 @@
           </a-card>
           <a-card title="节点与任务">
             <a-tabs v-model:activeKey="activeTab" @change="handleTabChange">
-              <a-tab-pane key="1" title="节点管理">
-                <Node :key="tabKeys['1']" />
+              <a-tab-pane key="1" title="节点管理" >
+                <Node :key="tabKeys['1']" :upgradeK8sVersion = upgradeK8sVersion :upgradeNetworkPlugin = upgradeNetworkPlugin />
               </a-tab-pane>
-              <a-tab-pane key="2" title="任务队列">
-                <TaskQueue :key="tabKeys['2']" />
+              <a-tab-pane key="2" title="任务队列" >
+                <TaskQueue :key="tabKeys['2']" :upgradeK8sVersion = upgradeK8sVersion  />
               </a-tab-pane>
               <a-tab-pane key="3" title="任务历史">
                 <TaskHistory :key="tabKeys['3']" />
@@ -299,6 +299,8 @@
       version: '',
       taskNum: '0',
   });
+  const upgradeK8sVersion = ref();
+  const upgradeNetworkPlugin =ref();
   
   // 切换标签时更新对应子组件的 key
   const handleTabChange = (key: string) => {
@@ -323,13 +325,19 @@
 
     await fetchClustersList();
     if (Array.isArray(clusterList.value)) {
-        clusterList.value.forEach(item => {
+        clusterList.value.forEach(item => { 
             if (item.id === id.value) {
                 cluster.clusterName = item.clusterName || '';
                 cluster.offlinePackage = item.offlinePackage || '';
                 cluster.networkPlugin = item.networkPlugin || '';
                 cluster.version = item.version || '';
                 cluster.taskNum = item.taskNum || '0';
+                if(item.upgradeK8sVersion){
+                  upgradeK8sVersion.value = item.upgradeK8sVersion;
+                }
+                if(item.upgradeNetworkPlugin){
+                  upgradeNetworkPlugin.value = item.upgradeNetworkPlugin;
+                }
             }
         });
     } else {
