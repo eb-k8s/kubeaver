@@ -34,6 +34,7 @@ const updateClusterSchema = Joi.object({
       os: Joi.string().required(),
       k8sVersion: Joi.string().optional(),
       upgradeK8sVersion: Joi.string().optional(),
+      upgradeNetworkPlugin: Joi.string().optional(),
       status: Joi.string().optional(),
       lastJobType: Joi.string().optional(),
       lastJobStatus: Joi.string().optional(),
