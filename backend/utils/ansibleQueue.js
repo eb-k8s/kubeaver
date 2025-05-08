@@ -161,11 +161,18 @@ async function createAnsibleQueue(baseQueueId, concurrency, k8sVersion) {
           'updateTime', updateTime
         );
         await redis.hset(baseHashKey,
-          'taskProcess','Unknown',
           'status', result.status,
           'clusterId', clusterId,//用于sql数据库
           'updateTime', updateTime
         )
+        //初始化集群，没有活跃任务之后，要把taskProcess设置成Unknown
+        const activeJobs = await getActiveJobs(`${job.data.playbook.taskId}`);
+        if (activeJobs.length === 0) {
+          await redis.hset(baseHashKey,
+            'taskProcess','Unknown',
+            'updateTime', updateTime
+          );
+        }
       }
       if (job.name == 'addNode' && job.data.playbook.role === 'node') {
         //设置节点状态
@@ -185,6 +192,15 @@ async function createAnsibleQueue(baseQueueId, concurrency, k8sVersion) {
           )
         } else {
           console.error(`未能获取到节点状态`);
+        }
+        //加入节点，没有活跃任务之后，要把taskProcess设置成Unknown
+        const baseHashKey = `k8s_cluster:${job.data.playbook.id}:baseInfo`;
+        const activeJobs = await getActiveJobs(`${job.data.playbook.taskId}`);
+        if (activeJobs.length === 0) {
+          await redis.hset(baseHashKey,
+            'taskProcess','Unknown',
+            'updateTime', updateTime
+          );
         }
       }
       if (job.name == 'resetNode') {
@@ -207,15 +223,14 @@ async function createAnsibleQueue(baseQueueId, concurrency, k8sVersion) {
       }
       if (job.name == 'resetCluster') {
         //如果master reset成功之后集群部署状态NotDeploy
+        const baseHashKey = `k8s_cluster:${job.data.playbook.id}:baseInfo`;
         if (job.data.playbook.role === 'master') {
           //重置集群成功之后要删掉config证书
           const masterResult = await getNodeStatus(job.data.playbook.id, job.data.playbook.hostName, job.data.playbook.hostsPath, job.data.playbook.ip);
           let configHashKey = `k8s_cluster:${job.data.playbook.id}:config`
           await redis.del(configHashKey);
-          const baseHashKey = `k8s_cluster:${job.data.playbook.id}:baseInfo`;
           //const clusterInfo = await redis.hgetall(baseHashKey);
           await redis.hset(baseHashKey,
-            'taskProcess','Unknown',
             'status', masterResult.status,//集群实际状态
             'updateTime', updateTime
           );
@@ -234,7 +249,14 @@ async function createAnsibleQueue(baseQueueId, concurrency, k8sVersion) {
           'status', nodeResult.status,//集群实际状态
           'updateTime', updateTime
         );
-
+        //重置集群，没有活跃任务之后，要把taskProcess设置成Unknown
+        const activeJobs = await getActiveJobs(`${job.data.playbook.taskId}`);
+        if (activeJobs.length === 0) {
+          await redis.hset(baseHashKey,
+            'taskProcess','Unknown',
+            'updateTime', updateTime
+          );
+        }
       }
       if (job.name == 'upgradeCluster') {
         //如果是master升级成功，更新集群状态和版本。节点开始升级。
@@ -242,10 +264,11 @@ async function createAnsibleQueue(baseQueueId, concurrency, k8sVersion) {
           await getConfigFile(job.data.playbook.id, job.data.playbook.hostsPath, job.data.playbook.ip)
           const baseHashKey = `k8s_cluster:${job.data.playbook.id}:baseInfo`;
           const masterStatusData = await getNodeStatus(job.data.playbook.id, job.data.playbook.hostName, job.data.playbook.hostsPath, job.data.playbook.ip);
+          const upgradeNetworkPlugin = job.data.playbook.networkPlugin + ' - ' + job.data.playbook.networkVersion;
           await redis.hset(baseHashKey,
-            'taskProcess','Unknown',
             'clusterName', job.data.playbook.clusterName,
             'version', job.data.playbook.version,
+            'networkPlugin',upgradeNetworkPlugin,
             'status', masterStatusData.status,
             'updateTime', updateTime
           );
@@ -269,6 +292,15 @@ async function createAnsibleQueue(baseQueueId, concurrency, k8sVersion) {
           'status', nodeStatusData.status,
           'updateTime', updateTime
         );
+        //升级集群，没有活跃任务之后，要把taskProcess设置成Unknown
+        const activeJobs = await getActiveJobs(`${job.data.playbook.taskId}`);
+        if (activeJobs.length === 0) {
+          await redis.hset(baseHashKey,
+            'taskProcess','Unknown',
+            'updateTime', updateTime
+          );
+        }
+
       }
     });
     queue.on('failed', async (job) => {
