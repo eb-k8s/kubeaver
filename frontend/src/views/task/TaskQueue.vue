@@ -276,12 +276,10 @@
     };
 
     const openWebSocketModal = async (task) => {
-        console.log(task);
-        
     webSocketVisible.value = true;
     // const socketUrl = `ws://10.1.35.91:8000/websocket/${id.value}/${task.ip}/${task.timestamp}`;
     let k8sVersion: any;
-    if(task.taskName === '集群升级' && props.upgradeK8sVersion){
+    if(task.taskName === '升级集群' && props.upgradeK8sVersion){
       k8sVersion = getMappedK8sVersion(props.upgradeK8sVersion);
     }else{
       k8sVersion = getMappedK8sVersion(nodeVersion.value);  
