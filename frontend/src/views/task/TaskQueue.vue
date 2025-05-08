@@ -281,7 +281,7 @@
     if(task.taskName === '升级集群' && props.upgradeK8sVersion){
       k8sVersion = getMappedK8sVersion(props.upgradeK8sVersion);
     }else{
-      k8sVersion = getMappedK8sVersion(version.value);  
+      k8sVersion = getMappedK8sVersion(nodeVersion.value);  
     }
     console.log(k8sVersion);
     const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
@@ -339,7 +339,7 @@
         if(props.upgradeK8sVersion){
             k8sVersion = getMappedK8sVersion(props.upgradeK8sVersion);
         }else{
-            k8sVersion = getMappedK8sVersion(nodeVersion.value);  
+            k8sVersion = getMappedK8sVersion(version.value);  
         }
         const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
         socket2.value = createWebSocket(`${protocol}${window.location.host}/${k8sVersion}/ws/activeTasks/${id}`, (event) => {
