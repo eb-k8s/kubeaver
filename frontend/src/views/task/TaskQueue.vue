@@ -160,6 +160,8 @@
     }
 
     const onClickBulkTermination = async (taskname: any) => {
+        console.log(taskname);
+        
         try {
             setLoading(true);
             const taskNameMap: Record<string, string> = {
@@ -175,7 +177,12 @@
                 taskName,
             };
             // const k8sVersion = getFirstK8sVersionFromStorage();
-            const k8sVersion = getMappedK8sVersion(version.value);
+            let k8sVersion;
+            if(taskname === '升级集群' && props.upgradeK8sVersion){
+                k8sVersion = getMappedK8sVersion(props.upgradeK8sVersion)
+            }else{
+                k8sVersion = getMappedK8sVersion(version.value);
+            }
             const result: any = await stopTasks(data, k8sVersion);
             if(result.status === 'ok'){
                 Message.success("任务已终止！");
@@ -206,8 +213,12 @@
                 jobId: record.jobId,
                 taskName,
             };
-            // const k8sVersion = getFirstK8sVersionFromStorage();
-            const k8sVersion = getMappedK8sVersion(version.value);
+            let k8sVersion;
+            if(record.taskName === '升级集群' && props.upgradeK8sVersion){
+                k8sVersion = getMappedK8sVersion(props.upgradeK8sVersion)
+            }else{
+                k8sVersion = getMappedK8sVersion(version.value);
+            }
             const result: any = await removeWaitingTask(data, k8sVersion);
             if(result.status === 'ok'){
                 Message.success("任务已删除！");
@@ -239,7 +250,13 @@
                 taskName,
             };
             // const k8sVersion = getFirstK8sVersionFromStorage();
-            const k8sVersion = getMappedK8sVersion(version.value);
+            // const k8sVersion = getMappedK8sVersion(version.value);
+            let k8sVersion;
+            if(record.taskName === '升级集群' && props.upgradeK8sVersion){
+                k8sVersion = getMappedK8sVersion(props.upgradeK8sVersion)
+            }else{
+                k8sVersion = getMappedK8sVersion(version.value);
+            }
             const result: any = await stopTask(data, k8sVersion);
             if(result.status === 'ok'){
                 Message.success("任务已终止！");
@@ -274,6 +291,7 @@
     return socket;
     };
 
+    // 获取详情
     const openWebSocketModal = async (task) => {
     webSocketVisible.value = true;
     // const socketUrl = `ws://10.1.35.91:8000/websocket/${id.value}/${task.ip}/${task.timestamp}`;
@@ -331,6 +349,7 @@
     }
     };
 
+    // 获取列表
     const connectWebSocket = (id) => {
         // socket2.value = createWebSocket(`ws://10.1.35.91:8000/activeTasks/${id}`, (event) => {
         //    handleTaskListMessage(event.data);
