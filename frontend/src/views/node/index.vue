@@ -545,6 +545,7 @@
             ip: record.ip,
             networkPlugin: props.upgradeNetworkPlugin
         }
+        console.log(props.upgradeNetworkPlugin);
         const k8sVersion = getMappedK8sVersion(props.upgradeK8sVersion);
         const result: any = await upgradeCluster(data, k8sVersion);
         if(result.status === 'ok'){
