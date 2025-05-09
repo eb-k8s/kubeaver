@@ -272,6 +272,7 @@
     const k8sCache = ref();
     const networkPlugins = ref();
     const originalPlugin = ref();
+    const upgradeK8sVersion = ref();
     const cluster = reactive({
         version: '',
         networkPlugins: ''
@@ -493,6 +494,9 @@
         id.value = record.id;
         name.value = record.clusterName;
         version.value = record.version
+        if(record.upgradeK8sVersion){
+            upgradeK8sVersion.value = record.upgradeK8sVersion
+        };
     }
 
     const onClickUpgrade = async (record: any) => {
@@ -581,6 +585,9 @@
     const onClickDeploy = async (record: any) => {
         version.value = record.version;
         id.value = record.id;
+        if(record.upgradeK8sVersion){
+            upgradeK8sVersion.value = record.upgradeK8sVersion
+        };
         deployVisible.value = true;
     }
 
@@ -620,8 +627,15 @@
 
     // 重置集群
     const handleResetOk = async () => {
+        
         try {
-            const k8sVersion = getMappedK8sVersion(version.value);
+            // const k8sVersion = getMappedK8sVersion(version.value);
+            let k8sVersion;
+            if(upgradeK8sVersion.value){
+                k8sVersion = getMappedK8sVersion(upgradeK8sVersion.value)
+            }else{
+                k8sVersion = getMappedK8sVersion(version.value);
+            }
             const result: any = await resetCluster(id.value, k8sVersion);
             if(result.status === 'ok'){
                 Message.info("正在重置集群,请稍后......");
@@ -645,7 +659,13 @@
         const data = {
             id : id.value,
         };
-        const k8sVersion = getMappedK8sVersion(version.value);
+        // const k8sVersion = getMappedK8sVersion(version.value);
+        let k8sVersion;
+        if(upgradeK8sVersion.value){
+            k8sVersion = getMappedK8sVersion(upgradeK8sVersion.value)
+        }else{
+            k8sVersion = getMappedK8sVersion(version.value);
+        }
         const result: any = await deployCluster(data, k8sVersion);
         if(result.status === 'ok'){
             Message.info("正在安装集群,请稍后......");
