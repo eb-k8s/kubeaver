@@ -280,6 +280,8 @@ async function createAnsibleQueue(baseQueueId, concurrency, k8sVersion) {
         if (activeJobs.length === 0) {
           await redis.hset(baseHashKey,
             'taskProcess','Unknown',
+            'upgradeK8sVersion', '',
+            'upgradeNetworkPlugin', '',
             'updateTime', updateTime
           );
         }
@@ -915,10 +917,12 @@ async function updateNodeStatus(id, ip, taskName) {
   const nodeKey = `k8s_cluster:${id}:hosts:${ip}`;
   // 获取活跃中的任务
   const activeJobs = await getActiveJobs(`${id}_${taskName}`);
+  console.log("当前活跃的任务", activeJobs)
   const isActive = activeJobs.some(job => job.ip === ip);
 
   // 获取等待中的任务
   const waitingJobs = await getWaitingJobs(`${id}_${taskName}`);
+  console.log(waitingJobs)
   const isWaiting = waitingJobs.some(job => job.ip === ip);
 
   // 根据任务名称和状态设置部署状态
@@ -976,7 +980,6 @@ async function getWaitingJobs(queueId) {
   }
   try {
     const waitingJobs = await queues[queueId].getWaiting();
-    //console.log(waitingJobs)
     return waitingJobs.map(job => ({
       jobId: job.id,
       taskName: job.data.playbook.taskName,
