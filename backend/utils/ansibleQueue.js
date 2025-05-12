@@ -208,7 +208,7 @@ async function createAnsibleQueue(baseQueueId, concurrency, k8sVersion) {
         }
         //加入节点，没有活跃任务之后，要把taskProcess设置成Unknown
         const baseHashKey = `k8s_cluster:${job.data.playbook.id}:baseInfo`;
-        const taskNames = ["initCluster", "addNode"];
+        const taskNames = ["initCluster", "addNode", "resetNode"];
         let allJobsEmpty = true; // 初始假设所有任务都为空
         
         for (const taskName of taskNames) {
@@ -241,11 +241,28 @@ async function createAnsibleQueue(baseQueueId, concurrency, k8sVersion) {
           'k8sVersion', 'Unknown',
           'updateTime', updateTime
         );
+        //移除节点，没有活跃任务之后，要把taskProcess设置成Unknown
         const baseHashKey = `k8s_cluster:${job.data.playbook.id}:baseInfo`;
-        await redis.hset(baseHashKey,
-          'taskProcess','Unknown',
-          'updateTime', updateTime
-        )
+        const taskNames = ["addNode", "resetNode"];
+        let allJobsEmpty = true; // 初始假设所有任务都为空
+        
+        for (const taskName of taskNames) {
+          const queueId = `${job.data.playbook.id}_${taskName}`;
+          const activeJobs = await getActiveJobs(queueId); 
+          
+          if (activeJobs.length > 0) { // 如果当前任务有活跃作业
+            allJobsEmpty = false; // 标记为“不全部为空”
+            break; // 提前退出循环（无需检查剩余任务）
+          }
+        }
+        
+        if (allJobsEmpty) { // 只有所有任务的 activeJobs 都为空时，才更新 Redis
+          await redis.hset(
+            baseHashKey,
+            'taskProcess', 'Unknown',
+            'updateTime', updateTime
+          );
+        }
       }
       if (job.name == 'resetCluster') {
         //如果master reset成功之后集群部署状态NotDeploy
@@ -300,6 +317,14 @@ async function createAnsibleQueue(baseQueueId, concurrency, k8sVersion) {
             'status', masterStatusData.status,
             'updateTime', updateTime
           );
+          //升级集群，没有活跃任务之后，要把taskProcess设置成Unknown
+          const activeJobs = await getActiveJobs(`${job.data.playbook.taskId}`);
+          if (activeJobs.length === 0) {
+            await redis.hset(baseHashKey,
+              'taskProcess','Unknown',
+              'updateTime', updateTime
+            );
+          }
           let resultData = await getRedis(job.data.playbook.id)
           //需要更新sql数据库中的证书文件
           const configHashKey = `k8s_cluster:${job.data.playbook.id}:config`;
@@ -320,14 +345,7 @@ async function createAnsibleQueue(baseQueueId, concurrency, k8sVersion) {
           'status', nodeStatusData.status,
           'updateTime', updateTime
         );
-        //升级集群，没有活跃任务之后，要把taskProcess设置成Unknown
-        const activeJobs = await getActiveJobs(`${job.data.playbook.taskId}`);
-        if (activeJobs.length === 0) {
-          await redis.hset(baseHashKey,
-            'taskProcess','Unknown',
-            'updateTime', updateTime
-          );
-        }
+
 
       }
     });
@@ -401,7 +419,7 @@ async function createAnsibleQueue(baseQueueId, concurrency, k8sVersion) {
         );
         //加入节点，没有活跃任务之后，要把taskProcess设置成Unknown
         const baseHashKey = `k8s_cluster:${job.data.playbook.id}:baseInfo`;
-        const taskNames = ["initCluster", "addNode"];
+        const taskNames = ["initCluster", "addNode","resetNode"];
         let allJobsEmpty = true; // 初始假设所有任务都为空
         
         for (const taskName of taskNames) {
@@ -436,10 +454,26 @@ async function createAnsibleQueue(baseQueueId, concurrency, k8sVersion) {
           'updateTime', updateTime
         );
         const baseHashKey = `k8s_cluster:${job.data.playbook.id}:baseInfo`;
-        await redis.hset(baseHashKey,
-          'taskProcess','Unknown',
-          'updateTime', updateTime
-        )
+        const taskNames = ["addNode", "resetNode"];
+        let allJobsEmpty = true; // 初始假设所有任务都为空
+        
+        for (const taskName of taskNames) {
+          const queueId = `${job.data.playbook.id}_${taskName}`;
+          const activeJobs = await getActiveJobs(queueId); 
+          
+          if (activeJobs.length > 0) { // 如果当前任务有活跃作业
+            allJobsEmpty = false; // 标记为“不全部为空”
+            break; // 提前退出循环（无需检查剩余任务）
+          }
+        }
+        
+        if (allJobsEmpty) { // 只有所有任务的 activeJobs 都为空时，才更新 Redis
+          await redis.hset(
+            baseHashKey,
+            'taskProcess', 'Unknown',
+            'updateTime', updateTime
+          );
+        }
       }
       if (job.name == 'resetCluster') {
         const nodeKey = `k8s_cluster:${job.data.playbook.id}:hosts:${job.data.playbook.ip}`;
