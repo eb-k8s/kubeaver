@@ -527,7 +527,12 @@
                 )
             );
         });
-        cluster.networkPlugins = '';
+        // 设置默认网络插件值
+        if (originalPlugin.value) {
+            cluster.networkPlugins = originalPlugin.value;
+        } else {
+            cluster.networkPlugins = ''; // 如果没有默认值，设置为空
+        }
     };
 
     // 处理升级时的离线包
