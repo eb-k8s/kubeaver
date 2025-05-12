@@ -47,6 +47,7 @@ files_repo: "http://{{registry_host}}/file"
 # set registry host as registry mirror
 containerd_registries_mirrors:
  - server: http://{{registry_host}}
+   prefix: "{{registry_host}}"
    mirrors:
     - host: http://{{registry_host}}
       capabilities: ["pull", "resolve"]
