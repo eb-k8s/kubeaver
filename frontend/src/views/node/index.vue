@@ -257,7 +257,7 @@
         return nodeList.value 
             && nodeList.value
                 .filter(node => node.role === 'master')
-                .every(node => node.activeStatus === '暂无状态');
+                .every(node => node.activeStatus === '暂无状态' || node.activeJobType === '初始化集群');
     });
     
     const getFirstK8sVersionFromStorage = (key = 'k8sVersionList'): string => {
