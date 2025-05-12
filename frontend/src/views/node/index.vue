@@ -97,7 +97,7 @@
                             <!-- <a-button v-if="record.status === 'Unknown' && record.activeJobType === '暂无任务' && isMasterNotReadyAndDeploying" type="text" size="small" @click="onClickJoinNode(record)">
                                 加入
                             </a-button> -->
-                            <a-button v-if="record.status === 'Unknown' && record.activeJobType === '暂无任务' && isMasterRunning" type="text" size="small" @click="onClickJoinNode(record)">
+                            <a-button v-if="record.status === 'Unknown' && record.activeJobType === '暂无任务' && isAllMastersRunning" type="text" size="small" @click="onClickJoinNode(record)">
                                 加入
                             </a-button>
                             <a-button v-if="record.status === 'Unknown' && record.activeJobType === '暂无任务'" type="text" size="small" @click="onClickDelete(record)">
@@ -233,6 +233,10 @@
     const upgradeVersion = ref();
     const clusterName = ref();
     const master1 = ref();
+    const props = defineProps({
+        upgradeK8sVersion: String,
+        upgradeNetworkPlugin: String,
+    })
     const cluster = reactive({
         id: '',
         controlPlaneHosts: [] as Array<{ ip: string; hostName: string; role: string; os: string }>,
@@ -246,10 +250,16 @@
     master1.value = route.query.master1;
     upgradeVersion.value = route.query.upgradeVersion;
 
-    const isMasterRunning = computed(() => {
-        return nodeList.value && nodeList.value.some(node => node.role === 'master' && node.activeStatus === '运行中');
+    // const isMasterRunning = computed(() => {
+    //     return nodeList.value && nodeList.value.some(node => node.role === 'master' && node.activeStatus === '运行中');
+    // });
+    const isAllMastersRunning = computed(() => {
+        return nodeList.value 
+            && nodeList.value
+                .filter(node => node.role === 'master')
+                .every(node => node.activeStatus === '暂无状态' || node.activeJobType === '初始化集群');
     });
-
+    
     const getFirstK8sVersionFromStorage = (key = 'k8sVersionList'): string => {
         const versionArrayStr = localStorage.getItem(key);
         if (versionArrayStr) {
@@ -537,10 +547,11 @@
         const data = {
             id : id.value,
             clusterName: clusterName.value,
-            version: version.value,
+            version: props.upgradeK8sVersion,
             ip: record.ip,
+            networkPlugin: props.upgradeNetworkPlugin
         }
-        const k8sVersion = getMappedK8sVersion(upgradeVersion.value);
+        const k8sVersion = getMappedK8sVersion(props.upgradeK8sVersion);
         const result: any = await upgradeCluster(data, k8sVersion);
         if(result.status === 'ok'){
             Message.info("节点正在升级,请稍后......");
@@ -560,7 +571,14 @@
                 id : id.value,
                 ip: nodeip.value
             };
-            const k8sVersion = getFirstK8sVersionFromStorage();
+            // const k8sVersion = getFirstK8sVersionFromStorage();
+            let k8sVersion;
+            if(props.upgradeK8sVersion){
+                k8sVersion = getMappedK8sVersion(props.upgradeK8sVersion)
+            }else{
+                k8sVersion = getMappedK8sVersion(version.value);
+            }
+            console.log(k8sVersion);
             const result: any = await deleteNode(data, k8sVersion);
             if(result.status === 'ok'){
                 Message.success("节点删除成功！");
@@ -645,7 +663,13 @@
                 ip: nodeip.value
             };
             // const k8sVersion = getFirstK8sVersionFromStorage();
-            const k8sVersion = getMappedK8sVersion(version.value);
+            // const k8sVersion = getMappedK8sVersion(version.value);
+            let k8sVersion;
+            if(props.upgradeK8sVersion){
+                k8sVersion = getMappedK8sVersion(props.upgradeK8sVersion)
+            }else{
+                k8sVersion = getMappedK8sVersion(version.value);
+            }
             const result: any = await removeNode(data, k8sVersion);
             if(result.status === 'ok'){
                 Message.info("节点正在移除中，请稍后......");
