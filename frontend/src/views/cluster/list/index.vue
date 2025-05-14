@@ -52,19 +52,33 @@
                                 class="circle Unknown"
                             ></span>
                             <span 
-                                v-if="record.status === 'NotReady'" 
+                                v-if="record.status === 'Ready,SchedulingDisabled'" 
+                                class="circle pause"
+                            ></span>
+                            <span 
+                                v-if="record.status === 'NotReady' || record.status === 'NotReady,SchedulingDisabled'" 
                                 class="circle failed"
                             ></span>
                             <span class="status-text">{{ record.status }}</span>
                         </div>
                     </template>
-                    <template #activeTask="{ record }">
+                    <!-- <template #activeTask="{ record }">
                         <div style="white-space: pre-line; display: flex; flex-direction: column; align-items: flex-start;">
                             <span :style="{ color: record.initCluster !== 0 ? '#52c41a' : 'black', display: 'block' }">初始化集群: {{ record.initCluster }}</span>
                             <span :style="{ color: record.addNode !== 0 ? '#52c41a' : 'black', display: 'block' }">添加节点: {{ record.addNode }}</span>
                             <span :style="{ color: record.upgradeCluster !== 0 ? '#52c41a' : 'black', display: 'block' }">升级集群: {{ record.upgradeCluster }}</span>
                             <span :style="{ color: record.resetNode !== 0 ? '#52c41a' : 'black', display: 'block' }">重置节点: {{ record.resetNode }}</span>
                             <span :style="{ color: record.resetCluster !== 0 ? '#52c41a' : 'black', display: 'block' }">重置集群: {{ record.resetCluster }}</span>
+                        </div>
+                    </template> -->
+                    <template #taskProcess="{ record }">
+                        <div class="status-container">
+                            <span v-if="translateTaskProcess(record.taskProcess) !== '暂无任务'" class="status-icon running">
+                                <icon-sync class="rotating" />
+                            </span>
+                            <span v-if="translateTaskProcess(record.taskProcess) === '暂无任务'" class="circle Unknown"></span>
+                            <!-- <span class="status-text1">{{ record.taskProcess }}</span> -->
+                            <span class="status-text1">{{ translateTaskProcess(record.taskProcess) }}</span>
                         </div>
                     </template>
                     <template #operations="{ record }">
@@ -722,22 +736,38 @@
             setLoading(true);
             const k8sVersion = getFirstK8sVersionFromStorage();
             const result = await getClusterList(k8sVersion);
+        
             clusterList.value = result.data.map(cluster => ({
                 ...cluster,
                 createTime: formatTime(cluster.createTime),
                 count: (cluster.masterCount + cluster.nodeCount)+"("+cluster.masterCount+"/"+ cluster.nodeCount+")",
-                activeTask: `
-                    初始化集群: ${cluster.initCluster}
-                    添加节点: ${cluster.addNode}
-                    重置节点: ${cluster.resetNode}
-                    升级集群: ${cluster.upgradeCluster}
-                    重置集群: ${cluster.resetCluster}
-                `.trim(),
+                // activeTask: `
+                //     初始化集群: ${cluster.initCluster}
+                //     添加节点: ${cluster.addNode}
+                //     重置节点: ${cluster.resetNode}
+                //     升级集群: ${cluster.upgradeCluster}
+                //     重置集群: ${cluster.resetCluster}
+                // `.trim(),
+               
             }));
         } catch (err) {
             console.log(err);
         } finally {
             setLoading(false);
+        }
+    };
+    const translateTaskProcess = (taskProcess: string) => {
+        switch (taskProcess) {
+            case 'Unknown':
+                return '暂无任务';
+            case 'deploying':
+                return '部署中';
+            case 'upgrading':
+                return '升级中';
+            case 'resetting':
+                return '重置中';
+            default:
+                return taskProcess; // 如果没有匹配到，返回原值
         }
     };
    
@@ -867,12 +897,32 @@
     .failed {
         background-color: red; 
     }
+    .pause {
+        background-color: yellow; 
+    }
 
     .status-text {
         white-space: nowrap; 
         word-break: keep-all; 
         font-size: 14px; 
         line-height: 1; 
+    }
+
+    .rotating {
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        0% {
+            transform: rotate(0deg); 
+        }
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+
+    .status-icon.running {
+        color: #52c41a; 
     }
 
 </style>
