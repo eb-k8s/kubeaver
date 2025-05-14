@@ -402,7 +402,7 @@ const processNodeReset = (plays, task, rawContent) => {
 const processPlayStages = (plays, task, rawContent, playStages, stageToTimeMapping) => {
     function getStageTime(stageName) {
         const taskName = stageToTimeMapping[stageName];
-        if (taskName && task.statistics) {
+        if (taskName && Array.isArray(task.statistics)) {
             const stageData = task.statistics.find(item => item.name === taskName);
             return stageData ? stageData.time : 0;
         }
@@ -609,7 +609,7 @@ const fetchTaskList = async () => {
                         timestamp: data.task, 
                         executionTime: calculateExecutionTime(data.processedOn, data.finishedOn),
                         IP: entry.ip,
-                        statistics: data.statistics
+                        statistics: Array.isArray(data.statistics) ? data.statistics : [],
                     });
                 });
             });
