@@ -45,7 +45,11 @@
                                 class="circle Unknown"
                             ></span>
                             <span 
-                                v-if="record.status === 'NotReady'" 
+                                v-if="record.status === 'Ready,SchedulingDisabled'" 
+                                class="circle pause"
+                            ></span>
+                            <span 
+                                v-if="record.status === 'NotReady' || record.status === 'NotReady,SchedulingDisabled'" 
                                 class="circle failed"
                             ></span>
                             <span class="status-text">{{ record.status }}</span>
@@ -89,7 +93,7 @@
                             <a-button v-if="master1.value !== record.name && record.status !== 'Unknown' && record.activeJobType === '暂无任务'" type="text" size="small" @click="onClickRemove(record)">
                                 移除
                             </a-button>
-                            <a-button v-if="record.lastJobType === '升级集群' && record.lastJobStatus === '失败' && record.activeJobType === '暂无任务'" type="text" size="small" @click="onClickRetry(record)">
+                            <a-button v-if="!isAnyNodeBusy && record.lastJobType === '升级集群' && record.lastJobStatus === '失败' && record.activeJobType === '暂无任务'" type="text" size="small" @click="onClickRetry(record)">
                                 重试
                             </a-button>
                         </template>
@@ -106,7 +110,7 @@
                             <a-button v-if="record.status !== 'Unknown' && record.activeJobType === '暂无任务' && isMasterNotReadyAndDeploying" type="text" size="small" @click="onClickRemove(record)">
                                 移除
                             </a-button>
-                            <a-button v-if="record.lastJobType === '升级集群' && record.lastJobStatus === '失败' && record.activeJobType === '暂无任务'" type="text" size="small" @click="onClickRetry(record)">
+                            <a-button v-if="!isAnyNodeBusy && record.lastJobType === '升级集群' && record.lastJobStatus === '失败' && record.activeJobType === '暂无任务'" type="text" size="small" @click="onClickRetry(record)">
                                 重试
                             </a-button>
                         </template>
@@ -257,7 +261,11 @@
         return nodeList.value 
             && nodeList.value
                 .filter(node => node.role === 'master')
-                .every(node => node.activeStatus === '暂无状态');
+                .every(node => node.activeStatus === '暂无状态' || node.activeJobType === '初始化集群');
+    });
+
+    const isAnyNodeBusy = computed(() => {
+        return nodeList.value && nodeList.value.some(node => node.activeJobType !== '暂无任务');
     });
     
     const getFirstK8sVersionFromStorage = (key = 'k8sVersionList'): string => {
@@ -896,6 +904,9 @@
 
     .failed {
         background-color: red; 
+    }
+    .pause {
+        background-color: yellow; 
     }
 
     .status-text {

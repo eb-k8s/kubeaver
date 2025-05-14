@@ -41,11 +41,11 @@
         regexp: ^.*127\.0\.0\.1.*localhost\.localdomain.*$'
         state: absent
     
-    - name: remove old hostname mapping  in /etc/hosts
-      lineinfile:
-        path: /etc/hosts
-        regexp: '^127\.0\.0\.1.*\b(master|node)\w*\b'
-        state: absent
+    # - name: remove old hostname mapping  in /etc/hosts
+    #   lineinfile:
+    #     path: /etc/hosts
+    #     regexp: '^127\.0\.0\.1.*\b(master|node)\w*\b'
+    #     state: absent
 
     - name: Ensure hostname mapping exists in /etc/hosts
       lineinfile:
