@@ -101,7 +101,7 @@
                             <!-- <a-button v-if="record.status === 'Unknown' && record.activeJobType === '暂无任务' && isMasterNotReadyAndDeploying" type="text" size="small" @click="onClickJoinNode(record)">
                                 加入
                             </a-button> -->
-                            <a-button v-if="record.status === 'Unknown' && record.activeJobType === '暂无任务' && isAllMastersRunning" type="text" size="small" @click="onClickJoinNode(record)">
+                            <a-button v-if="record.status === 'Unknown' && record.activeJobType === '暂无任务' && isMasterRunning" type="text" size="small" @click="onClickJoinNode(record)">
                                 加入
                             </a-button>
                             <a-button v-if="record.status === 'Unknown' && record.activeJobType === '暂无任务'" type="text" size="small" @click="onClickDelete(record)">
@@ -254,9 +254,10 @@
     master1.value = route.query.master1;
     upgradeVersion.value = route.query.upgradeVersion;
 
-    // const isMasterRunning = computed(() => {
-    //     return nodeList.value && nodeList.value.some(node => node.role === 'master' && node.activeStatus === '运行中');
-    // });
+    const isMasterRunning = computed(() => {
+        return nodeList.value && nodeList.value.some(node => node.role === 'master' && node.activeStatus === '运行中');
+    });
+
     const isAllMastersRunning = computed(() => {
         return nodeList.value 
             && nodeList.value
