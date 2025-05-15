@@ -322,14 +322,6 @@ async function createAnsibleQueue(baseQueueId, concurrency, k8sVersion) {
             'status', masterStatusData.status,
             'updateTime', updateTime
           );
-          //升级集群，没有活跃任务之后，要把taskProcess设置成Unknown
-          const activeJobs = await getActiveJobs(`${job.data.playbook.taskId}`);
-          if (activeJobs.length === 0) {
-            await redis.hset(baseHashKey,
-              'taskProcess', 'Unknown',
-              'updateTime', updateTime
-            );
-          }
           let resultData = await getRedis(job.data.playbook.id)
           //需要更新sql数据库中的证书文件
           const configHashKey = `k8s_cluster:${job.data.playbook.id}:config`;
@@ -350,8 +342,15 @@ async function createAnsibleQueue(baseQueueId, concurrency, k8sVersion) {
           'status', nodeStatusData.status,
           'updateTime', updateTime
         );
-
-
+        //升级集群，没有活跃任务之后，要把taskProcess设置成Unknown
+        const activeJobs = await getActiveJobs(`${job.data.playbook.taskId}`);
+        console.log(activeJobs)
+        if (activeJobs.length === 0) {
+          await redis.hset(baseHashKey,
+            'taskProcess', 'Unknown',
+            'updateTime', updateTime
+          );
+        }
       }
     });
     queue.on('failed', async (job) => {
