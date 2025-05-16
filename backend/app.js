@@ -4,7 +4,7 @@ const bodyParser = require('koa-bodyparser');
 const app = websockify(new Koa());
 const { initQueue } = require('./utils/initQueue');
 const { startScheduler } = require('./utils/scheduler');
-const { startFileWatcher, initOffline } = require('./utils/fileWatcher');
+// const { startFileWatcher, initOffline } = require('./utils/fileWatcher');
 const serve = require('koa-static');
 const Router = require('koa-router');
 const path = require('path');
@@ -32,7 +32,7 @@ app.use(router.routes()).use(router.allowedMethods());
 //   }
 // });
 //console.log(process.env.REDIS_HOST, process.env.REDIS_PORT);
-initOffline();
+// initOffline();
 //startFileWatcher();
 initQueue();
 startScheduler();
