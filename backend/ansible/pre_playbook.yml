@@ -194,6 +194,31 @@
       become: yes
       when: is_ubuntu
 
+    - name: install nessasry package for debug(CentOS series)
+      yum: 
+        name: "{{ item}}"
+        state: present
+      loop:
+        - net-tools
+        - nmap
+        - tcpdump
+        - sysstat
+        - iotop
+      when: not is_ubuntu
+
+    - name: install NFS server (Debian series)
+      apt:
+        name: "{{ item}}"
+        state: present
+      become: yes
+      loop: 
+        - net-tools
+        - nmap
+        - tcpdump
+        - sysstat
+        - iotop
+      when: is_ubuntu
+
     - name: Manage firewalld service (RedHat series)
       block:
         - name: Stop firewalld
