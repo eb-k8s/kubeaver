@@ -93,7 +93,7 @@
                             <a-button v-if="master1.value !== record.name && record.status !== 'Unknown' && record.activeJobType === '暂无任务'" type="text" size="small" @click="onClickRemove(record)">
                                 移除
                             </a-button>
-                            <a-button v-if="!isNodeTrying && record.lastJobType === '升级集群' && record.lastJobStatus === '失败' && record.activeJobType === '暂无任务'" type="text" size="small" @click="onClickRetry(record)">
+                            <a-button v-if="!isAnyNodeBusy && record.lastJobType === '升级集群' && record.lastJobStatus === '失败' && record.activeJobType === '暂无任务'" type="text" size="small" @click="onClickRetry(record)">
                                 重试
                             </a-button>
                         </template>
@@ -111,7 +111,7 @@
                             <a-button v-if="record.status !== 'Unknown' && record.activeJobType === '暂无任务' && isMasterNotReadyAndDeploying" type="text" size="small" @click="onClickRemove(record)">
                                 移除
                             </a-button>
-                            <a-button v-if="!isNodeTrying && record.lastJobType === '升级集群' && record.lastJobStatus === '失败' && record.activeJobType === '暂无任务'" type="text" size="small" @click="onClickRetry(record)">
+                            <a-button v-if="!isAnyNodeBusy && record.lastJobType === '升级集群' && record.lastJobStatus === '失败' && record.activeJobType === '暂无任务'" type="text" size="small" @click="onClickRetry(record)">
                                 重试
                             </a-button>
                         </template>
@@ -280,12 +280,8 @@
     //     );
     // });
 
-    const isNodeTrying = computed(() => {
-        return nodeList.value && nodeList.value.some(node => node.activeJobType !== '暂无任务');
-    });
-
     const isAnyNodeBusy = computed(() => {
-        return nodeList.value && nodeList.value.some(node => node.status !== 'Unknown' && node.activeJobType !== '暂无任务');
+        return nodeList.value && nodeList.value.some(node => node.activeJobType !== '暂无任务');
     });
 
     const getFirstK8sVersionFromStorage = (key = 'k8sVersionList'): string => {
