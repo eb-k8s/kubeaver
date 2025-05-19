@@ -395,67 +395,6 @@
         }
     };
 
-    // const formattedPlugins = computed(() => {
-    //     if (!networkPlugins.value || !networkPlugins.value.children) return [];
-
-    //     // 获取当前选择的 Kubernetes 版本
-    //     const k8sVersion = cluster.version;
-
-    //     // 获取当前集群的原有网络插件
-    //     if(!originalPlugin.value){
-    //         return;
-    //     }
-    //     const [originalType, originalVersion] = originalPlugin.value.split(' - ');
-        
-    //     // 解析版本号为数组 [major, minor, patch]
-    //     const parseVersion = (version: string) => {
-    //         const match = version.match(/^v?(\d+)\.(\d+)\.(\d+)/);
-    //         return match ? [parseInt(match[1]), parseInt(match[2]), parseInt(match[3])] : null;
-    //     };
-
-    //     const k8sVersionParsed = parseVersion(k8sVersion);
-
-    //     return networkPlugins.value.children.flatMap(plugin => {
-    //     // 仅保留与原有插件类型相同的插件
-    //     if (plugin.name.toLowerCase() === originalType.toLowerCase()) {
-    //         return (plugin.children || []).filter(versionNode => {
-    //             const pluginVersion = versionNode.name; // 示例: "v0.23.0"
-    //             const pluginVersionParsed = parseVersion(pluginVersion);
-
-    //             if (!pluginVersionParsed) return false;
-
-    //             // 如果是 calico 插件，额外根据 Kubernetes 版本范围过滤
-    //             if (plugin.name.toLowerCase() === 'calico' && k8sVersionParsed) {
-    //                 const [k8sMajor, k8sMinor] = k8sVersionParsed;
-    //                 const [calicoMajor, calicoMinor] = pluginVersionParsed;
-
-    //                 if (k8sMajor === 1 && k8sMinor >= 25 && k8sMinor <= 27) {
-    //                     return calicoMajor === 3 && calicoMinor <= 25; // 1.25-1.27 的 k8s 只能用 3.25 及以下的 calico
-    //                 } else if (k8sMajor === 1 && k8sMinor >= 28 && k8sMinor <= 30) {
-    //                     return calicoMajor === 3 && calicoMinor >= 26; // 1.28-1.30 的 k8s 只能用 3.26 及以上的 calico
-    //                 }
-    //                 return false; 
-    //             }
-
-    //             // 对于非 calico 插件，保留原有及比原有的高的
-    //             return compareVersions(pluginVersion, originalVersion) >= 0;
-    //         }).map(versionNode => {
-    //             const imagesNode = versionNode.children?.find(child => child.name === 'images');
-
-    //             return {
-    //                 name: plugin.name,
-    //                 version: versionNode?.name,
-    //                 images: imagesNode?.children || [],
-    //                 files: versionNode.children
-    //                     ?.filter(child => child.name !== 'images' && child.type === 'file') || []
-    //             };
-    //         });
-    //     }
-
-    //     return []; // 其他类型的插件不保留
-    //     });
-    // });
-
     const formattedPlugins = computed(() => {
     if (!networkPlugins.value || !networkPlugins.value.children || !cluster.version) return [];
 
@@ -786,14 +725,6 @@ const parseVersion = (version: string) => {
                 ...cluster,
                 createTime: formatTime(cluster.createTime),
                 count: (cluster.masterCount + cluster.nodeCount)+"("+cluster.masterCount+"/"+ cluster.nodeCount+")",
-                // activeTask: `
-                //     初始化集群: ${cluster.initCluster}
-                //     添加节点: ${cluster.addNode}
-                //     重置节点: ${cluster.resetNode}
-                //     升级集群: ${cluster.upgradeCluster}
-                //     重置集群: ${cluster.resetCluster}
-                // `.trim(),
-               
             }));
         } catch (err) {
             console.log(err);
@@ -816,13 +747,17 @@ const parseVersion = (version: string) => {
         }
     };
 
-    watch(() => cluster.version, (newVersion) => {
-        const candidates = formattedPlugins.value;
-        if (candidates.length > 0) {
-            // 默认选第一个兼容的网络插件
-            cluster.networkPlugins = `${candidates[0].name} - ${candidates[0].version}`;
-        } else {
-            cluster.networkPlugins = ''; // 没有兼容插件时清空
+    // 校验当前选择的插件是否与当前 K8s 版本兼容
+    watch([() => cluster.version, () => cluster.networkPlugins], ([newVersion, newPlugin]) => {
+        if (!newVersion || !newPlugin) return;
+
+        const match = formattedPlugins.value.find(
+            plugin => `${plugin.name} - ${plugin.version}` === newPlugin
+        );
+
+        if (!match) {
+            Message.warning('当前 Kubernetes 版本与所选网络插件不兼容，请重新选择');
+            cluster.networkPlugins = ''; 
         }
     });
    
