@@ -8,7 +8,7 @@ const { getNodeList } = require('./node')
 const { getDatabaseByK8sVersion } = require('../utils/getDatabase');
 //redis一直处于连接
 const redisConfig = {
-  host: process.env.REDIS_HOST, 
+  host: process.env.REDIS_HOST,
   port: process.env.REDIS_PORT,
 };
 
@@ -168,17 +168,27 @@ async function createK8sCluster(clusterInfo) {
     const clusterKey = customNanoid();
     const nodeKey = `k8s_cluster:${clusterKey}:baseInfo`;
     const createTime = Date.now();
+    //找出role为master的第一个值clusterInfo.hosts
+    const masterNode = clusterInfo.hosts.find(node => node.role === 'master');
+    console.log(masterNode)
+    if (!masterNode) {
+      return {
+        code: 10004,
+        status: "error",
+        msg: "集群中必须包含至少一个master节点！"
+      };
+    }
     await redis.hset(
       nodeKey,
       'clusterName', clusterInfo.clusterName,
       'version', clusterInfo.version,
       'networkPlugin', clusterInfo.networkPlugin,
-      'taskProcess','Unknown',
+      'taskProcess', 'Unknown',
       'status', 'Unknown',
       'taskNum', clusterInfo.taskNum,
       'createTime', createTime,
       'updateTime', createTime,
-      'master1', clusterInfo.hosts[0].hostName,
+      'master1', masterNode.hostName,
     );
     //initQueue(); //初始化操作同步进行
     //在不同库创建相应的队列
@@ -261,6 +271,7 @@ async function updateK8sCluster(clusterInfo) {
         };
       }
     }
+    const masterNode = clusterInfo.hosts.find(node => node.role === 'master');
     const nodeKey = `k8s_cluster:${clusterInfo.id}:baseInfo`;
     const updateTime = Date.now();
     await redis.hset(nodeKey,
@@ -268,10 +279,10 @@ async function updateK8sCluster(clusterInfo) {
       'version', clusterInfo.version,
       'networkPlugin', clusterInfo.networkPlugin,
       'taskNum', clusterInfo.taskNum,
-      'taskProcess','Unknown',
+      'taskProcess', 'Unknown',
       'status', 'Unknown',//集群实际状态
       'updateTime', updateTime,
-      'master1', clusterInfo.hosts[0].hostName,
+      'master1', masterNode.hostName,
     );
     //initQueue();
     await createAnsibleQueue(clusterInfo.id, parseInt(clusterInfo.taskNum, 10), clusterInfo.version);
@@ -374,12 +385,19 @@ async function deleteK8sCluster(id) {
 
   // 2. 获取集群版本（从db0的Hash结构）
   let k8sVersion;
+  let baseInfo;
   try {
-    const baseInfo = await redis.hgetall(`k8s_cluster:${id}:baseInfo`);
-    if (!baseInfo?.version) {
-      return { code: 20001, msg: '集群不存在', status: 'ok' };
+    baseInfo = await redis.hgetall(`k8s_cluster:${id}:baseInfo`);
+    if (!baseInfo || Object.keys(baseInfo).length === 0) {
+      // 没有任何信息，直接清理所有相关key
+      k8sVersion = null;
+    } else if (!baseInfo.version) {
+      // 没有version字段，说明是脏数据，也要清理
+      console.log(`集群${id} baseInfo为脏数据，强制清理所有相关key`);
+      k8sVersion = null;
+    } else {
+      k8sVersion = baseInfo.version;
     }
-    k8sVersion = baseInfo.version;
   } catch (error) {
     console.error(`Version check error: ${error.message}`);
     return { code: 50002, msg: '获取版本失败', status: 'error' };
