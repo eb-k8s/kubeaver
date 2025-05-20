@@ -287,6 +287,7 @@
     const networkPlugins = ref();
     const originalPlugin = ref();
     const upgradeK8sVersion = ref();
+    const installedPlugin = ref();
     const cluster = reactive({
         version: '',
         networkPlugins: ''
@@ -396,49 +397,68 @@
     };
 
     const formattedPlugins = computed(() => {
-    if (!networkPlugins.value || !networkPlugins.value.children || !cluster.version) return [];
+        if (!networkPlugins.value || !networkPlugins.value.children) {
+            console.warn('networkPlugins 或其 children 为空');
+            return [];
+        }
 
-    const k8sVersionParsed = parseVersion(cluster.version);
-    if (!k8sVersionParsed) return [];
+        const k8sVersion = cluster.version;
+        if (!k8sVersion) {
+            console.warn('cluster.version 为空');
+            return [];
+        }
 
-    const [k8sMajor, k8sMinor] = k8sVersionParsed;
+        const installedPluginType = originalPlugin.value?.split(' - ')[0]?.toLowerCase();
+        if (!installedPluginType) {
+            console.warn('installedPluginType 为空');
+            return [];
+        }
 
-    return networkPlugins.value.children.flatMap(plugin => {
-        return (plugin.children || []).filter(versionNode => {
-            const pluginVersion = versionNode.name; // 示例: "v3.25.1"
-            const pluginVersionParsed = parseVersion(pluginVersion);
+        const parseVersion = (version: string) => {
+            const match = version.match(/^v?(\d+)\.(\d+)\.(\d+)/);
+            return match ? [parseInt(match[1]), parseInt(match[2]), parseInt(match[3])] : null;
+        };
+
+        const k8sVersionParsed = parseVersion(k8sVersion);
+        if (!k8sVersionParsed) {
+            console.warn('k8sVersionParsed 解析失败:', k8sVersion);
+            return [];
+        }
+
+        const matchedPlugin = networkPlugins.value.children.find(plugin => 
+            plugin.name.toLowerCase() === installedPluginType
+        );
+        if (!matchedPlugin || !matchedPlugin.children) {
+            console.warn('未找到匹配的插件:', installedPluginType);
+            return [];
+        }
+        return matchedPlugin.children.filter(versionNode => {
+            const pluginVersionParsed = parseVersion(versionNode.name);
             if (!pluginVersionParsed) return false;
 
-            // Calico 特殊处理
-            if (plugin.name.toLowerCase() === 'calico') {
-                const [calicoMajor, calicoMinor] = pluginVersionParsed;
+            const [k8sMajor, k8sMinor] = k8sVersionParsed;
+            const [, pluginMinor] = pluginVersionParsed;
+
+            if (installedPluginType === 'calico') {
                 if (k8sMajor === 1 && k8sMinor >= 25 && k8sMinor <= 27) {
-                    return calicoMajor === 3 && calicoMinor <= 25;
-                } else if (k8sMinor >= 28 && k8sMinor <= 30) {
-                    return calicoMajor === 3 && calicoMinor >= 26;
+                    return pluginMinor <= 25;
+                } else if (k8sMajor === 1 && k8sMinor >= 28 && k8sMinor <= 30) {
+                    return pluginMinor >= 26;
                 }
                 return false;
             }
 
-            // 非 Calico，默认保留所有版本（也可以根据你的逻辑限制）
             return true;
         }).map(versionNode => {
             const imagesNode = versionNode.children?.find(child => child.name === 'images');
-
             return {
-                name: plugin.name,
+                name: matchedPlugin.name,
                 version: versionNode.name,
                 images: imagesNode?.children || [],
                 files: versionNode.children?.filter(child => child.name !== 'images' && child.type === 'file') || []
             };
         });
     });
-});
-
-const parseVersion = (version: string) => {
-    const match = version.match(/^v?(\d+)\.(\d+)\.(\d+)/);
-    return match ? [parseInt(match[1]), parseInt(match[2]), parseInt(match[3])] : null;
-};
 
     // 创建集群
     const handleCreateCluster = async () => {
@@ -484,7 +504,6 @@ const parseVersion = (version: string) => {
         const url = `/kubeadmin/gotocluster/${record.clusterId}`;
         window.open(url, '_blank');
     };
-
 
     // 重置集群
     const onClickReset = async (record: any) => {
