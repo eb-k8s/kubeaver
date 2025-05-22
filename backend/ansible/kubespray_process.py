@@ -404,11 +404,34 @@ def main():
       loop: "{{ groups['kube_node'] }}"
       delegate_to: "{{ item }}"
       ignore_errors: yes
+    
+    - name: Check the OS pretty name
+      command: grep '^PRETTY_NAME=' /etc/os-release
+      register: temp_os_pretty_name
+    
+    - name: Extract the pretty name from the command output
+      set_fact:
+        extracted_os_pretty_name: "{{ temp_os_pretty_name.stdout.split('=')[1].strip('\"') }}"
 
-#   - name: Restart first flannel containers
-#      shell: "{{bin_dir}}/crictl ps | grep kube-flannel | awk '{print $1}' | xargs {{bin_dir}}/crictl stop"
-#      delegate_to: "{{ groups['kube_control_plane'] | first }}"
-#      ignore_errors: yes
+    - name: Gen the standard repo file name
+      set_fact:
+        os_pretty_name: "{{ extracted_os_pretty_name | regex_replace(' ', '_') | regex_replace('[()]', '') }}"
+
+    - name: Clean the variable
+      set_fact:
+        os_pretty_name: "{{ os_pretty_name | replace('_Linux', '') }}"
+
+    - name: Set OS version variable 
+      set_fact:
+        is_centos: "{{ os_pretty_name | regex_search('CentOS', ignorecase=True) }}"
+
+    - name: Restart first flannel containers
+      shell: "{{bin_dir}}/crictl ps | grep kube-flannel | awk '{print $1}' | xargs {{bin_dir}}/crictl stop"
+      when: 
+        - inventory_hostname in groups['kube_control_plane']
+        - kube_network_plugin == 'flannel'
+        - is_centos
+      ignore_errors: yes
     """
     modified_lines = insert_line_after_pattern(lines, """- { role: kubernetes/preinstall, when: "dns_mode != 'none' and resolvconf_mode == 'host_resolvconf'", tags: resolvconf, dns_late: true }""", new_string)
     # 将更改写入文件
@@ -434,7 +457,11 @@ def main():
     # 将更改写入文件
     write_yaml_file(f"{kubespray_path}/ansible.cfg", modified_lines)
 
-
+    # 修改roles/kubernetes/node-label/tasks/main.yml
+    lines = read_yaml_file(f"{kubespray_path}/roles/kubernetes/node-label/tasks/main.yml")
+    # 将  retries: 10替换为  retries: 30
+    modified_lines = replace_line_with_pattern(lines, "  retries: 10", "  retries: 30")
+    write_yaml_file(f"{kubespray_path}/roles/kubernetes/node-label/tasks/main.yml", modified_lines)
     # # 修改roles/kubernetes/preinstall/tasks/0070-system-packages.yml
     # lines = read_yaml_file(f"{kubespray_path}/roles/kubernetes/preinstall/tasks/0070-system-packages.yml")
     # # 替换  when: ansible_os_family == "Debian"
