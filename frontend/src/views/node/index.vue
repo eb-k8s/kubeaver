@@ -45,7 +45,11 @@
                                 class="circle Unknown"
                             ></span>
                             <span 
-                                v-if="record.status === 'NotReady'" 
+                                v-if="record.status === 'Ready,SchedulingDisabled'" 
+                                class="circle pause"
+                            ></span>
+                            <span 
+                                v-if="record.status === 'NotReady' || record.status === 'NotReady,SchedulingDisabled'" 
                                 class="circle failed"
                             ></span>
                             <span class="status-text">{{ record.status }}</span>
@@ -80,24 +84,25 @@
                     </template>
                     <template #operations="{ record }">
                         <template v-if="record.role === 'master'">
-                            <a-button v-if="record.status === 'Unknown' && record.activeJobType === '暂无任务'" type="text" size="small" @click="onClickJoinMaster(record)">
+                            <a-button v-if="record.status === 'Unknown' && record.activeJobType === '暂无任务' && !isAnyNodeBusy" type="text" size="small" @click="onClickJoinMaster(record)">
                                 加入
                             </a-button>
-                            <a-button v-if="record.status === 'Unknown' && record.activeJobType === '暂无任务'" type="text" size="small" @click="onClickDelete(record)">
+                            <a-button v-if="record.status === 'Unknown' && record.activeJobType === '暂无任务' && !isAnyNodeBusy" type="text" size="small" @click="onClickDelete(record)">
                                 删除
                             </a-button>
                             <a-button v-if="master1.value !== record.name && record.status !== 'Unknown' && record.activeJobType === '暂无任务'" type="text" size="small" @click="onClickRemove(record)">
                                 移除
                             </a-button>
-                            <a-button v-if="record.lastJobType === '升级集群' && record.lastJobStatus === '失败' && record.activeJobType === '暂无任务'" type="text" size="small" @click="onClickRetry(record)">
+                            <a-button v-if="!isAnyNodeBusy && record.lastJobType === '升级集群' && record.lastJobStatus === '失败' && record.activeJobType === '暂无任务'" type="text" size="small" @click="onClickRetry(record)">
                                 重试
                             </a-button>
                         </template>
                         <template v-else-if="record.role === 'node'">
-                            <!-- <a-button v-if="record.status === 'Unknown' && record.activeJobType === '暂无任务' && isMasterNotReadyAndDeploying" type="text" size="small" @click="onClickJoinNode(record)">
+                            <!-- <a-button v-if="record.status === 'Unknown' && record.activeJobType === '暂无任务' &&  
+                                            (isMasterRunning || !isMasterResetting || !isNodeUpgrading || !isNodeTrying )" type="text" size="small" @click="onClickJoinNode(record)">
                                 加入
                             </a-button> -->
-                            <a-button v-if="record.status === 'Unknown' && record.activeJobType === '暂无任务' && isMasterRunning" type="text" size="small" @click="onClickJoinNode(record)">
+                            <a-button v-if="record.status === 'Unknown' && record.activeJobType === '暂无任务' && !isAnyNodeBusy" type="text" size="small" @click="onClickJoinNode(record)">
                                 加入
                             </a-button>
                             <a-button v-if="record.status === 'Unknown' && record.activeJobType === '暂无任务'" type="text" size="small" @click="onClickDelete(record)">
@@ -106,7 +111,7 @@
                             <a-button v-if="record.status !== 'Unknown' && record.activeJobType === '暂无任务' && isMasterNotReadyAndDeploying" type="text" size="small" @click="onClickRemove(record)">
                                 移除
                             </a-button>
-                            <a-button v-if="record.lastJobType === '升级集群' && record.lastJobStatus === '失败' && record.activeJobType === '暂无任务'" type="text" size="small" @click="onClickRetry(record)">
+                            <a-button v-if="!isAnyNodeBusy && record.lastJobType === '升级集群' && record.lastJobStatus === '失败' && record.activeJobType === '暂无任务'" type="text" size="small" @click="onClickRetry(record)">
                                 重试
                             </a-button>
                         </template>
@@ -233,6 +238,11 @@
     const upgradeVersion = ref();
     const clusterName = ref();
     const master1 = ref();
+    const props = defineProps({
+        upgradeK8sVersion: String,
+        upgradeNetworkPlugin: String,
+        taskProcess: String,
+    })
     const cluster = reactive({
         id: '',
         controlPlaneHosts: [] as Array<{ ip: string; hostName: string; role: string; os: string }>,
@@ -247,7 +257,31 @@
     upgradeVersion.value = route.query.upgradeVersion;
 
     const isMasterRunning = computed(() => {
-        return nodeList.value && nodeList.value.some(node => node.role === 'master' && node.activeStatus === '运行中');
+        return nodeList.value && nodeList.value.some(node => 
+            node.role === 'master' && node.status === 'Unknown' && node.activeStatus === '暂无状态' && node.activeJobType === '暂无任务'
+        );
+    });
+
+    // const isMasterResetting = computed(() => {
+    //     return nodeList.value && nodeList.value.some(node => 
+    //         props.taskProcess === 'resetting' && node.role === 'master' && node.status === 'Unknown' && node.activeStatus === '运行中'
+    //     );
+    // });
+
+    // const isNodeUpgrading = computed(() => {
+    //     return nodeList.value && nodeList.value.some(node =>
+    //         node.status === 'Ready' && node.activeStatus === "运行中" && node.activeJobType === '升级集群' && props.taskProcess === 'upgrading'
+    //     );
+    // });
+    
+    // const isNodeTrying = computed(() => {
+    //     return nodeList.value && nodeList.value.some(node =>
+    //       props.taskProcess === 'upgrading' && node.status === 'Ready' && node.activeJobType === '升级集群' && node.activeStatus === '运行中'
+    //     );
+    // });
+
+    const isAnyNodeBusy = computed(() => {
+        return nodeList.value && nodeList.value.some(node => node.activeJobType !== '暂无任务');
     });
 
     const getFirstK8sVersionFromStorage = (key = 'k8sVersionList'): string => {
@@ -376,8 +410,18 @@
                 id : id.value,
                 hosts: [node.value],
             };
+            let count = 0;
+            nodeList.value.forEach(itme => {
+                if(itme.role === 'master'){
+                    count += 1;
+                }
+            });
+            // 校验控制节点个数是否为单数
+            if (count % 2 ===0 ) {
+                Message.warning(`列表中现有${count}个master，建议保持单数以保证高可用！`);
+                return;
+            }
             const k8sVersion = getMappedK8sVersion(version.value);
-            console.log(k8sVersion);
             if(nodeRole.value === 'master'){
                 const result: any = await deployCluster(data, k8sVersion);
                 if(result.status === 'ok'){
@@ -387,6 +431,7 @@
                     Message.error(result.msg);
                 }
             }else{
+                
                 const result: any = await joinCluster(data, k8sVersion);
                 if(result.status === 'ok'){
                     Message.info("节点正在加入集群中，请稍后......");
@@ -534,24 +579,24 @@
 
     const onClickRetry = async (record: any) =>{
         try {
-        const data = {
-            id : id.value,
-            clusterName: clusterName.value,
-            version: version.value,
-            ip: record.ip,
+            const data = {
+                id : id.value,
+                clusterName: clusterName.value,
+                version: props.upgradeK8sVersion,
+                ip: record.ip,
+                networkPlugin: props.upgradeNetworkPlugin
+            }
+            const k8sVersion = getMappedK8sVersion(props.upgradeK8sVersion);
+            const result: any = await upgradeCluster(data, k8sVersion);
+            if(result.status === 'ok'){
+                Message.info("节点正在升级,请稍后......");
+                fetchNodeList();
+            }else{
+                Message.error(result.msg);
+            }
+        } catch (err) {
+            console.log(err);
         }
-        const k8sVersion = getMappedK8sVersion(upgradeVersion.value);
-        const result: any = await upgradeCluster(data, k8sVersion);
-        if(result.status === 'ok'){
-            Message.info("节点正在升级,请稍后......");
-            fetchNodeList();
-        }else{
-            Message.error(result.msg);
-        }
-      } catch (err) {
-        console.log(err);
-      }
-
     }
 
     const handleDeleteOk = async () => {
@@ -560,7 +605,14 @@
                 id : id.value,
                 ip: nodeip.value
             };
-            const k8sVersion = getFirstK8sVersionFromStorage();
+            // const k8sVersion = getFirstK8sVersionFromStorage();
+            let k8sVersion;
+            if(props.upgradeK8sVersion){
+                k8sVersion = getMappedK8sVersion(props.upgradeK8sVersion)
+            }else{
+                k8sVersion = getMappedK8sVersion(version.value);
+            }
+            console.log(k8sVersion);
             const result: any = await deleteNode(data, k8sVersion);
             if(result.status === 'ok'){
                 Message.success("节点删除成功！");
@@ -581,12 +633,12 @@
         
         try {
 
-            let count = 0;
-            nodeList.value.forEach(itme => {
-                if(itme.role === 'master'){
-                    count += 1;
-                }
-            });
+            // let count = 0;
+            // nodeList.value.forEach(itme => {
+            //     if(itme.role === 'master'){
+            //         count += 1;
+            //     }
+            // });
 
             if (cluster.controlPlaneHosts.length === 0 && cluster.workerHosts.length === 0) {
                 Message.error("至少需要添加一个控制节点或一个工作节点！");
@@ -594,10 +646,10 @@
             }
 
             // 校验控制节点个数是否为单数
-            if (cluster.controlPlaneHosts.length % 2 !== 0 && count % 2 !==0 ) {
-                Message.error(`添加后有 ${cluster.controlPlaneHosts.length + count} 个控制节点，建议保持单数以保证高可用！`);
-                return;
-            }
+            // if (cluster.controlPlaneHosts.length % 2 !== 0 && count % 2 !==0 ) {
+            //     Message.error(`添加后有 ${cluster.controlPlaneHosts.length + count} 个控制节点，建议保持单数以保证高可用！`);
+            //     return;
+            // }
 
             const hostNames = hosts.value.map(host => host.hostName); 
             const duplicateHostNames = hostNames.filter((name, index) => hostNames.indexOf(name) !== index);
@@ -645,7 +697,13 @@
                 ip: nodeip.value
             };
             // const k8sVersion = getFirstK8sVersionFromStorage();
-            const k8sVersion = getMappedK8sVersion(version.value);
+            // const k8sVersion = getMappedK8sVersion(version.value);
+            let k8sVersion;
+            if(props.upgradeK8sVersion){
+                k8sVersion = getMappedK8sVersion(props.upgradeK8sVersion)
+            }else{
+                k8sVersion = getMappedK8sVersion(version.value);
+            }
             const result: any = await removeNode(data, k8sVersion);
             if(result.status === 'ok'){
                 Message.info("节点正在移除中，请稍后......");
@@ -872,6 +930,9 @@
 
     .failed {
         background-color: red; 
+    }
+    .pause {
+        background-color: #faad14; 
     }
 
     .status-text {

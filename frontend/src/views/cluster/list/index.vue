@@ -52,19 +52,33 @@
                                 class="circle Unknown"
                             ></span>
                             <span 
-                                v-if="record.status === 'NotReady'" 
+                                v-if="record.status === 'Ready,SchedulingDisabled'" 
+                                class="circle pause"
+                            ></span>
+                            <span 
+                                v-if="record.status === 'NotReady' || record.status === 'NotReady,SchedulingDisabled'" 
                                 class="circle failed"
                             ></span>
                             <span class="status-text">{{ record.status }}</span>
                         </div>
                     </template>
-                    <template #activeTask="{ record }">
+                    <!-- <template #activeTask="{ record }">
                         <div style="white-space: pre-line; display: flex; flex-direction: column; align-items: flex-start;">
                             <span :style="{ color: record.initCluster !== 0 ? '#52c41a' : 'black', display: 'block' }">初始化集群: {{ record.initCluster }}</span>
                             <span :style="{ color: record.addNode !== 0 ? '#52c41a' : 'black', display: 'block' }">添加节点: {{ record.addNode }}</span>
                             <span :style="{ color: record.upgradeCluster !== 0 ? '#52c41a' : 'black', display: 'block' }">升级集群: {{ record.upgradeCluster }}</span>
                             <span :style="{ color: record.resetNode !== 0 ? '#52c41a' : 'black', display: 'block' }">重置节点: {{ record.resetNode }}</span>
                             <span :style="{ color: record.resetCluster !== 0 ? '#52c41a' : 'black', display: 'block' }">重置集群: {{ record.resetCluster }}</span>
+                        </div>
+                    </template> -->
+                    <template #taskProcess="{ record }">
+                        <div class="status-container">
+                            <span v-if="translateTaskProcess(record.taskProcess) !== '暂无任务'" class="status-icon running">
+                                <icon-sync class="rotating" />
+                            </span>
+                            <span v-if="translateTaskProcess(record.taskProcess) === '暂无任务'" class="circle Unknown"></span>
+                            <!-- <span class="status-text1">{{ record.taskProcess }}</span> -->
+                            <span class="status-text1">{{ translateTaskProcess(record.taskProcess) }}</span>
                         </div>
                     </template>
                     <template #operations="{ record }">
@@ -245,7 +259,7 @@
     </div>
 </template>
 <script lang="ts" setup>
-    import { ref, onMounted, reactive, computed } from 'vue';
+    import { ref, onMounted, reactive, computed, watch } from 'vue';
     import router from '@/router';
     import useLoading from '@/hooks/loading';
     import { getResources } from '@/api/resources';
@@ -272,6 +286,8 @@
     const k8sCache = ref();
     const networkPlugins = ref();
     const originalPlugin = ref();
+    const upgradeK8sVersion = ref();
+    const installedPlugin = ref();
     const cluster = reactive({
         version: '',
         networkPlugins: ''
@@ -381,63 +397,66 @@
     };
 
     const formattedPlugins = computed(() => {
-        if (!networkPlugins.value || !networkPlugins.value.children) return [];
-
-        // 获取当前选择的 Kubernetes 版本
-        const k8sVersion = cluster.version;
-
-        // 获取当前集群的原有网络插件
-        if(!originalPlugin.value){
-            return;
+        if (!networkPlugins.value || !networkPlugins.value.children) {
+            console.warn('networkPlugins 或其 children 为空');
+            return [];
         }
-        const [originalType, originalVersion] = originalPlugin.value.split(' - ');
-        
-        // 解析版本号为数组 [major, minor, patch]
+
+        const k8sVersion = cluster.version;
+        if (!k8sVersion) {
+            console.warn('cluster.version 为空');
+            return [];
+        }
+
+        const installedPluginType = originalPlugin.value?.split(' - ')[0]?.toLowerCase();
+        if (!installedPluginType) {
+            console.warn('installedPluginType 为空');
+            return [];
+        }
+
         const parseVersion = (version: string) => {
             const match = version.match(/^v?(\d+)\.(\d+)\.(\d+)/);
             return match ? [parseInt(match[1]), parseInt(match[2]), parseInt(match[3])] : null;
         };
 
         const k8sVersionParsed = parseVersion(k8sVersion);
-
-        return networkPlugins.value.children.flatMap(plugin => {
-        // 仅保留与原有插件类型相同的插件
-        if (plugin.name.toLowerCase() === originalType.toLowerCase()) {
-            return (plugin.children || []).filter(versionNode => {
-                const pluginVersion = versionNode.name; // 示例: "v0.23.0"
-                const pluginVersionParsed = parseVersion(pluginVersion);
-
-                if (!pluginVersionParsed) return false;
-
-                // 如果是 calico 插件，额外根据 Kubernetes 版本范围过滤
-                if (plugin.name.toLowerCase() === 'calico' && k8sVersionParsed) {
-                    const [k8sMajor, k8sMinor] = k8sVersionParsed;
-                    const [calicoMajor, calicoMinor] = pluginVersionParsed;
-
-                    if (k8sMajor === 1 && k8sMinor >= 25 && k8sMinor <= 27) {
-                        return calicoMajor === 3 && calicoMinor <= 25; // 1.25-1.27 的 k8s 只能用 3.25 及以下的 calico
-                    } else if (k8sMajor === 1 && k8sMinor >= 28 && k8sMinor <= 30) {
-                        return calicoMajor === 3 && calicoMinor >= 26; // 1.28-1.30 的 k8s 只能用 3.26 及以上的 calico
-                    }
-                    return false; 
-                }
-
-                // 对于非 calico 插件，保留原有及比原有的高的
-                return compareVersions(pluginVersion, originalVersion) >= 0;
-            }).map(versionNode => {
-                const imagesNode = versionNode.children?.find(child => child.name === 'images');
-
-                return {
-                    name: plugin.name,
-                    version: versionNode?.name,
-                    images: imagesNode?.children || [],
-                    files: versionNode.children
-                        ?.filter(child => child.name !== 'images' && child.type === 'file') || []
-                };
-            });
+        if (!k8sVersionParsed) {
+            console.warn('k8sVersionParsed 解析失败:', k8sVersion);
+            return [];
         }
 
-        return []; // 其他类型的插件不保留
+        const matchedPlugin = networkPlugins.value.children.find(plugin => 
+            plugin.name.toLowerCase() === installedPluginType
+        );
+        if (!matchedPlugin || !matchedPlugin.children) {
+            console.warn('未找到匹配的插件:', installedPluginType);
+            return [];
+        }
+        return matchedPlugin.children.filter(versionNode => {
+            const pluginVersionParsed = parseVersion(versionNode.name);
+            if (!pluginVersionParsed) return false;
+
+            const [k8sMajor, k8sMinor] = k8sVersionParsed;
+            const [, pluginMinor] = pluginVersionParsed;
+
+            if (installedPluginType === 'calico') {
+                if (k8sMajor === 1 && k8sMinor >= 25 && k8sMinor <= 27) {
+                    return pluginMinor <= 25;
+                } else if (k8sMajor === 1 && k8sMinor >= 28 && k8sMinor <= 30) {
+                    return pluginMinor >= 26;
+                }
+                return false;
+            }
+
+            return true;
+        }).map(versionNode => {
+            const imagesNode = versionNode.children?.find(child => child.name === 'images');
+            return {
+                name: matchedPlugin.name,
+                version: versionNode.name,
+                images: imagesNode?.children || [],
+                files: versionNode.children?.filter(child => child.name !== 'images' && child.type === 'file') || []
+            };
         });
     });
 
@@ -486,13 +505,15 @@
         window.open(url, '_blank');
     };
 
-
     // 重置集群
     const onClickReset = async (record: any) => {
         resetVisible.value = true;
         id.value = record.id;
         name.value = record.clusterName;
         version.value = record.version
+        if(record.upgradeK8sVersion){
+            upgradeK8sVersion.value = record.upgradeK8sVersion
+        };
     }
 
     const onClickUpgrade = async (record: any) => {
@@ -523,7 +544,12 @@
                 )
             );
         });
-        cluster.networkPlugins = '';
+        // 设置默认网络插件值
+        if (originalPlugin.value) {
+            cluster.networkPlugins = originalPlugin.value;
+        } else {
+            cluster.networkPlugins = ''; // 如果没有默认值，设置为空
+        }
     };
 
     // 处理升级时的离线包
@@ -581,6 +607,9 @@
     const onClickDeploy = async (record: any) => {
         version.value = record.version;
         id.value = record.id;
+        if(record.upgradeK8sVersion){
+            upgradeK8sVersion.value = record.upgradeK8sVersion
+        };
         deployVisible.value = true;
     }
 
@@ -620,8 +649,15 @@
 
     // 重置集群
     const handleResetOk = async () => {
+        
         try {
-            const k8sVersion = getMappedK8sVersion(version.value);
+            // const k8sVersion = getMappedK8sVersion(version.value);
+            let k8sVersion;
+            if(upgradeK8sVersion.value){
+                k8sVersion = getMappedK8sVersion(upgradeK8sVersion.value)
+            }else{
+                k8sVersion = getMappedK8sVersion(version.value);
+            }
             const result: any = await resetCluster(id.value, k8sVersion);
             if(result.status === 'ok'){
                 Message.info("正在重置集群,请稍后......");
@@ -645,7 +681,13 @@
         const data = {
             id : id.value,
         };
-        const k8sVersion = getMappedK8sVersion(version.value);
+        // const k8sVersion = getMappedK8sVersion(version.value);
+        let k8sVersion;
+        if(upgradeK8sVersion.value){
+            k8sVersion = getMappedK8sVersion(upgradeK8sVersion.value)
+        }else{
+            k8sVersion = getMappedK8sVersion(version.value);
+        }
         const result: any = await deployCluster(data, k8sVersion);
         if(result.status === 'ok'){
             Message.info("正在安装集群,请稍后......");
@@ -697,17 +739,11 @@
             setLoading(true);
             const k8sVersion = getFirstK8sVersionFromStorage();
             const result = await getClusterList(k8sVersion);
+        
             clusterList.value = result.data.map(cluster => ({
                 ...cluster,
                 createTime: formatTime(cluster.createTime),
                 count: (cluster.masterCount + cluster.nodeCount)+"("+cluster.masterCount+"/"+ cluster.nodeCount+")",
-                activeTask: `
-                    初始化集群: ${cluster.initCluster}
-                    添加节点: ${cluster.addNode}
-                    重置节点: ${cluster.resetNode}
-                    升级集群: ${cluster.upgradeCluster}
-                    重置集群: ${cluster.resetCluster}
-                `.trim(),
             }));
         } catch (err) {
             console.log(err);
@@ -715,6 +751,34 @@
             setLoading(false);
         }
     };
+    const translateTaskProcess = (taskProcess: string) => {
+        switch (taskProcess) {
+            case 'Unknown':
+                return '暂无任务';
+            case 'deploying':
+                return '部署中';
+            case 'upgrading':
+                return '升级中';
+            case 'resetting':
+                return '重置中';
+            default:
+                return taskProcess; // 如果没有匹配到，返回原值
+        }
+    };
+
+    // 校验当前选择的插件是否与当前 K8s 版本兼容
+    watch([() => cluster.version, () => cluster.networkPlugins], ([newVersion, newPlugin]) => {
+        if (!newVersion || !newPlugin) return;
+
+        const match = formattedPlugins.value.find(
+            plugin => `${plugin.name} - ${plugin.version}` === newPlugin
+        );
+
+        if (!match) {
+            Message.warning('当前 Kubernetes 版本与所选网络插件不兼容，请重新选择');
+            cluster.networkPlugins = ''; 
+        }
+    });
    
     onMounted(async () => {
         k8sLogos.value['v1.22'] = (await import('@/assets/images/logo/k8s-1.22.png')).default;
@@ -842,12 +906,34 @@
     .failed {
         background-color: red; 
     }
+    
+    .pause {
+        background-color: #faad14;
+    }
 
     .status-text {
         white-space: nowrap; 
         word-break: keep-all; 
         font-size: 14px; 
         line-height: 1; 
+    }
+
+    .rotating {
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        0% {
+            transform: rotate(0deg); 
+        }
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+
+    .status-icon.running {
+        color: #52c41a; 
+        font-size: 24px;
     }
 
 </style>

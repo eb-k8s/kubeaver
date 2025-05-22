@@ -46,7 +46,8 @@ etcd_image_repo: "{{registry_host}}/k8s/etcd"
 files_repo: "http://{{registry_host}}/file"
 # set registry host as registry mirror
 containerd_registries_mirrors:
- - prefix: "{{registry_host}}"
+ - server: http://{{registry_host}}
+   prefix: "{{registry_host}}"
    mirrors:
     - host: http://{{registry_host}}
       capabilities: ["pull", "resolve"]

@@ -138,7 +138,7 @@ def main():
     process_files(FILES2, "force_reset_playbook: ./reset.yml")
 
     parser = argparse.ArgumentParser(description="Process some parameters.")
-    parser.add_argument('--kubespray_version', type=str, default='v2.26.0',
+    parser.add_argument('--kubespray_version', type=str, default='v2.23.3',
                         help='The kubespray version.')
 
     args = parser.parse_args()
@@ -363,6 +363,11 @@ def main():
         modified_lines = insert_line_after_pattern(lines, "- name: Stop if supported Calico versions","  when: false")
         # 更改写入文件
         write_yaml_file(f"{kubespray_path}/roles/network_plugin/calico/tasks/check.yml", modified_lines)  
+        # 修改hosts.yaml文件
+        lines = read_yaml_file(f"{kubespray_path}/roles/container-engine/containerd/templates/hosts.toml.j2")
+        # 替换server = "https://{{ item.prefix }}"为server = "{{ item.server | default("https://" + item.prefix) }}"
+        modified_lines = replace_line_with_pattern(lines, "server = \"https://{{ item.prefix }}\"", "server = \"{{ item.server | default(\"https://\" + item.prefix) }}\"")
+        write_yaml_file(f"{kubespray_path}/roles/container-engine/containerd/templates/hosts.toml.j2", modified_lines)
     elif kubespray_version == "2.26.0":
         shutil.copytree(f"{kubespray_path}/inventory/sample/group_vars/all", f"{kubespray_path}/roles/kubespray-defaults/defaults/main/all")
         shutil.copytree(f"{kubespray_path}/inventory/sample/group_vars/k8s_cluster", f"{kubespray_path}/roles/kubespray-defaults/defaults/main/k8s_cluster")
@@ -400,10 +405,10 @@ def main():
       delegate_to: "{{ item }}"
       ignore_errors: yes
 
-    - name: Restart first flannel containers
-      shell: "{{bin_dir}}/crictl ps | grep kube-flannel | awk '{print $1}' | xargs {{bin_dir}}/crictl stop"
-      delegate_to: "{{ groups['kube_control_plane'] | first }}"
-      ignore_errors: yes
+#   - name: Restart first flannel containers
+#      shell: "{{bin_dir}}/crictl ps | grep kube-flannel | awk '{print $1}' | xargs {{bin_dir}}/crictl stop"
+#      delegate_to: "{{ groups['kube_control_plane'] | first }}"
+#      ignore_errors: yes
     """
     modified_lines = insert_line_after_pattern(lines, """- { role: kubernetes/preinstall, when: "dns_mode != 'none' and resolvconf_mode == 'host_resolvconf'", tags: resolvconf, dns_late: true }""", new_string)
     # 将更改写入文件
