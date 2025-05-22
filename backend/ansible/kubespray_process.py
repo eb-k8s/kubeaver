@@ -457,7 +457,11 @@ def main():
     # 将更改写入文件
     write_yaml_file(f"{kubespray_path}/ansible.cfg", modified_lines)
 
-
+    # 修改roles/kubernetes/node-label/tasks/main.yml
+    lines = read_yaml_file(f"{kubespray_path}/roles/kubernetes/node-label/tasks/main.yml")
+    # 将  retries: 10替换为  retries: 30
+    modified_lines = replace_line_with_pattern(lines, "  retries: 10", "  retries: 30")
+    write_yaml_file(f"{kubespray_path}/roles/kubernetes/node-label/tasks/main.yml", modified_lines)
     # # 修改roles/kubernetes/preinstall/tasks/0070-system-packages.yml
     # lines = read_yaml_file(f"{kubespray_path}/roles/kubernetes/preinstall/tasks/0070-system-packages.yml")
     # # 替换  when: ansible_os_family == "Debian"
