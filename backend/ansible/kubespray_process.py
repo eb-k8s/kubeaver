@@ -404,11 +404,34 @@ def main():
       loop: "{{ groups['kube_node'] }}"
       delegate_to: "{{ item }}"
       ignore_errors: yes
+    
+    - name: Check the OS pretty name
+      command: grep '^PRETTY_NAME=' /etc/os-release
+      register: temp_os_pretty_name
+    
+    - name: Extract the pretty name from the command output
+      set_fact:
+        extracted_os_pretty_name: "{{ temp_os_pretty_name.stdout.split('=')[1].strip('\"') }}"
 
-#   - name: Restart first flannel containers
-#      shell: "{{bin_dir}}/crictl ps | grep kube-flannel | awk '{print $1}' | xargs {{bin_dir}}/crictl stop"
-#      delegate_to: "{{ groups['kube_control_plane'] | first }}"
-#      ignore_errors: yes
+    - name: Gen the standard repo file name
+      set_fact:
+        os_pretty_name: "{{ extracted_os_pretty_name | regex_replace(' ', '_') | regex_replace('[()]', '') }}"
+
+    - name: Clean the variable
+      set_fact:
+        os_pretty_name: "{{ os_pretty_name | replace('_Linux', '') }}"
+
+    - name: Set OS version variable 
+      set_fact:
+        is_centos: "{{ os_pretty_name | regex_search('CentOS', ignorecase=True) }}"
+
+    - name: Restart first flannel containers
+      shell: "{{bin_dir}}/crictl ps | grep kube-flannel | awk '{print $1}' | xargs {{bin_dir}}/crictl stop"
+      when: 
+        - inventory_hostname in groups['kube_control_plane']
+        - kube_network_plugin == 'flannel'
+        - is_centos
+      ignore_errors: yes
     """
     modified_lines = insert_line_after_pattern(lines, """- { role: kubernetes/preinstall, when: "dns_mode != 'none' and resolvconf_mode == 'host_resolvconf'", tags: resolvconf, dns_late: true }""", new_string)
     # 将更改写入文件
