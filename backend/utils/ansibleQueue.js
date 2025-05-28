@@ -943,26 +943,28 @@ async function addTaskToQueue(id, taskName, playbook, oldK8sVersion, k8sVersion)
   }
   //updateQueueConcurrency(queueId, taskNum)
   //console.log(queues[queueId])
+  console.log("1")
   await queues[queueId].add(taskName, { playbook });
   await redis.select(0);
+  console.log("2")
   //更新redi数据中节点信息的当前执行的是什么任务
   await updateNodeStatus(id, playbook.ip, taskName)
+  console.log("3")
   //更新集群部署状态
   await updateClusterStatus(id, taskName)
 }
 
 async function updateNodeStatus(id, ip, taskName) {
   const nodeKey = `k8s_cluster:${id}:hosts:${ip}`;
+  console.log(nodeKey)
   // 获取活跃中的任务
   const activeJobs = await getActiveJobs(`${id}_${taskName}`);
-  console.log("当前活跃的任务", activeJobs)
+  console.log("当前活跃中的任务", activeJobs)
   const isActive = activeJobs.some(job => job.ip === ip);
-
   // 获取等待中的任务
   const waitingJobs = await getWaitingJobs(`${id}_${taskName}`);
-  console.log(waitingJobs)
+  console.log("当前等待中的任务", waitingJobs)
   const isWaiting = waitingJobs.some(job => job.ip === ip);
-
   // 根据任务名称和状态设置部署状态
   let activeStatus;
   if (isActive) {
