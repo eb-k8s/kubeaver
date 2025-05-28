@@ -127,6 +127,16 @@ async function createAnsibleQueue(baseQueueId, concurrency, k8sVersion) {
         'updateTime', Date.now()
       );
     });
+    queue.on('waiting', async (jobId) => {
+      console.log(`Job ${jobId} is now waiting`);
+      const waitingJob = await queues[queueId].getJob(jobId);
+      const nodeKey = `k8s_cluster:${waitingJob.data.playbook.id}:hosts:${waitingJob.data.playbook.ip}`;
+      await redis.hset(nodeKey,
+        'activeStatus', 'waiting',
+        'activeJobType', waitingJob.name,
+        'updateTime', Date.now()
+      );
+    });
 
     queue.on('completed', async (job) => {
       const nodeTaskKey = `k8s_cluster:${job.data.playbook.id}:tasks:${job.data.playbook.ip}:${job.data.playbook.taskName}:${job.timestamp}`;
@@ -948,8 +958,7 @@ async function addTaskToQueue(id, taskName, playbook, oldK8sVersion, k8sVersion)
   await redis.select(0);
   console.log("2")
   //更新redi数据中节点信息的当前执行的是什么任务
-  await updateNodeStatus(id, playbook.ip, taskName)
-  console.log("3")
+  //await updateNodeStatus(id, playbook.ip, taskName)
   //更新集群部署状态
   await updateClusterStatus(id, taskName)
 }
