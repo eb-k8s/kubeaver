@@ -679,19 +679,19 @@
         });
     });
 
-    // 监听 cluster.version 的变化
-    watch(
-        () => cluster.version,
-        (newVersion) => {
-            console.log('Kubernetes 版本切换为:', newVersion);
-            if (formattedPlugins.value.length) {
-            // 更新默认网络插件为第一个可用的插件
-            cluster.networkPlugin = `${formattedPlugins.value[0].name} - ${formattedPlugins.value[0].version}`;
-            } else {
-            cluster.networkPlugin = ''; // 如果没有可用插件，清空选择
-            }
+    // 校验当前选择的插件是否与当前 K8s 版本兼容
+    watch([() => cluster.version, () => cluster.networkPlugin], ([newVersion, newPlugin]) => {
+        if (!newVersion || !newPlugin) return;
+
+        const match = formattedPlugins.value.find(
+            plugin => `${plugin.name} - ${plugin.version}` === newPlugin
+        );
+
+        if (!match) {
+            Message.warning('当前 Kubernetes 版本与所选网络插件不兼容，请重新选择');
+            cluster.networkPlugin = ''; 
         }
-    );
+    });
 
     //获取主机列表
     const fetchHostList = async () => {
@@ -726,7 +726,6 @@
         } else {
             console.error('clusterList is not an array or undefined');
         }
-        console.log(nodeList.value);
         if (Array.isArray(nodeList.value)) {
             nodeList.value.forEach(item => {
                 if (item.role === "master") {
