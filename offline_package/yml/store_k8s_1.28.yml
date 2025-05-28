@@ -1,0 +1,111 @@
+kube_version: v1.28
+kubespray_version: v2.26.0
+dependency:
+  files:
+    - name: containerd
+      version: '1.7.21'
+      path: others/containerd
+      filename: containerd-1.7.21-linux-{{image_arch}}.tar.gz
+    - name: crictl
+      version: v1.28.0
+      path: others/crictl
+      filename: crictl-v1.28.0-linux-{{image_arch}}.tar.gz
+    - name: runc
+      version: v1.1.13
+      path: others/runc
+      filename: runc-v1.1.13.{{image_arch}}
+    - name: cni-plugins
+      version: v1.4.0
+      path: others/cni-plugins-linux
+      filename: cni-plugins-linux-{{image_arch}}-v1.4.0.tgz
+    - name: nerdctl
+      version: '1.7.6'
+      path: others/nerdctl
+      filename: nerdctl-1.7.6-linux-{{image_arch}}.tar.gz
+    - name: kubeadm
+      version: "{{kube_version}}"
+      path: k8s/{{kube_version}}/{{image_arch}}
+      filename: kubeadm-{{kube_version}}-{{image_arch}}
+    - name: kubectl
+      version: "{{kube_version}}"
+      path: k8s/{{kube_version}}/{{image_arch}}
+      filename: kubectl-{{kube_version}}-{{image_arch}}
+    - name: kubelet
+      version: "{{kube_version}}"
+      path: k8s/{{kube_version}}/{{image_arch}}
+      filename: kubelet-{{kube_version}}-{{image_arch}}
+  images:
+    - name: etcd
+      version: v3.5.12
+      name: store.e-byte.cn/k8s/etcd
+    - name: coredns
+      version: v1.10.1
+      tag: store.e-byte.cn/k8s/coredns
+    - name: cluster-proportional-autoscaler
+      version: v1.8.8
+      tag: store.e-byte.cn/k8s/cluster-proportional-autoscaler
+    - name: pause
+      version: '3.9'
+      tag: store.e-byte.cn/k8s/pause
+    - name: k8s-dns-node-cache
+      version: '1.22.28'
+      tag: store.e-byte.cn/k8s/k8s-dns-node-cache
+    - name: kube_apiserver
+      version: "{{kube_version}}"
+      tag: store.e-byte.cn/k8s/kube-apiserver
+    - name: kube_controller_manager
+      version: "{{kube_version}}"
+      tag: store.e-byte.cn/k8s/kube-controller-manager
+    - name: kube_proxy
+      version: "{{kube_version}}"
+      tag: store.e-byte.cn/k8s/kube-proxy
+    - name: kube_scheduler
+      version: "{{kube_version}}"
+      tag: store.e-byte.cn/k8s/kube-scheduler
+    - name: nginx
+      version: 1.25.2-alpine
+      tag: store.e-byte.cn/app/webserver/nginx
+network_plugins:
+  - name: flannel
+    version: v0.22.0
+    dependency:
+      images:
+        - name: flannel
+          version: v0.22.0
+          tag: store.e-byte.cn/sysapp/network/flannel/flannel
+        - name: flannel-cni-plugin
+          version: v1.1.2
+          tag: store.e-byte.cn/sysapp/network/flannel/flannel-cni-plugin
+  - name: calico
+    version: v3.28.1
+    dependency:
+      files:
+        - name: calicoctl
+          version: v3.28.1
+          path: sysapp/network/calico/v3.28.1
+          filename: calicoctl-v3.28.1-{{image_arch}}
+        - name: calico
+          version: v3.28.1
+          path: sysapp/network/calico/v3.28.1
+          filename: v3.28.1.tar.gz
+      images:
+        - name: node
+          version: v3.28.1
+          tag: store.e-byte.cn/sysapp/network/calico/node
+        - name: cni
+          version: v3.28.1
+          tag: store.e-byte.cn/sysapp/network/calico/cni
+        - name: kube-controllers
+          version: v3.28.1
+          tag: store.e-byte.cn/sysapp/network/calico/kube-controllers
+        - name: pod2daemon-flexvol
+          version: v3.28.1
+          tag: store.e-byte.cn/sysapp/network/calico/pod2daemon-flexvol
+system_app:
+  - name: metrics_server
+    version: v0.7.0
+    dependency:
+      images:
+        - name: metrics_server
+          version: v0.7.0
+          tag: store.e-byte.cn/sysapp/metrics-server/metrics-server
