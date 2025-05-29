@@ -983,10 +983,8 @@ async function addTaskToQueue(id, taskName, playbook, oldK8sVersion, k8sVersion)
   }
   //updateQueueConcurrency(queueId, taskNum)
   //console.log(queues[queueId])
-  console.log("1")
   await queues[queueId].add(taskName, { playbook });
   await redis.select(0);
-  console.log("2")
   //更新redi数据中节点信息的当前执行的是什么任务
   //await updateNodeStatus(id, playbook.ip, taskName)
   //更新集群部署状态
