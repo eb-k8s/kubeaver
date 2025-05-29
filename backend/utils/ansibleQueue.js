@@ -120,6 +120,8 @@ async function createAnsibleQueue(baseQueueId, concurrency, k8sVersion) {
     queue.process(config.name, config.taskNum, config.processFunction);
     queue.on('active', async (job) => {
       console.log(`Job ${job.id} is now active`);
+      console.log("获取运行中的任务")
+      console.log(job)
       const nodeKey = `k8s_cluster:${job.data.playbook.id}:hosts:${job.data.playbook.ip}`;
       await redis.hset(nodeKey,
         'activeStatus', 'running',
@@ -127,15 +129,43 @@ async function createAnsibleQueue(baseQueueId, concurrency, k8sVersion) {
         'updateTime', Date.now()
       );
     });
-    queue.on('waiting', async (jobId) => {
-      console.log(`Job ${jobId} is now waiting`);
-      const waitingJob = await queues[queueId].getJob(jobId);
-      const nodeKey = `k8s_cluster:${waitingJob.data.playbook.id}:hosts:${waitingJob.data.playbook.ip}`;
-      await redis.hset(nodeKey,
-        'activeStatus', 'waiting',
-        'activeJobType', waitingJob.name,
+    queue.on('active', (job) => {
+      console.log(`Job ${job.id} is now active`);
+      console.log("获取运行中的任务")
+      console.log(job)
+      const nodeKey = `k8s_cluster:${job.data.playbook.id}:hosts:${job.data.playbook.ip}`;
+      redis.hset(nodeKey,
+        'activeStatus', 'running',
+        'activeJobType', job.name,
         'updateTime', Date.now()
       );
+    });
+    // queue.on('waiting', async (jobId) => {
+    //   console.log(`Job ${jobId} is now waiting`);
+    //   const waitingJob = await queues[queueId].getJob(jobId);
+    //   console.log("获取等待中的任务")
+    //   console.log(waitingJob)
+    //   const nodeKey = `k8s_cluster:${waitingJob.data.playbook.id}:hosts:${waitingJob.data.playbook.ip}`;
+    //   await redis.hset(nodeKey,
+    //     'activeStatus', 'waiting',
+    //     'activeJobType', waitingJob.name,
+    //     'updateTime', Date.now()
+    //   );
+    // });
+    queue.on('waiting', (jobId) => {
+      console.log(`Job ${jobId} is now waiting`);
+      queues[queueId].getJob(jobId).then(waitingJob => {
+        console.log("获取等待中的任务");
+        console.log(waitingJob);
+        const nodeKey = `k8s_cluster:${waitingJob.data.playbook.id}:hosts:${waitingJob.data.playbook.ip}`;
+        redis.hset(nodeKey,
+          'activeStatus', 'waiting',
+          'activeJobType', waitingJob.name,
+          'updateTime', Date.now()
+        );
+      }).catch(error => {
+        console.error('Error fetching job:', error);
+      });
     });
 
     queue.on('completed', async (job) => {
@@ -953,10 +983,8 @@ async function addTaskToQueue(id, taskName, playbook, oldK8sVersion, k8sVersion)
   }
   //updateQueueConcurrency(queueId, taskNum)
   //console.log(queues[queueId])
-  console.log("1")
   await queues[queueId].add(taskName, { playbook });
   await redis.select(0);
-  console.log("2")
   //更新redi数据中节点信息的当前执行的是什么任务
   //await updateNodeStatus(id, playbook.ip, taskName)
   //更新集群部署状态
