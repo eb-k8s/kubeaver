@@ -5,7 +5,7 @@ const { getTaskOutput } = require('../utils/getTaskOutput');
 const { getActiveTasks } = require('../service/task')
 
 const redisConfig = {
-  host: process.env.REDIS_HOST, 
+  host: process.env.REDIS_HOST,
   port: process.env.REDIS_PORT,
 };
 
