@@ -431,7 +431,20 @@
                     Message.error(result.msg);
                 }
             }else{
-                
+                let count = 0;
+                nodeList.value.forEach(itme => {
+                    if(itme.role === 'master'){
+                        count += 1;
+                    }
+                });
+                if(isMasterRunning.value){
+                    Message.warning("请先加入master！");
+                    return;
+                }
+                if (count % 2 ===0 ) {
+                    Message.warning(`列表中现有${count}个master，建议保持单数以保证高可用！`);
+                    return;
+                }
                 const result: any = await joinCluster(data, k8sVersion);
                 if(result.status === 'ok'){
                     Message.info("节点正在加入集群中，请稍后......");
