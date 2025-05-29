@@ -76,6 +76,7 @@ import { getTaskList, getTaskDetail } from '@/api/tasks';
 import { useRoute } from 'vue-router';
 import { formatTime } from '@/utils/time';
 import * as echarts from 'echarts';
+import { Message } from '@arco-design/web-vue';
 
 const route = useRoute();
 const id = ref(route.query.id);
@@ -267,6 +268,13 @@ const handleTaskDetail = async (task: any) => {
     webTaskDetailVisible.value = true;
 
     try {
+        // 检查次版本是否存在
+        const versionMapStr = localStorage.getItem('k8sVersionMap');
+        if (!versionMapStr) {
+            Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
+            return;
+        }
+
         const taskNameMap: Record<string, string> = {
             '添加节点': 'addNode',
             '初始化集群': 'initCluster',
@@ -579,6 +587,13 @@ function calculateExecutionTime(processedOn, finishedOn) {
 
 const fetchTaskList = async () => {
     try {
+        // 检查次版本是否存在
+        const versionMapStr = localStorage.getItem('k8sVersionMap');
+        if (!versionMapStr) {
+            Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
+            return;
+        }
+            
         setLoading(true);
         const k8sVersion = getFirstK8sVersionFromStorage();
         const result = await getTaskList(id.value, k8sVersion);

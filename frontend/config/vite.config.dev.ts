@@ -18,17 +18,17 @@ export default mergeConfig(
           // rewrite: (path) => path.replace(/^\/api/, '/'),
         },
         '/v125/api/': {
-          target: 'http://127.0.0.1:8088',
+          target: 'http://kubeaver_backend_v1:8000/',
           changeOrigin: true,
           secure: false,
           rewrite: (path: string) => path.replace(/^\/v125\/api/, '/api'),
         },
-        // '/v128/api/': {
-        //   target: 'http://127.0.0.1:8000',
-        //   changeOrigin: true,
-        //   secure: false,
-        //   rewrite: (path: string) => path.replace(/^\/v128\/api/, '/api'),
-        // },
+        '/v128/api/': {
+          target: 'http://kubeaver_backend_v2:8000/',
+          changeOrigin: true,
+          secure: false,
+          rewrite: (path: string) => path.replace(/^\/v128\/api/, '/api'),
+        },
         // '/ws/': {
         //   target: 'http://127.0.0.1:8000',
         //   changeOrigin: true,
@@ -37,14 +37,14 @@ export default mergeConfig(
         //   rewrite: (path) => path.replace(/^\/ws/, '/'),
         // },
         '/v125/ws/': {
-          target: 'http://127.0.0.1:8088',
+          target: 'http://kubeaver_backend_v1:8000/',
           changeOrigin: true,
           secure: false,
           ws: true,
           rewrite: (path) => path.replace(/^\/v125\/ws/, '/'),
         },
         '/v128/ws/': {
-          target: 'http://127.0.0.1:8000',
+          target: 'http://kubeaver_backend_v2:8000/',
           changeOrigin: true,
           secure: false,
           ws: true,

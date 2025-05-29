@@ -87,7 +87,6 @@
     const taskList = ref<any>();
     const webSocketVisible = ref(false);
     const version = ref();
-    const upgradeVersion = ref();
     const webSocketContent = ref<HTMLElement | null>(null);
     const defaultActiveKey = ref();
     const socket1 = ref(null);
@@ -106,21 +105,6 @@
         webSocketVisible.value = true; 
         nodeVersion.value = record.k8sVersion;
         openWebSocketModal(record);
-    };
-
-    const getFirstK8sVersionFromStorage = (key = 'k8sVersionList'): string => {
-        const versionArrayStr = localStorage.getItem(key);
-        if (versionArrayStr) {
-            try {
-                const versionArray = JSON.parse(versionArrayStr);
-                if (Array.isArray(versionArray) && versionArray.length > 0) {
-                    return versionArray[0]; // 返回第一个版本
-                }
-            } catch (parseError) {
-                console.error('版本信息解析失败:', parseError);
-            }
-        }
-        return '';
     };
 
     const extractMajorMinor = (version: string)=> {
@@ -176,12 +160,32 @@
                 id: id.value,
                 taskName,
             };
-            // const k8sVersion = getFirstK8sVersionFromStorage();
-            let k8sVersion;
-            if(taskname === '升级集群' && props.upgradeK8sVersion){
-                k8sVersion = getMappedK8sVersion(props.upgradeK8sVersion)
-            }else{
-                k8sVersion = getMappedK8sVersion(version.value);
+            let versionMap: Record<string, string>;
+            try {
+                const versionMapStr = localStorage.getItem('k8sVersionMap');
+                if (!versionMapStr) {
+                    Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
+                    return;
+                }
+                versionMap = JSON.parse(versionMapStr);
+            } catch (err) {
+                Message.error("版本映射解析失败，请退出重新登录！");
+                return;
+            }
+
+            // 获取目标版本号
+            const selectedVersion = props.upgradeK8sVersion || version.value;
+            const majorMinorVersion = selectedVersion.match(/^v?\d+\.\d+/)?.[0];
+
+            if (!majorMinorVersion) {
+                Message.error("无法解析 Kubernetes 主次版本，请检查格式！");
+                return;
+            }
+
+            const k8sVersion = versionMap[majorMinorVersion];
+            if (!k8sVersion) {
+                Message.error("所选版本对应的后端不存在或未启动，请更换版本或启动后端！");
+                return;
             }
             const result: any = await stopTasks(data, k8sVersion);
             if(result.status === 'ok'){
@@ -213,11 +217,32 @@
                 jobId: record.jobId,
                 taskName,
             };
-            let k8sVersion;
-            if(record.taskName === '升级集群' && props.upgradeK8sVersion){
-                k8sVersion = getMappedK8sVersion(props.upgradeK8sVersion)
-            }else{
-                k8sVersion = getMappedK8sVersion(version.value);
+            let versionMap: Record<string, string>;
+            try {
+                const versionMapStr = localStorage.getItem('k8sVersionMap');
+                if (!versionMapStr) {
+                    Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
+                    return;
+                }
+                versionMap = JSON.parse(versionMapStr);
+            } catch (err) {
+                Message.error("版本映射解析失败，请退出重新登录！");
+                return;
+            }
+
+            // 获取目标版本号
+            const selectedVersion = props.upgradeK8sVersion || version.value;
+            const majorMinorVersion = selectedVersion.match(/^v?\d+\.\d+/)?.[0];
+
+            if (!majorMinorVersion) {
+                Message.error("无法解析 Kubernetes 主次版本，请检查格式！");
+                return;
+            }
+
+            const k8sVersion = versionMap[majorMinorVersion];
+            if (!k8sVersion) {
+                Message.error("所选版本对应的后端不存在或未启动，请更换版本或启动后端！");
+                return;
             }
             const result: any = await removeWaitingTask(data, k8sVersion);
             if(result.status === 'ok'){
@@ -249,13 +274,32 @@
                 jobId: record.jobId,
                 taskName,
             };
-            // const k8sVersion = getFirstK8sVersionFromStorage();
-            // const k8sVersion = getMappedK8sVersion(version.value);
-            let k8sVersion;
-            if(record.taskName === '升级集群' && props.upgradeK8sVersion){
-                k8sVersion = getMappedK8sVersion(props.upgradeK8sVersion)
-            }else{
-                k8sVersion = getMappedK8sVersion(version.value);
+            let versionMap: Record<string, string>;
+            try {
+                const versionMapStr = localStorage.getItem('k8sVersionMap');
+                if (!versionMapStr) {
+                    Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
+                    return;
+                }
+                versionMap = JSON.parse(versionMapStr);
+            } catch (err) {
+                Message.error("版本映射解析失败，请退出重新登录！");
+                return;
+            }
+
+            // 获取目标版本号
+            const selectedVersion = props.upgradeK8sVersion || version.value;
+            const majorMinorVersion = selectedVersion.match(/^v?\d+\.\d+/)?.[0];
+
+            if (!majorMinorVersion) {
+                Message.error("无法解析 Kubernetes 主次版本，请检查格式！");
+                return;
+            }
+
+            const k8sVersion = versionMap[majorMinorVersion];
+            if (!k8sVersion) {
+                Message.error("所选版本对应的后端不存在或未启动，请更换版本或启动后端！");
+                return;
             }
             const result: any = await stopTask(data, k8sVersion);
             if(result.status === 'ok'){
@@ -295,13 +339,39 @@
     const openWebSocketModal = async (task) => {
     webSocketVisible.value = true;
     // const socketUrl = `ws://10.1.35.91:8000/websocket/${id.value}/${task.ip}/${task.timestamp}`;
-    let k8sVersion: any;
-    if(task.taskName === '升级集群' && props.upgradeK8sVersion){
-      k8sVersion = getMappedK8sVersion(props.upgradeK8sVersion);
-    }else{
-      k8sVersion = getMappedK8sVersion(nodeVersion.value);  
+    // let k8sVersion: any;
+    // if(task.taskName === '升级集群' && props.upgradeK8sVersion){
+    //   k8sVersion = getMappedK8sVersion(props.upgradeK8sVersion);
+    // }else{
+    //   k8sVersion = getMappedK8sVersion(nodeVersion.value);  
+    // }
+    let versionMap: Record<string, string>;
+    try {
+        const versionMapStr = localStorage.getItem('k8sVersionMap');
+        if (!versionMapStr) {
+            Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
+            return;
+        }
+        versionMap = JSON.parse(versionMapStr);
+    } catch (err) {
+        Message.error("版本映射解析失败，请退出重新登录！");
+        return;
     }
-    console.log(k8sVersion);
+
+    // 获取目标版本号
+    const selectedVersion = props.upgradeK8sVersion || nodeVersion.value;
+    const majorMinorVersion = selectedVersion.match(/^v?\d+\.\d+/)?.[0];
+
+    if (!majorMinorVersion) {
+        Message.error("无法解析 Kubernetes 主次版本，请检查格式！");
+        return;
+    }
+
+    const k8sVersion = versionMap[majorMinorVersion];
+    if (!k8sVersion) {
+        Message.error("所选版本对应的后端不存在或未启动，请更换版本或启动后端！");
+        return;
+    }
     const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
     const socketUrl = `${protocol}${window.location.host}/${k8sVersion}/ws/websocket/${id.value}/${task.ip}/${task.timestamp}`;
 
@@ -354,11 +424,38 @@
         // socket2.value = createWebSocket(`ws://10.1.35.91:8000/activeTasks/${id}`, (event) => {
         //    handleTaskListMessage(event.data);
         // });
-        let k8sVersion: any;
-        if(props.upgradeK8sVersion){
-            k8sVersion = getMappedK8sVersion(props.upgradeK8sVersion);
-        }else{
-            k8sVersion = getMappedK8sVersion(version.value);  
+        // let k8sVersion: any;
+        // if(props.upgradeK8sVersion){
+        //     k8sVersion = getMappedK8sVersion(props.upgradeK8sVersion);
+        // }else{
+        //     k8sVersion = getMappedK8sVersion(version.value);  
+        // }
+        let versionMap: Record<string, string>;
+        try {
+            const versionMapStr = localStorage.getItem('k8sVersionMap');
+            if (!versionMapStr) {
+                Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
+                return;
+            }
+            versionMap = JSON.parse(versionMapStr);
+        } catch (err) {
+            Message.error("版本映射解析失败，请退出重新登录！");
+            return;
+        }
+
+        // 获取目标版本号
+        const selectedVersion = props.upgradeK8sVersion || version.value;
+        const majorMinorVersion = selectedVersion.match(/^v?\d+\.\d+/)?.[0];
+
+        if (!majorMinorVersion) {
+            Message.error("无法解析 Kubernetes 主次版本，请检查格式！");
+            return;
+        }
+
+        const k8sVersion = versionMap[majorMinorVersion];
+        if (!k8sVersion) {
+            Message.error("所选版本对应的后端不存在或未启动，请更换版本或启动后端！");
+            return;
         }
         const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
         socket2.value = createWebSocket(`${protocol}${window.location.host}/${k8sVersion}/ws/activeTasks/${id}`, (event) => {
