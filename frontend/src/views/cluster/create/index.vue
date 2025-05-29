@@ -354,28 +354,6 @@
         return '';
     };
 
-    const getMappedK8sVersion = (version: string)=> {
-        try {
-            const majorMinor = extractMajorMinor(version); 
-            if (!majorMinor) return '';
-
-            const versionMapStr = localStorage.getItem('k8sVersionMap');
-            if (!versionMapStr) return '';
-            
-            const versionMap: Record<string, string> = JSON.parse(versionMapStr);
-            
-            return versionMap[majorMinor] || '';
-        } catch (err) {
-            console.error('解析版本映射失败:', err);
-            return '';
-        }
-    }
-
-    const extractMajorMinor = (version: string)=> {
-        const match = version.match(/(v?\d+\.\d+)/);
-        return match ? match[1] : '';
-    }
-    
     const hosts = computed(() => {
         return [
             ...cluster.controlPlaneHosts.map(host => ({
@@ -439,17 +417,6 @@
                 return;
             }
 
-            // const selectedHostOS = selectedHost.os.split(' ')[0]; // 获取操作系统名称
-            
-            // // 获取所有工作节点的操作系统集合
-            // const workerOSSet = new Set(cluster.workerHosts.map(host => host.os.split(' ')[0]));
-            
-            // 如果已经选择了工作节点，检查控制节点的操作系统是否一致
-            // if (workerOSSet.size > 0 && !workerOSSet.has(selectedHostOS)) {
-            //     Message.error(`控制节点 ${selectedIP} 的操作系统必须与工作节点的操作系统一致`);
-            //     return;
-            // }
-
             // 检查是否已经添加过
             if (!cluster.controlPlaneHosts.some(host => host.ip === selectedIP)) {
                 const segments = selectedHost.hostIP.split('.');
@@ -480,16 +447,6 @@
             return;
         }
 
-        // 获取所有控制节点的操作系统集合
-        // const controlPlaneOSSet = new Set(cluster.controlPlaneHosts.map(host => host.os.split(' ')[0]));
-
-        // // 检查所有选中的工作节点的操作系统是否一致
-        // const selectedWorkerHosts = workerHost.value.map(ip => hostList.value.find(host => host.hostIP === ip));
-        // if (selectedWorkerHosts.some(host => !host)) {
-        //     Message.error("某些选中的主机不存在！");
-        //     return;
-        // }
-
         // 遍历添加工作节点
         workerHost.value.forEach(ip => {
             if (!cluster.workerHosts.some(host => host.ip === ip)) {
@@ -513,6 +470,12 @@
 
      //获取集群列表
      const fetchClustersList = async () => {
+        // 检查次版本是否存在
+        const versionMapStr = localStorage.getItem('k8sVersionMap');
+        if (!versionMapStr) {
+            Message.error("未检测到可用的后端，请退出重新登录！");
+            return;
+        }
         try {
             setLoading(true);
             const k8sVersion = getFirstK8sVersionFromStorage();
@@ -563,6 +526,27 @@
             return;
         }
 
+        // 检查次版本是否存在
+        const versionMapStr = localStorage.getItem('k8sVersionMap');
+        if (!versionMapStr) {
+            Message.error("未检测到可用的 Kubernetes 版本对应的后端，请退出重新登录！");
+            return;
+        }
+
+        const versionMap: Record<string, string> = JSON.parse(versionMapStr);
+
+        const majorMinorVersion = cluster.version.match(/^v?\d+\.\d+/)?.[0];
+        if (!majorMinorVersion) {
+            Message.error("无法解析集群版本，请检查版本格式！");
+            return;
+        }
+
+        const k8sVersion = versionMap[majorMinorVersion];
+        if (!k8sVersion) {
+            Message.error("所选的 Kubernetes 版本对应的后端不存在或未启动，请选择其他版本或启动对应的后端！");
+            return;
+        }
+
         const data = {
             clusterName: cluster.clusterName,
             networkPlugin: cluster.networkPlugin,
@@ -573,7 +557,6 @@
 
         try {
             setLoading(true);
-            const k8sVersion = getMappedK8sVersion(data.version);
             const result: any = await createCluster(data,k8sVersion);
             if (result.status === 'ok') {
                 Message.success("集群创建成功！");
@@ -593,6 +576,12 @@
 
     //获取离线包列表
     const fetchResourcesList = async () => {
+        // 检查次版本是否存在
+        const versionMapStr = localStorage.getItem('k8sVersionMap');
+        if (!versionMapStr) {
+            Message.error("未检测到可用的后端，请退出重新登录！");
+            return;
+        }
         try {
             setLoading(true);
             const k8sVersion = getFirstK8sVersionFromStorage();
@@ -636,25 +625,6 @@
             setLoading(false);
         }
     };
-
-    // const formattedPlugins = computed(() => {
-    //     if (!networkPlugins.value || !networkPlugins.value.children) return [];
-
-    //     return networkPlugins.value.children.flatMap(plugin => {
-    //         // 遍历所有版本
-    //         return (plugin.children || []).map(versionNode => {
-    //             const imagesNode = versionNode.children?.find(child => child.name === 'images');
-
-    //             return {
-    //                 name: plugin.name,           
-    //                 version: versionNode?.name,       
-    //                 images: imagesNode?.children || [],
-    //                 files: versionNode.children
-    //                     ?.filter(child => child.name !== 'images' && child.type === 'file') || []
-    //             };
-    //         });
-    //     });
-    // });
 
     const formattedPlugins = computed(() => {
         if (!networkPlugins.value || !networkPlugins.value.children) return [];
@@ -731,16 +701,22 @@
     );
     //获取主机列表
     const fetchHostList = async () => {
-      try {
-        setLoading(true);
-        const k8sVersion = getFirstK8sVersionFromStorage();
-        const result = await getAvailableHostList(k8sVersion);
-        hostList.value = result.data;
-      } catch (err) {
-        console.log(err);
-      } finally {
-        setLoading(false);
-      }
+        // 检查次版本是否存在
+        const versionMapStr = localStorage.getItem('k8sVersionMap');
+        if (!versionMapStr) {
+            Message.error("未检测到可用的后端，请退出重新登录！");
+            return;
+        }
+        try {
+            setLoading(true);
+            const k8sVersion = getFirstK8sVersionFromStorage();
+            const result = await getAvailableHostList(k8sVersion);
+            hostList.value = result.data;
+        } catch (err) {
+            console.log(err);
+        } finally {
+            setLoading(false);
+        }
     };
   
     fetchHostList();
