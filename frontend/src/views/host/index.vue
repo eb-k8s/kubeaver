@@ -132,13 +132,14 @@ const isHostExist = (hostIP: string) => {
 const handleAddOk = async () => {
   const k8sVersion = getFirstK8sVersionFromStorage();
   const { hostIP } = form;
-  setLoading(true);
+  
   if (isHostExist(hostIP)) {
     Message.warning(`主机 ${hostIP} 已经存在！`);
     return;
   }
 
   try {
+    setLoading(true);
     const result: any = await addHost(form, k8sVersion);
     if (result.status === 'ok') {
       Message.success('主机添加成功!');
@@ -148,8 +149,6 @@ const handleAddOk = async () => {
     }
   } catch (error) {
     Message.error('添加主机时发生异常');
-  }finally{
-    setLoading(false);
   }
 };
 
