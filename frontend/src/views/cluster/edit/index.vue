@@ -553,7 +553,7 @@
         // 检查次版本是否存在
         const versionMapStr = localStorage.getItem('k8sVersionMap');
         if (!versionMapStr) {
-            Message.error("未检测到可用的后端，请退出重新登录！");
+            Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
             return;
         }
         try {
@@ -671,7 +671,7 @@
         // 检查次版本是否存在
         const versionMapStr = localStorage.getItem('k8sVersionMap');
         if (!versionMapStr) {
-            Message.error("未检测到可用的后端，请退出重新登录！");
+            Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
             return;
         }
         try {
@@ -723,7 +723,7 @@
         // 检查次版本是否存在
         const versionMapStr = localStorage.getItem('k8sVersionMap');
         if (!versionMapStr) {
-            Message.error("未检测到可用的后端，请退出重新登录！");
+            Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
             return;
         }
         try {
@@ -743,7 +743,7 @@
         // 检查次版本是否存在
         const versionMapStr = localStorage.getItem('k8sVersionMap');
         if (!versionMapStr) {
-            Message.error("未检测到可用的后端，请退出重新登录！");
+            Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
             return;
         }
         try {

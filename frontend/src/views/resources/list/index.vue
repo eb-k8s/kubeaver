@@ -144,6 +144,7 @@
     import router from '@/router';
     import useLoading from '@/hooks/loading';
     import { getResources } from '@/api/resources';
+    import { Message } from '@arco-design/web-vue';
 
     const { loading, setLoading } = useLoading();
     const k8sCache = ref(null)
@@ -162,25 +163,33 @@
         fetchResourcesList();
     }
 
+    const getFirstK8sVersionFromStorage = (key = 'k8sVersionList'): string => {
+        const versionArrayStr = localStorage.getItem(key);
+        if (versionArrayStr) {
+            try {
+                const versionArray = JSON.parse(versionArrayStr);
+                if (Array.isArray(versionArray) && versionArray.length > 0) {
+                    return versionArray[0]; // 返回第一个版本
+                }
+            } catch (parseError) {
+                console.error('版本信息解析失败:', parseError);
+            }
+        }
+        return '';
+    };
+
     const fetchResourcesList = async () => {
         try {
-            setLoading(true);
-            // 从 localStorage 获取版本数组并解析
-            const versionArrayStr = localStorage.getItem('k8sVersionList');
-            let k8sVersion = '';
-            
-            if (versionArrayStr) {
-                try {
-                    const versionArray = JSON.parse(versionArrayStr);
-                    if (Array.isArray(versionArray) && versionArray.length > 0) {
-                        k8sVersion = versionArray[0]; // 取第一个值作为版本号
-                    }
-                } catch (parseError) {
-                    console.error('版本信息解析失败:', parseError);
-                }
-            }
 
-            // const result: any = await getResources();
+            // 检查次版本是否存在
+            const versionMapStr = localStorage.getItem('k8sVersionMap');
+            if (!versionMapStr) {
+                Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
+                return;
+            }
+            
+            setLoading(true);
+            const k8sVersion = getFirstK8sVersionFromStorage();
             const result: any = await getResources(k8sVersion);
             result.data.forEach(item => {
                 if (item.name === 'k8s_cache') {
