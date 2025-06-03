@@ -811,11 +811,11 @@
         dataIndex: 'count',
         slotName: 'count',
     },
-    {
-        title: 'master1',
-        dataIndex: 'master1',
-        slotName: 'master1',
-    },
+    // {
+    //     title: 'master1',
+    //     dataIndex: 'master1',
+    //     slotName: 'master1',
+    // },
     {
         title: '集群状态',
         dataIndex: 'status',
