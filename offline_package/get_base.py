@@ -18,9 +18,9 @@ def render_template(yaml_content, kube_version, image_arch):
 
 # 设置全局参数
 # 具体的k8s版本与yaml文件前缀
-store_k8s_yaml_prefix ='../yml/store_k8s'
+store_k8s_yaml_prefix ='./yml/store_k8s'
 # 每个文件和镜像从何处下载
-store_file_url_filename = '../yml/url_and_repo.yml'
+store_file_url_filename = './yml/url_and_repo.yml'
 
 # 创建解析器解析命令行参数
 parser = argparse.ArgumentParser(description='读取用户指定的离线包信息')
