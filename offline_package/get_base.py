@@ -32,7 +32,7 @@ parser.add_argument('--image_arch', type=str, default='amd64', help='文件系�
 # 添加 image_registry 参数，设置默认值
 parser.add_argument('--image_registry', type=str, default='store.e-byte.cn', help='离线服务器镜像域名')
 # 添加 target_path 参数，设置默认值
-parser.add_argument('--target_path', type=str, default='./', help='离线包生成路径')
+parser.add_argument('--target_path', type=str, default='.', help='离线包生成路径')
 # 解析参数
 args = parser.parse_args() 
 
