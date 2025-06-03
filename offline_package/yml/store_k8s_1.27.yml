@@ -37,7 +37,7 @@ dependency:
   images:
     - name: etcd
       version: v3.5.10
-      name: store.e-byte.cn/k8s/etcd
+      tag: store.e-byte.cn/k8s/etcd
     - name: coredns
       version: v1.10.1
       tag: store.e-byte.cn/k8s/coredns
