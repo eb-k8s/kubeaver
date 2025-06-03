@@ -230,7 +230,8 @@
   import Node from '@/views/node/index.vue';
   import TaskQueue from '@/views/task/TaskQueue.vue';
   import TaskHistory from '@/views/task/TaskHistory.vue';
-  import { getClusterList} from '@/api/cluster';
+  import { getClusterList } from '@/api/cluster';
+  import { Message } from '@arco-design/web-vue';
   
   const { loading, setLoading } = useLoading();
   const route = useRoute();
@@ -310,17 +311,23 @@
 
   //获取集群列表
   const fetchClustersList = async () => {
-        try {
-            setLoading(true);
-            const k8sVersion = getFirstK8sVersionFromStorage();
-            const result = await getClusterList(k8sVersion);
-            clusterList.value = result.data;
-        } catch (err) {
-            console.log(err);
-        } finally {
-            setLoading(false);
-        }
-    };
+    // 检查次版本是否存在
+    const versionMapStr = localStorage.getItem('k8sVersionMap');
+    if (!versionMapStr) {
+        Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
+        return;
+    }
+    try {
+        setLoading(true);
+        const k8sVersion = getFirstK8sVersionFromStorage();
+        const result = await getClusterList(k8sVersion);
+        clusterList.value = result.data;
+    } catch (err) {
+        console.log(err);
+    } finally {
+        setLoading(false);
+    }
+  };
 
   onMounted(async () => {
 

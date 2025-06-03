@@ -87,7 +87,7 @@
                             <a-button v-if="record.status === 'Unknown' && record.activeJobType === '暂无任务' && !isAnyNodeBusy" type="text" size="small" @click="onClickJoinMaster(record)">
                                 加入
                             </a-button>
-                            <a-button v-if="record.status === 'Unknown' && record.activeJobType === '暂无任务' && !isAnyNodeBusy" type="text" size="small" @click="onClickDelete(record)">
+                            <a-button v-if="record.status === 'Unknown' && record.activeJobType === '暂无任务'" type="text" size="small" @click="onClickDelete(record)">
                                 删除
                             </a-button>
                             <a-button v-if="master1.value !== record.name && record.status !== 'Unknown' && record.activeJobType === '暂无任务'" type="text" size="small" @click="onClickRemove(record)">
@@ -209,10 +209,10 @@
     import { getResources } from '@/api/resources';
     import { deployCluster } from '@/api/cluster';
     import { upgradeCluster } from '@/api/tasks';
+    import { getAvailableHostList } from '@/api/hosts';
     import useLoading from '@/hooks/loading';
     import { useRoute } from 'vue-router';
     import { Message } from '@arco-design/web-vue';
-    import { getAvailableHostList } from '@/api/hosts';
     import { formatTime } from '@/utils/time';
 
     const { loading, setLoading } = useLoading();
@@ -421,7 +421,28 @@
                 Message.warning(`列表中现有${count}个master，建议保持单数以保证高可用！`);
                 return;
             }
-            const k8sVersion = getMappedK8sVersion(version.value);
+
+            // 检查次版本是否存在
+            const versionMapStr = localStorage.getItem('k8sVersionMap');
+            if (!versionMapStr) {
+                Message.error("未检测到可用的 Kubernetes 版本对应的后端，请退出重新登录！");
+                return;
+            }
+
+            const versionMap: Record<string, string> = JSON.parse(versionMapStr);
+
+            const majorMinorVersion = version.value.match(/^v?\d+\.\d+/)?.[0];
+            if (!majorMinorVersion) {
+                Message.error("无法解析集群版本，请检查版本格式！");
+                return;
+            }
+
+            const k8sVersion = versionMap[majorMinorVersion];
+            if (!k8sVersion) {
+                Message.error("所选的 Kubernetes 版本对应的后端不存在或未启动，请选择其他版本或启动对应的后端！");
+                return;
+            }
+            // const k8sVersion = getMappedK8sVersion(version.value);
             if(nodeRole.value === 'master'){
                 const result: any = await deployCluster(data, k8sVersion);
                 if(result.status === 'ok'){
@@ -431,7 +452,20 @@
                     Message.error(result.msg);
                 }
             }else{
-                
+                let count = 0;
+                nodeList.value.forEach(itme => {
+                    if(itme.role === 'master'){
+                        count += 1;
+                    }
+                });
+                if(isMasterRunning.value){
+                    Message.warning("请先加入master！");
+                    return;
+                }
+                if (count % 2 ===0 ) {
+                    Message.warning(`列表中现有${count}个master，建议保持单数以保证高可用！`);
+                    return;
+                }
                 const result: any = await joinCluster(data, k8sVersion);
                 if(result.status === 'ok'){
                     Message.info("节点正在加入集群中，请稍后......");
@@ -586,7 +620,26 @@
                 ip: record.ip,
                 networkPlugin: props.upgradeNetworkPlugin
             }
-            const k8sVersion = getMappedK8sVersion(props.upgradeK8sVersion);
+            const versionMapStr = localStorage.getItem('k8sVersionMap');
+            if (!versionMapStr) {
+                Message.error("未检测到可用的 Kubernetes 版本对应的后端，请退出重新登录！");
+                return;
+            }
+
+            const versionMap: Record<string, string> = JSON.parse(versionMapStr);
+
+            const majorMinorVersion = props.upgradeK8sVersion.match(/^v?\d+\.\d+/)?.[0];
+            if (!majorMinorVersion) {
+                Message.error("无法解析集群版本，请检查版本格式！");
+                return;
+            }
+
+            const k8sVersion = versionMap[majorMinorVersion];
+            if (!k8sVersion) {
+                Message.error("所选的 Kubernetes 版本对应的后端不存在或未启动，请选择其他版本或启动对应的后端！");
+                return;
+            }
+            // const k8sVersion = getMappedK8sVersion(props.upgradeK8sVersion);
             const result: any = await upgradeCluster(data, k8sVersion);
             if(result.status === 'ok'){
                 Message.info("节点正在升级,请稍后......");
@@ -601,18 +654,39 @@
 
     const handleDeleteOk = async () => {
         try {
+
+            let versionMap: Record<string, string>;
+            try {
+                const versionMapStr = localStorage.getItem('k8sVersionMap');
+                if (!versionMapStr) {
+                    Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
+                    return;
+                }
+                versionMap = JSON.parse(versionMapStr);
+            } catch (err) {
+                Message.error("版本映射解析失败，请退出重新登录！");
+                return;
+            }
+
+            // 获取目标版本号
+            const selectedVersion = props.upgradeK8sVersion || version.value;
+            const majorMinorVersion = selectedVersion.match(/^v?\d+\.\d+/)?.[0];
+
+            if (!majorMinorVersion) {
+                Message.error("无法解析 Kubernetes 主次版本，请检查格式！");
+                return;
+            }
+
+            const k8sVersion = versionMap[majorMinorVersion];
+            if (!k8sVersion) {
+                Message.error("所选版本对应的后端不存在或未启动，请更换版本或启动后端！");
+                return;
+            }
+
             const data = {
                 id : id.value,
                 ip: nodeip.value
             };
-            // const k8sVersion = getFirstK8sVersionFromStorage();
-            let k8sVersion;
-            if(props.upgradeK8sVersion){
-                k8sVersion = getMappedK8sVersion(props.upgradeK8sVersion)
-            }else{
-                k8sVersion = getMappedK8sVersion(version.value);
-            }
-            console.log(k8sVersion);
             const result: any = await deleteNode(data, k8sVersion);
             if(result.status === 'ok'){
                 Message.success("节点删除成功！");
@@ -632,19 +706,11 @@
     const handleAddNodeOk = async () => {
         
         try {
-
-            // let count = 0;
-            // nodeList.value.forEach(itme => {
-            //     if(itme.role === 'master'){
-            //         count += 1;
-            //     }
-            // });
-
             if (cluster.controlPlaneHosts.length === 0 && cluster.workerHosts.length === 0) {
                 Message.error("至少需要添加一个控制节点或一个工作节点！");
                 return;
             }
-
+          
             // 校验控制节点个数是否为单数
             // if (cluster.controlPlaneHosts.length % 2 !== 0 && count % 2 !==0 ) {
             //     Message.error(`添加后有 ${cluster.controlPlaneHosts.length + count} 个控制节点，建议保持单数以保证高可用！`);
@@ -664,6 +730,40 @@
                 return false;
             }
 
+            //   // 检查次版本是否存在
+            //   const versionMapStr = localStorage.getItem('k8sVersionMap');
+            // if (!versionMapStr) {
+            //     Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
+            //     return;
+            // }
+            let versionMap: Record<string, string>;
+            try {
+                const versionMapStr = localStorage.getItem('k8sVersionMap');
+                if (!versionMapStr) {
+                    Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
+                    return;
+                }
+                versionMap = JSON.parse(versionMapStr);
+            } catch (err) {
+                Message.error("版本映射解析失败，请退出重新登录！");
+                return;
+            }
+
+            // 获取目标版本号
+            const selectedVersion = props.upgradeK8sVersion || version.value;
+            const majorMinorVersion = selectedVersion.match(/^v?\d+\.\d+/)?.[0];
+
+            if (!majorMinorVersion) {
+                Message.error("无法解析 Kubernetes 主次版本，请检查格式！");
+                return;
+            }
+
+            const k8sVersion = versionMap[majorMinorVersion];
+            if (!k8sVersion) {
+                Message.error("所选版本对应的后端不存在或未启动，请更换版本或启动后端！");
+                return;
+            }
+
             const data = {
                 id : id.value,
                 hosts: [
@@ -671,7 +771,7 @@
                     ...(Array.isArray(cluster.workerHosts) ? cluster.workerHosts : [])
                 ]
             };
-            const k8sVersion = getFirstK8sVersionFromStorage();
+            // const k8sVersion = getFirstK8sVersionFromStorage();
             const result: any = await addNode(data, k8sVersion);
             if(result.status === 'ok'){
                 Message.success("节点添加成功！");
@@ -692,18 +792,38 @@
                 Message.warning("不能移除最后一个master节点！");
                 return;
             }
+
+            let versionMap: Record<string, string>;
+            try {
+                const versionMapStr = localStorage.getItem('k8sVersionMap');
+                if (!versionMapStr) {
+                    Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
+                    return;
+                }
+                versionMap = JSON.parse(versionMapStr);
+            } catch (err) {
+                Message.error("版本映射解析失败，请退出重新登录！");
+                return;
+            }
+
+            // 获取目标版本号
+            const selectedVersion = props.upgradeK8sVersion || version.value;
+            const majorMinorVersion = selectedVersion.match(/^v?\d+\.\d+/)?.[0];
+
+            if (!majorMinorVersion) {
+                Message.error("无法解析 Kubernetes 主次版本，请检查格式！");
+                return;
+            }
+
+            const k8sVersion = versionMap[majorMinorVersion];
+            if (!k8sVersion) {
+                Message.error("所选版本对应的后端不存在或未启动，请更换版本或启动后端！");
+                return;
+            }
             const data = {
                 id : id.value,
                 ip: nodeip.value
             };
-            // const k8sVersion = getFirstK8sVersionFromStorage();
-            // const k8sVersion = getMappedK8sVersion(version.value);
-            let k8sVersion;
-            if(props.upgradeK8sVersion){
-                k8sVersion = getMappedK8sVersion(props.upgradeK8sVersion)
-            }else{
-                k8sVersion = getMappedK8sVersion(version.value);
-            }
             const result: any = await removeNode(data, k8sVersion);
             if(result.status === 'ok'){
                 Message.info("节点正在移除中，请稍后......");
@@ -724,6 +844,12 @@
     //获取离线包列表
     const fetchResourcesList = async () => {
         try {
+            // 检查次版本是否存在
+            const versionMapStr = localStorage.getItem('k8sVersionMap');
+            if (!versionMapStr) {
+                Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
+                return;
+            }
             setLoading(true);
             const k8sVersion = getFirstK8sVersionFromStorage();
             const result = await getResources(k8sVersion);
@@ -754,8 +880,14 @@
     };
 
     //获取集群节点列表
-    const fetchNodeList = async () => {
+    const fetchNodeList = async () => { 
       try {
+        // 检查次版本是否存在
+        const versionMapStr = localStorage.getItem('k8sVersionMap');
+        if (!versionMapStr) {
+            Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
+            return;
+        }
         setLoading(true);
         const k8sVersion = getFirstK8sVersionFromStorage();
         const result = await getNodeList(id.value, k8sVersion);
@@ -805,13 +937,19 @@
     };
      //获取主机列表
      const fetchHostList = async () => {
-      try {
-        const k8sVersion = getFirstK8sVersionFromStorage();
-        const result = await getAvailableHostList(k8sVersion);
-        hostList.value = result.data;
-      } catch (err) {
-        console.log(err);
-      } 
+        try {
+            // 检查次版本是否存在
+            const versionMapStr = localStorage.getItem('k8sVersionMap');
+            if (!versionMapStr) {
+                Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
+                return;
+            }
+            const k8sVersion = getFirstK8sVersionFromStorage();
+            const result = await getAvailableHostList(k8sVersion);
+            hostList.value = result.data;
+        } catch (err) {
+            console.log(err);
+        } 
     };
 
     onMounted(async() => {

@@ -118,8 +118,35 @@ async function createAnsibleQueue(baseQueueId, concurrency, k8sVersion) {
     });
 
     queue.process(config.name, config.taskNum, config.processFunction);
+    queue.on('waiting', async (jobId) => {
+      console.log(`Job ${jobId} is now waiting`);
+      //存在的问题await queues[queueId].getJob(jobId);数据返回来之前数据库存的是running，这里就会覆盖成waiting
+      // const waitingJob = await queues[queueId].getJob(jobId);
+      // console.log("获取等待中的任务")
+      // console.log(waitingJob)
+      // const nodeKey = `k8s_cluster:${waitingJob.data.playbook.id}:hosts:${waitingJob.data.playbook.ip}`;
+      // await redis.hset(nodeKey,
+      //   'activeStatus', 'waiting',
+      //   'activeJobType', waitingJob.name,
+      //   'updateTime', Date.now()
+      // );
+      const waitingJobs = await queues[queueId].getWaiting();
+      if (waitingJobs.length > 0) {
+        for (const waitingJob of waitingJobs) {
+          const nodeKey = `k8s_cluster:${waitingJob.data.playbook.id}:hosts:${waitingJob.data.playbook.ip}`;
+          await redis.hset(nodeKey,
+            'activeStatus', 'waiting',
+            'activeJobType', waitingJob.name,
+            'updateTime', Date.now()
+          );
+        }
+      } else {
+        console.log('No jobs are currently waiting.');
+      }
+    });
     queue.on('active', async (job) => {
       console.log(`Job ${job.id} is now active`);
+      console.log("获取运行中的任务")
       const nodeKey = `k8s_cluster:${job.data.playbook.id}:hosts:${job.data.playbook.ip}`;
       await redis.hset(nodeKey,
         'activeStatus', 'running',
@@ -127,7 +154,6 @@ async function createAnsibleQueue(baseQueueId, concurrency, k8sVersion) {
         'updateTime', Date.now()
       );
     });
-
     queue.on('completed', async (job) => {
       const nodeTaskKey = `k8s_cluster:${job.data.playbook.id}:tasks:${job.data.playbook.ip}:${job.data.playbook.taskName}:${job.timestamp}`;
       //更新结束时间
@@ -946,23 +972,22 @@ async function addTaskToQueue(id, taskName, playbook, oldK8sVersion, k8sVersion)
   await queues[queueId].add(taskName, { playbook });
   await redis.select(0);
   //更新redi数据中节点信息的当前执行的是什么任务
-  await updateNodeStatus(id, playbook.ip, taskName)
+  //await updateNodeStatus(id, playbook.ip, taskName)
   //更新集群部署状态
   await updateClusterStatus(id, taskName)
 }
 
 async function updateNodeStatus(id, ip, taskName) {
   const nodeKey = `k8s_cluster:${id}:hosts:${ip}`;
+  console.log(nodeKey)
   // 获取活跃中的任务
   const activeJobs = await getActiveJobs(`${id}_${taskName}`);
-  console.log("当前活跃的任务", activeJobs)
+  console.log("当前活跃中的任务", activeJobs)
   const isActive = activeJobs.some(job => job.ip === ip);
-
   // 获取等待中的任务
   const waitingJobs = await getWaitingJobs(`${id}_${taskName}`);
-  console.log(waitingJobs)
+  console.log("当前等待中的任务", waitingJobs)
   const isWaiting = waitingJobs.some(job => job.ip === ip);
-
   // 根据任务名称和状态设置部署状态
   let activeStatus;
   if (isActive) {
