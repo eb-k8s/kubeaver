@@ -414,28 +414,6 @@
         ];
     });
 
-    const getMappedK8sVersion = (version: string)=> {
-        try {
-            const majorMinor = extractMajorMinor(version); 
-            if (!majorMinor) return '';
-
-            const versionMapStr = localStorage.getItem('k8sVersionMap');
-            if (!versionMapStr) return '';
-            
-            const versionMap: Record<string, string> = JSON.parse(versionMapStr);
-            
-            return versionMap[majorMinor] || '';
-        } catch (err) {
-            console.error('解析版本映射失败:', err);
-            return '';
-        }
-    }
-
-    const extractMajorMinor = (version: string)=> {
-        const match = version.match(/(v?\d+\.\d+)/);
-        return match ? match[1] : '';
-    }
-
     const filteredControlPlaneHosts = computed(() => {
         return hostList.value.filter((host) => {
             const osName = host.os.split(' ')[0]; 
@@ -483,18 +461,7 @@
                 Message.error(`主机 ${selectedIP} 已被添加为工作节点，无法添加为控制节点！`);
                 return;
             }
-
-            // const selectedHostOS = selectedHost.os.split(' ')[0]; // 获取操作系统名称
-            
-            // 获取所有工作节点的操作系统集合
-            const workerOSSet = new Set(cluster.workerHosts.map(host => (host.os ? host.os.split(' ')[0] : '')).filter(os => os));
-
-            // // 如果已经选择了工作节点，检查控制节点的操作系统是否一致
-            // if (workerOSSet.size > 0 && !workerOSSet.has(selectedHostOS)) {
-            //     Message.error(`控制节点 ${selectedIP} 的操作系统必须与工作节点的操作系统一致`);
-            //     return;
-            // }
-
+        
             // 检查是否已经添加过
             if (!cluster.controlPlaneHosts.some(host => host.ip === selectedIP)) {
                 const segments = selectedHost.hostIP.split('.');
@@ -583,6 +550,12 @@
 
    //获取离线包列表
    const fetchResourcesList = async () => {
+        // 检查次版本是否存在
+        const versionMapStr = localStorage.getItem('k8sVersionMap');
+        if (!versionMapStr) {
+            Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
+            return;
+        }
         try {
             setLoading(true);
             const k8sVersion = getFirstK8sVersionFromStorage();
@@ -695,16 +668,22 @@
 
     //获取主机列表
     const fetchHostList = async () => {
-      try {
-        setLoading(true);
-        const k8sVersion = getFirstK8sVersionFromStorage();
-        const result = await getAvailableHostList(k8sVersion);
-        hostList.value = result.data;
-      } catch (err) {
-        console.log(err);
-      } finally {
-        setLoading(false);
-      }
+        // 检查次版本是否存在
+        const versionMapStr = localStorage.getItem('k8sVersionMap');
+        if (!versionMapStr) {
+            Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
+            return;
+        }
+        try {
+            setLoading(true);
+            const k8sVersion = getFirstK8sVersionFromStorage();
+            const result = await getAvailableHostList(k8sVersion);
+            hostList.value = result.data;
+        } catch (err) {
+            console.log(err);
+        } finally {
+            setLoading(false);
+        }
     };
   
     fetchHostList();
@@ -741,6 +720,12 @@
 
     //获取集群列表
     const fetchClustersList = async () => {
+        // 检查次版本是否存在
+        const versionMapStr = localStorage.getItem('k8sVersionMap');
+        if (!versionMapStr) {
+            Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
+            return;
+        }
         try {
             setLoading(true);
             const k8sVersion = getFirstK8sVersionFromStorage();
@@ -755,16 +740,22 @@
 
     //获取集群节点列表
     const fetchNodeList = async () => {
-      try {
-        setLoading(true);
-        const k8sVersion = getFirstK8sVersionFromStorage();
-        const result = await getNodeList(id.value, k8sVersion);
-        nodeList.value = result.data;
-      } catch (err) {
-        console.log(err);
-      } finally {
-        setLoading(false);
-      }
+        // 检查次版本是否存在
+        const versionMapStr = localStorage.getItem('k8sVersionMap');
+        if (!versionMapStr) {
+            Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
+            return;
+        }
+        try {
+            setLoading(true);
+            const k8sVersion = getFirstK8sVersionFromStorage();
+            const result = await getNodeList(id.value, k8sVersion);
+            nodeList.value = result.data;
+        } catch (err) {
+            console.log(err);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleEditCluster = async () => {
@@ -800,6 +791,28 @@
             return;
         }
 
+        // 检查次版本是否存在
+        const versionMapStr = localStorage.getItem('k8sVersionMap');
+        if (!versionMapStr) {
+            Message.error("未检测到可用的 Kubernetes 版本对应的后端，请退出重新登录！");
+            return;
+        }
+
+        const versionMap: Record<string, string> = JSON.parse(versionMapStr);
+
+        // 提取主次版本（如从 v1.25.16 提取 v1.25）
+        const majorMinorVersion = cluster.version.match(/^v?\d+\.\d+/)?.[0];
+        if (!majorMinorVersion) {
+            Message.error("无法解析集群版本，请检查版本格式！");
+            return;
+        }
+
+        const k8sVersion = versionMap[majorMinorVersion];
+        if (!k8sVersion) {
+            Message.error("所选的 Kubernetes 版本对应的后端不存在或未启动，请选择其他版本或启动对应的后端！");
+            return;
+        }
+
         const data = {
             id: id.value,
             clusterName: cluster.clusterName,
@@ -811,7 +824,6 @@
        
         try{
             setLoading(true);
-            const k8sVersion = getMappedK8sVersion(data.version);
             const result: any = await editCluster(data, k8sVersion);
             if(result.status === 'ok'){
                 Message.success("编辑成功！")

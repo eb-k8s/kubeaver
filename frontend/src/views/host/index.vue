@@ -130,15 +130,24 @@ const isHostExist = (hostIP: string) => {
 }
 
 const handleAddOk = async () => {
+
+  // 检查次版本是否存在
+  const versionMapStr = localStorage.getItem('k8sVersionMap');
+  if (!versionMapStr) {
+      Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
+      return;
+  }
+
   const k8sVersion = getFirstK8sVersionFromStorage();
   const { hostIP } = form;
-  setLoading(true);
+  
   if (isHostExist(hostIP)) {
     Message.warning(`主机 ${hostIP} 已经存在！`);
     return;
   }
 
   try {
+    setLoading(true);
     const result: any = await addHost(form, k8sVersion);
     if (result.status === 'ok') {
       Message.success('主机添加成功!');
@@ -148,8 +157,6 @@ const handleAddOk = async () => {
     }
   } catch (error) {
     Message.error('添加主机时发生异常');
-  }finally{
-    setLoading(false);
   }
 };
 
@@ -171,6 +178,13 @@ const handleDeleteOk = async () => {
   if (isHostInUse) {
     Message.warning(`主机 ${hostIP.value} 正在被使用，无法删除！`);
     return;
+  }
+
+  // 检查次版本是否存在
+  const versionMapStr = localStorage.getItem('k8sVersionMap');
+  if (!versionMapStr) {
+      Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
+      return;
   }
 
   try {
@@ -205,6 +219,12 @@ function formatTimestamp(isoString) {
 
 const fetchNodeList = async () => {
   try {
+    // 检查次版本是否存在
+    const versionMapStr = localStorage.getItem('k8sVersionMap');
+    if (!versionMapStr) {
+        Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
+        return;
+    }
     setLoading(true);
     const k8sVersion = getFirstK8sVersionFromStorage();
     const result = await getAllNodeList(k8sVersion);
@@ -218,6 +238,13 @@ const fetchNodeList = async () => {
 
 const fetchHostList = async () => {
   try {
+    // 检查次版本是否存在
+    const versionMapStr = localStorage.getItem('k8sVersionMap');
+    if (!versionMapStr) {
+        Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
+        return;
+    }
+    
     setLoading(true);
     const k8sVersion = getFirstK8sVersionFromStorage();
     const result = await getHostList(k8sVersion);
