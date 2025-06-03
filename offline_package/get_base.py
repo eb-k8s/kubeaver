@@ -96,7 +96,6 @@ for file_item in base_files:
     # print(f"下载链接为: {file_url}")
     # 使用 wget 下载文件到指定目录，文件名保持不变
     subprocess.run(['wget', file_url, '-P', f'{offline_dir}'], check=True)
-    exit()
     print(f"下载文件{file_name}到{offline_dir}")
 
     save_filename = file_item['filename']
