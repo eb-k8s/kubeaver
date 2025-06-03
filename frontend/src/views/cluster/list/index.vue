@@ -461,10 +461,23 @@
             const [pkgMajor, pkgMinor, pkgPatch] = packageVersionParts;
 
             // 判断是否比当前版本高一个版本
+            // return (
+            //     (pkgMajor === curMajor && pkgMinor === curMinor + 1 && pkgPatch === 0) || // 次版本号 +1
+            //     (pkgMajor === curMajor && pkgMinor === curMinor && pkgPatch === curPatch + 1) || // 补丁号 +1
+            //     (pkgMajor === curMajor + 1 && pkgMinor === 0 && pkgPatch === 0) // 主版本号 +1
+            // );
+
+            // return (
+            //     (pkgMajor === curMajor && pkgMinor === curMinor + 1) || // 次版本号 +1
+            //     (curMinor === 9 && pkgMinor === 0 && pkgMajor === curMajor + 1) // 大版本升级：9.x -> (x+1).0
+            // );
             return (
-                (pkgMajor === curMajor && pkgMinor === curMinor + 1 && pkgPatch === 0) || // 次版本号 +1
-                (pkgMajor === curMajor && pkgMinor === curMinor && pkgPatch === curPatch + 1) || // 补丁号 +1
-                (pkgMajor === curMajor + 1 && pkgMinor === 0 && pkgPatch === 0) // 主版本号 +1
+                pkgMajor === curMajor &&
+                (
+                    pkgMinor === curMinor + 1 ||  // 次版本号 +1
+                    (pkgMinor === curMinor && pkgPatch === curPatch + 1) || // 补丁号 +1
+                    (curMinor === 9 && pkgMinor === 0 && pkgMajor === curMajor + 1 && pkgPatch === 0) // 版本大升级 9.x -> (x+1).0.0
+                )
             );
         });
     };
@@ -811,11 +824,11 @@
         dataIndex: 'count',
         slotName: 'count',
     },
-    {
-        title: 'master1',
-        dataIndex: 'master1',
-        slotName: 'master1',
-    },
+    // {
+    //     title: 'master1',
+    //     dataIndex: 'master1',
+    //     slotName: 'master1',
+    // },
     {
         title: '集群状态',
         dataIndex: 'status',
