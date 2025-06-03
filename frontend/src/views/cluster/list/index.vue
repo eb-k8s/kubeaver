@@ -29,18 +29,9 @@
                     </template>
                     <template #version="{ record }">
                         <div style="display: flex; align-items: center;">
-                            <!-- <img 
-                                :src="k8sLogos[getVersion(record.version)]" 
-                                alt="K8s Logo" 
-                                style="width: 30px; height: 30px; margin-right: 8px;"
-                                v-if="k8sLogos[getVersion(record.version)]"
-                            /> -->
                             <span>{{ record.version }}</span>
                         </div>
                     </template>
-                    <!-- <template #offlinePackage="{ record }"> 
-                        <a-link @click="onClickOfflinePackageView(record)">{{ record.offlinePackage }}</a-link>
-                    </template> -->
                     <template #status="{ record }">
                         <div class="status-container">
                             <span 
@@ -62,22 +53,12 @@
                             <span class="status-text">{{ record.status }}</span>
                         </div>
                     </template>
-                    <!-- <template #activeTask="{ record }">
-                        <div style="white-space: pre-line; display: flex; flex-direction: column; align-items: flex-start;">
-                            <span :style="{ color: record.initCluster !== 0 ? '#52c41a' : 'black', display: 'block' }">初始化集群: {{ record.initCluster }}</span>
-                            <span :style="{ color: record.addNode !== 0 ? '#52c41a' : 'black', display: 'block' }">添加节点: {{ record.addNode }}</span>
-                            <span :style="{ color: record.upgradeCluster !== 0 ? '#52c41a' : 'black', display: 'block' }">升级集群: {{ record.upgradeCluster }}</span>
-                            <span :style="{ color: record.resetNode !== 0 ? '#52c41a' : 'black', display: 'block' }">重置节点: {{ record.resetNode }}</span>
-                            <span :style="{ color: record.resetCluster !== 0 ? '#52c41a' : 'black', display: 'block' }">重置集群: {{ record.resetCluster }}</span>
-                        </div>
-                    </template> -->
                     <template #taskProcess="{ record }">
                         <div class="status-container">
                             <span v-if="translateTaskProcess(record.taskProcess) !== '暂无任务'" class="status-icon running">
                                 <icon-sync class="rotating" />
                             </span>
                             <span v-if="translateTaskProcess(record.taskProcess) === '暂无任务'" class="circle Unknown"></span>
-                            <!-- <span class="status-text1">{{ record.taskProcess }}</span> -->
                             <span class="status-text1">{{ translateTaskProcess(record.taskProcess) }}</span>
                         </div>
                     </template>
@@ -90,55 +71,6 @@
                                 justify-items: start;
                             "
                         >
-                            <!-- <a-button 
-                                v-if="isActiveTaskEmpty(record.activeTask) && record.status === 'Ready' && hasHigherVersion(record)" 
-                                type="text" 
-                                size="small" 
-                                @click="onClickUpgrade(record)">
-                                升级
-                            </a-button>
-                            <a-button 
-                                v-if="record.status === 'Ready' && isActiveTaskEmpty(record.activeTask)" 
-                                type="text" 
-                                size="small" 
-                                @click="handleLink(record)">
-                                容器云
-                            </a-button>
-                            <a-button 
-                                v-if="isActiveTaskEmpty(record.activeTask) && record.status === 'Unknown'" 
-                                type="text" 
-                                size="small" 
-                                @click="onClickDeploy(record)">
-                                部署
-                            </a-button>
-                            <a-button 
-                                v-if="record.status === 'Unknown' && isActiveTaskEmpty(record.activeTask)" 
-                                type="text" 
-                                size="small" 
-                                @click="onClickEdit(record)">
-                                编辑
-                            </a-button>
-                            <a-button 
-                                v-if="isActiveTaskEmpty(record.activeTask) && record.status !== 'Unknown'" 
-                                type="text" 
-                                size="small" 
-                                @click="onClickReset(record)">
-                                重置
-                            </a-button>
-                            <a-button 
-                                v-if="record.status === 'Unknown' && isActiveTaskEmpty(record.activeTask)" 
-                                type="text" 
-                                size="small" 
-                                @click="onClickDeleteBeforeDeploy(record)">
-                                删除
-                            </a-button>
-                            <a-button 
-                                v-if="record.status === 'Ready' && isActiveTaskEmpty(record.activeTask)" 
-                                type="text" 
-                                size="small" 
-                                @click="onClickDownloadConfig(record)">
-                                证书下载
-                            </a-button> -->
                             <a-button 
                                 v-if="record.taskProcess === 'Unknown' && record.status === 'Ready' && hasHigherVersion(record)" 
                                 type="text" 
@@ -199,9 +131,6 @@
         <a-modal v-model:visible="deployVisible" @ok="handleDeployOk" @cancel="handleDeployCancel">
            确定部署<span style="color: red; font-weight: bold;">{{ version }}</span>版本的集群吗？
         </a-modal>
-        <!-- <a-modal v-model:visible="resetVisible" @ok="handleResetOk" @cancel="handleResetCancel">
-           确定重置{{name}}集群吗？
-        </a-modal> -->
         <a-modal v-model:visible="resetVisible" @ok="handleResetOk" @cancel="handleResetCancel">
             <template #title>
                 <span>重置确认</span>
@@ -287,7 +216,6 @@
     const networkPlugins = ref();
     const originalPlugin = ref();
     const upgradeK8sVersion = ref();
-    const installedPlugin = ref();
     const cluster = reactive({
         version: '',
         networkPlugins: ''
@@ -295,7 +223,7 @@
     const name = ref();
 
     // 比较版本号的工具函数
-    const compareVersions1 = (version1: string, version2: string) => {
+    const compareVersions = (version1: string, version2: string) => {
         const v1 = version1.replace('v', '').split('.').map(Number);
         const v2 = version2.replace('v', '').split('.').map(Number);
         for (let i = 0; i < Math.max(v1.length, v2.length); i++) {
@@ -322,28 +250,6 @@
         return '';
     };
 
-    const getMappedK8sVersion = (version: string)=> {
-        try {
-            const majorMinor = extractMajorMinor(version); 
-            if (!majorMinor) return '';
-
-            const versionMapStr = localStorage.getItem('k8sVersionMap');
-            if (!versionMapStr) return '';
-            
-            const versionMap: Record<string, string> = JSON.parse(versionMapStr);
-            
-            return versionMap[majorMinor] || '';
-        } catch (err) {
-            console.error('解析版本映射失败:', err);
-            return '';
-        }
-    }
-
-    const extractMajorMinor = (version: string)=> {
-        const match = version.match(/(v?\d+\.\d+)/);
-        return match ? match[1] : '';
-    }
-
     const getVersion = (version) => {
         if (typeof version !== 'string' || !version.includes('.')) {
             return 'logo';
@@ -355,29 +261,13 @@
         return k8sLogos.value[versionKey] ? versionKey : 'logo';
     };
 
-
-    // 比较版本号的工具函数
-    const compareVersions = (version1: string, version2: string) => {
-        const v1 = version1.split('.').map(Number);
-        const v2 = version2.split('.').map(Number);
-        for (let i = 0; i < v1.length; i++) {
-            if (v1[i] > v2[i]) return 1;
-            if (v1[i] < v2[i]) return -1;
-        }
-        return 0;
-    };
-
-    // 检查折叠面板中的table是否有数据
-    const isActiveTaskEmpty = (task) => {
-        const taskValues = task
-            .split('\n')
-            .map(line => parseInt(line.split(':')[1], 10)) 
-            .filter(value => !isNaN(value));
-
-        return taskValues.every(value => value === 0);
-    };
-
     const fetchResourcesList = async () => {
+        // 检查次版本是否存在
+        const versionMapStr = localStorage.getItem('k8sVersionMap');
+        if (!versionMapStr) {
+            Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
+            return;
+        }
         try {
             setLoading(true);
             const k8sVersion = getFirstK8sVersionFromStorage();
@@ -558,15 +448,40 @@
             return false;
         }
 
+        const currentVersionParts = record.version.replace('v', '').split('.').map(Number);
+
         return k8sCache.value.children.some((item: any) => {
-            if (item?.name) {
-                return compareVersions1(item.name, record.version) === 1;
-            }
-            return false;
+            if (!item?.name) return false;
+
+            const packageVersionParts = item.name.replace('v', '').split('.').map(Number);
+
+            if (packageVersionParts.length < 3 || currentVersionParts.length < 3) return false;
+
+            const [curMajor, curMinor, curPatch] = currentVersionParts;
+            const [pkgMajor, pkgMinor, pkgPatch] = packageVersionParts;
+
+            // 判断是否比当前版本高一个版本
+            // return (
+            //     (pkgMajor === curMajor && pkgMinor === curMinor + 1 && pkgPatch === 0) || // 次版本号 +1
+            //     (pkgMajor === curMajor && pkgMinor === curMinor && pkgPatch === curPatch + 1) || // 补丁号 +1
+            //     (pkgMajor === curMajor + 1 && pkgMinor === 0 && pkgPatch === 0) // 主版本号 +1
+            // );
+
+            // return (
+            //     (pkgMajor === curMajor && pkgMinor === curMinor + 1) || // 次版本号 +1
+            //     (curMinor === 9 && pkgMinor === 0 && pkgMajor === curMajor + 1) // 大版本升级：9.x -> (x+1).0
+            // );
+            return (
+                pkgMajor === curMajor &&
+                (
+                    pkgMinor === curMinor + 1 ||  // 次版本号 +1
+                    (pkgMinor === curMinor && pkgPatch === curPatch + 1) || // 补丁号 +1
+                    (curMinor === 9 && pkgMinor === 0 && pkgMajor === curMajor + 1 && pkgPatch === 0) // 版本大升级 9.x -> (x+1).0.0
+                )
+            );
         });
     };
-
-
+   
     // 集群升级
     const handleUpgradeOk = async () => {
         try {
@@ -584,7 +499,27 @@
             Message.error("请选择网络插件");
             return;
         }
-        const k8sVersion = getMappedK8sVersion(data.version);
+
+        // 检查次版本是否存在
+        const versionMapStr = localStorage.getItem('k8sVersionMap');
+        if (!versionMapStr) {
+            Message.error("未检测到可用的 Kubernetes 版本对应的后端，请退出重新登录！");
+            return;
+        }
+
+        const versionMap: Record<string, string> = JSON.parse(versionMapStr);
+
+        const majorMinorVersion = data.version.match(/^v?\d+\.\d+/)?.[0];
+        if (!majorMinorVersion) {
+            Message.error("无法解析集群版本，请检查版本格式！");
+            return;
+        }
+
+        const k8sVersion = versionMap[majorMinorVersion];
+        if (!k8sVersion) {
+            Message.error("所选的 Kubernetes 版本对应的后端不存在或未启动，请选择其他版本或启动对应的后端！");
+            return;
+        }
         const result: any = await upgradeCluster(data, k8sVersion);
         if(result.status === 'ok'){
             Message.info("集群正在升级,请稍后......");
@@ -623,7 +558,12 @@
 
     // 下载证书
     const onClickDownloadConfig = async (record: any) => {
-
+        // 检查次版本是否存在
+        const versionMapStr = localStorage.getItem('k8sVersionMap');
+        if (!versionMapStr) {
+            Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
+            return;
+        }
         try {
             const k8sVersion = getFirstK8sVersionFromStorage();
             const result: any = await downloadConfig(record.id, k8sVersion);
@@ -649,15 +589,36 @@
 
     // 重置集群
     const handleResetOk = async () => {
+
+        let versionMap: Record<string, string>;
+        try {
+            const versionMapStr = localStorage.getItem('k8sVersionMap');
+            if (!versionMapStr) {
+                Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
+                return;
+            }
+            versionMap = JSON.parse(versionMapStr);
+        } catch (err) {
+            Message.error("版本映射解析失败，请退出重新登录！");
+            return;
+        }
+
+        // 获取目标版本号
+        const selectedVersion = upgradeK8sVersion.value || version.value;
+        const majorMinorVersion = selectedVersion.match(/^v?\d+\.\d+/)?.[0];
+
+        if (!majorMinorVersion) {
+            Message.error("无法解析 Kubernetes 主次版本，请检查格式！");
+            return;
+        }
+
+        const k8sVersion = versionMap[majorMinorVersion];
+        if (!k8sVersion) {
+            Message.error("所选版本对应的后端不存在或未启动，请更换版本或启动后端！");
+            return;
+        }
         
         try {
-            // const k8sVersion = getMappedK8sVersion(version.value);
-            let k8sVersion;
-            if(upgradeK8sVersion.value){
-                k8sVersion = getMappedK8sVersion(upgradeK8sVersion.value)
-            }else{
-                k8sVersion = getMappedK8sVersion(version.value);
-            }
             const result: any = await resetCluster(id.value, k8sVersion);
             if(result.status === 'ok'){
                 Message.info("正在重置集群,请稍后......");
@@ -677,46 +638,75 @@
     }
 
     const handleDeployOk = async () => {
+
+        let versionMap: Record<string, string>;
         try {
-        const data = {
-            id : id.value,
-        };
-        // const k8sVersion = getMappedK8sVersion(version.value);
-        let k8sVersion;
-        if(upgradeK8sVersion.value){
-            k8sVersion = getMappedK8sVersion(upgradeK8sVersion.value)
-        }else{
-            k8sVersion = getMappedK8sVersion(version.value);
+            const versionMapStr = localStorage.getItem('k8sVersionMap');
+            if (!versionMapStr) {
+                Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
+                return;
+            }
+            versionMap = JSON.parse(versionMapStr);
+        } catch (err) {
+            Message.error("版本映射解析失败，请退出重新登录！");
+            return;
         }
-        const result: any = await deployCluster(data, k8sVersion);
-        if(result.status === 'ok'){
-            Message.info("正在安装集群,请稍后......");
-            fetchClusterList();
-        }else{
-            Message.error(result.msg);
+
+        // 获取目标版本号
+        const selectedVersion = upgradeK8sVersion.value || version.value;
+        const majorMinorVersion = selectedVersion.match(/^v?\d+\.\d+/)?.[0];
+
+        if (!majorMinorVersion) {
+            Message.error("无法解析 Kubernetes 主次版本，请检查格式！");
+            return;
         }
-      } catch (err) {
-        console.log(err);
-      } 
-    }
+
+        const k8sVersion = versionMap[majorMinorVersion];
+        if (!k8sVersion) {
+            Message.error("所选版本对应的后端不存在或未启动，请更换版本或启动后端！");
+            return;
+        }
+
+        // 调用部署接口
+        try {
+            const params = { id: id.value };
+            const result: any = await deployCluster(params, k8sVersion);
+
+            if (result.status === 'ok') {
+                Message.success("正在安装集群，请稍后...");
+                fetchClusterList();
+            } else {
+                Message.error(result.msg || "集群部署失败！");
+            }
+        } catch (err) {
+            console.error("部署异常：", err);
+            Message.error("部署过程中发生异常，请查看控制台日志！");
+        }
+    };
 
     const handleDeployCancel = async () => {
         deployVisible.value = false;
     }
 
     const handleDeleteOk = async () => {
-      try {
-        const k8sVersion = getFirstK8sVersionFromStorage();
-        const result: any = await deleteBeforeDeployCluster(id.value,k8sVersion);
-        if(result.status === 'ok'){
-            Message.success("删除成功！");
-            await fetchClusterList();
-        }else{
-            Message.error(result.msg);
+        // 检查次版本是否存在
+        const versionMapStr = localStorage.getItem('k8sVersionMap');
+        if (!versionMapStr) {
+            Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
+            return;
         }
-      } catch (err) {
-        console.log(err);
-      } 
+        try {
+            const k8sVersion = getFirstK8sVersionFromStorage();
+            const result: any = await deleteBeforeDeployCluster(id.value,k8sVersion);
+            if(result.status === 'ok'){
+                Message.success("删除成功！");
+                await fetchClusterList();
+            }else{
+                Message.error(result.msg);
+            }
+        } catch (err) {
+            console.log(err);
+        } 
     }
   
     const handleDeleteCancel = () => {
@@ -725,16 +715,28 @@
 
     //获取主机列表
     const fetchHostList = async () => {
-      try {
-        const k8sVersion = getFirstK8sVersionFromStorage();
-        const result = await getHostList(k8sVersion);
-        hostList.value = result.data;
-      } catch (err) {
-        console.log(err);
-      }
+        // 检查次版本是否存在
+        const versionMapStr = localStorage.getItem('k8sVersionMap');
+        if (!versionMapStr) {
+            Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
+            return;
+        }
+        try {
+            const k8sVersion = getFirstK8sVersionFromStorage();
+            const result = await getHostList(k8sVersion);
+            hostList.value = result.data;
+        } catch (err) {
+            console.log(err);
+        }
     };
 
     const fetchClusterList = async () => {
+        // 检查次版本是否存在
+        const versionMapStr = localStorage.getItem('k8sVersionMap');
+        if (!versionMapStr) {
+            Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
+            return;
+        }
         try {
             setLoading(true);
             const k8sVersion = getFirstK8sVersionFromStorage();
@@ -822,11 +824,11 @@
         dataIndex: 'count',
         slotName: 'count',
     },
-    {
-        title: 'master1',
-        dataIndex: 'master1',
-        slotName: 'master1',
-    },
+    // {
+    //     title: 'master1',
+    //     dataIndex: 'master1',
+    //     slotName: 'master1',
+    // },
     {
         title: '集群状态',
         dataIndex: 'status',
