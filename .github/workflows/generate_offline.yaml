@@ -39,6 +39,7 @@ jobs:
 
     - name: Install package and tar to .tgz
       run: |
+        cd offline_package
         python3 get_base.py --k8s_version=${{ github.event.inputs.k8s_version }} --image_arch=${{ github.event.inputs.image_arch }}
         
     - name: Log in to the Container registry
