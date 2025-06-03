@@ -169,7 +169,7 @@ for image_item in third_images:
     subprocess.run(['docker', 'rmi', f'{image_repo}:{image_version}'], check=True)
     subprocess.run(['docker', 'rmi', f'{args.image_registry}/{image_tag}:{image_item["version"]}'], check=True)
 # 压缩为基础压缩包
-subprocess.run(['tar', '-cvzf', f"{offline_dir}.tgz", '-C', f'{offline_dir.rsplit('/', 1)[0]}', f'{offline_dir.rsplit('/', 1)[1]}'])
+subprocess.run(['tar', '-cvzf', f"{offline_dir}.tgz", '-C', f'{offline_dir.rsplit("/", 1)[0]}', f'{offline_dir.rsplit("/", 1)[1]}'])
 print(f'-------tar {offline_dir}.tgz')
 # 删除原来的目录
 subprocess.run(['rm', '-rf', f'{offline_dir}'], check=True)
