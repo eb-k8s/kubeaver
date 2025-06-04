@@ -126,8 +126,8 @@ for image_item in base_images:
     subprocess.run(['docker', 'save', '-o', f'{offline_dir }/k8s_cache/{args.k8s_version}/images/{image_tar_name}_{image_item["version"]}.tar', f'{args.image_registry}/{image_tag}:{image_item["version"]}'], check=True)
     print(f'-------------save {image_tar_name}_{image_item["version"]}.tar')
     # 删除镜像  
-    subprocess.run(['docker', 'rmi', f'{image_repo}:{image_version}'], check=True)
-    subprocess.run(['docker', 'rmi', f'{args.image_registry}/{image_tag}:{image_item["version"]}'], check=True)
+    # subprocess.run(['docker', 'rmi', f'{image_repo}:{image_version}'], check=True)
+    # subprocess.run(['docker', 'rmi', f'{args.image_registry}/{image_tag}:{image_item["version"]}'], check=True)
 
 for image_item in network_images:
     image_name = image_item['name']
@@ -146,8 +146,8 @@ for image_item in network_images:
     subprocess.run(['docker', 'save', '-o', f'{offline_dir}/network_plugins/flannel/{k8s_yaml["network_plugins"][0]["dependency"]["images"][0]["version"]}/images/{image_tar_name}_{image_item["version"]}.tar', f'{args.image_registry}/{image_tag}:{image_item["version"]}'], check=True)
     print(f'-------------save {image_tar_name}_{image_item["version"]}.tar')
     # 删除镜像  
-    subprocess.run(['docker', 'rmi', f'{image_repo}:{image_version}'], check=True)
-    subprocess.run(['docker', 'rmi', f'{args.image_registry}/{image_tag}:{image_item["version"]}'], check=True)
+    # subprocess.run(['docker', 'rmi', f'{image_repo}:{image_version}'], check=True)
+    # subprocess.run(['docker', 'rmi', f'{args.image_registry}/{image_tag}:{image_item["version"]}'], check=True)
 
 for image_item in third_images:
     image_name = image_item['name']
@@ -166,12 +166,12 @@ for image_item in third_images:
     subprocess.run(['docker', 'save', '-o', f'{offline_dir  }/system_app/metric_server/images/{image_tar_name}_{image_item["version"]}.tar', f'{args.image_registry}/{image_tag}:{image_item["version"]}'], check=True)
     print(f'-------------save {image_tar_name}_{image_item["version"]}.tar')
     # 删除镜像  
-    subprocess.run(['docker', 'rmi', f'{image_repo}:{image_version}'], check=True)
-    subprocess.run(['docker', 'rmi', f'{args.image_registry}/{image_tag}:{image_item["version"]}'], check=True)
+    # subprocess.run(['docker', 'rmi', f'{image_repo}:{image_version}'], check=True)
+    # subprocess.run(['docker', 'rmi', f'{args.image_registry}/{image_tag}:{image_item["version"]}'], check=True)
 # 压缩为基础压缩包
 subprocess.run(['tar', '-cvzf', f"{offline_dir}.tgz", '-C', f'{offline_dir.rsplit("/", 1)[0]}', f'{offline_dir.rsplit("/", 1)[1]}'])
 print(f'-------tar {offline_dir}.tgz')
 # 删除原来的目录
-subprocess.run(['rm', '-rf', f'{offline_dir}'], check=True)
+# subprocess.run(['rm', '-rf', f'{offline_dir}'], check=True)
 
 
