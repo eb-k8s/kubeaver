@@ -23,7 +23,7 @@ files:
   calico_url: "https://github.com/projectcalico/calico/archive/{{ version }}.tar.gz"
 
 images:
-  etcd_image_repo: "quay.io/coreos/etcd"
+  etcd_repo: "quay.io/coreos/etcd"
   coredns_repo: registry.aliyuncs.com/google_containers/coredns
   cluster-proportional-autoscaler_repo: "registry.k8s.io/cpa/cluster-proportional-autoscaler"
   pause_repo: registry.aliyuncs.com/google_containers/pause
