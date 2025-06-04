@@ -130,6 +130,14 @@ const isHostExist = (hostIP: string) => {
 }
 
 const handleAddOk = async () => {
+
+  // 检查次版本是否存在
+  const versionMapStr = localStorage.getItem('k8sVersionMap');
+  if (!versionMapStr) {
+      Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
+      return;
+  }
+
   const k8sVersion = getFirstK8sVersionFromStorage();
   const { hostIP } = form;
   
@@ -172,6 +180,13 @@ const handleDeleteOk = async () => {
     return;
   }
 
+  // 检查次版本是否存在
+  const versionMapStr = localStorage.getItem('k8sVersionMap');
+  if (!versionMapStr) {
+      Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
+      return;
+  }
+
   try {
     const k8sVersion = getFirstK8sVersionFromStorage();
     const result: any = await deleteHost(hostIP.value, k8sVersion);
@@ -204,6 +219,12 @@ function formatTimestamp(isoString) {
 
 const fetchNodeList = async () => {
   try {
+    // 检查次版本是否存在
+    const versionMapStr = localStorage.getItem('k8sVersionMap');
+    if (!versionMapStr) {
+        Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
+        return;
+    }
     setLoading(true);
     const k8sVersion = getFirstK8sVersionFromStorage();
     const result = await getAllNodeList(k8sVersion);
@@ -217,6 +238,13 @@ const fetchNodeList = async () => {
 
 const fetchHostList = async () => {
   try {
+    // 检查次版本是否存在
+    const versionMapStr = localStorage.getItem('k8sVersionMap');
+    if (!versionMapStr) {
+        Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
+        return;
+    }
+    
     setLoading(true);
     const k8sVersion = getFirstK8sVersionFromStorage();
     const result = await getHostList(k8sVersion);
