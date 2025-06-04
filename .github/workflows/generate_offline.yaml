@@ -71,4 +71,4 @@ jobs:
         -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
         -H "Content-Type: application/json" \
         -d '{"visibility":"public"}' \
-        "https://api.github.com/users/${{ github.repository_owner }}/packages/containers/${{ env.IMAGE_NAME }}/versions/${{ github.event.inputs.k8s_version }}"
+        "https://api.github.com/users/${{ github.repository_owner }}/packages/containers/${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/versions/${{ github.event.inputs.k8s_version }}"
