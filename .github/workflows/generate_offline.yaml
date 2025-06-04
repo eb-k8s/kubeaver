@@ -64,3 +64,11 @@ jobs:
         provenance: true
         cache-from: type=gha
         cache-to: type=gha,mode=max
+    
+    - name: Set image to Public
+      run: |
+        curl -X PATCH \
+        -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+        -H "Content-Type: application/json" \
+        -d '{"visibility":"public"}' \
+        "https://api.github.com/users/${{ github.repository_owner }}/packages/containers/${{ env.IMAGE_NAME }}/versions/${{ github.event.inputs.k8s_version }}"
