@@ -205,10 +205,15 @@
        <p style="color: red; font-weight: bold;">警告：移除操作不可恢复，请谨慎操作！</p>
     </a-modal>
     <a-modal v-model:visible="batchAddNodeVisible" @ok="handleBatchJoinOk" @cancel="handleBatchJoinCancel" width="800px">
+        <div style="display: flex; align-items: center; justify-content: flex-end; margin-bottom: 10px;">
+            <a-checkbox :checked="isSelectAllChecked" @change="toggleSelectAll">
+                全选
+            </a-checkbox>
+        </div>
         <a-checkbox-group v-model="selectedBatchNodes">
-            <a-grid :cols="6" :colGap="18" :rowGap="16">
+            <a-grid :cols="5" :colGap="24" :rowGap="16">
                 <a-grid-item v-for="host in filteredUnjoinedHosts" :key="host.ip" :style="{ width: '200px' }">
-                <a-checkbox :value="host.ip">{{ host.ip }}</a-checkbox>
+                <a-checkbox :value="host.ip">{{ host.ip }}({{ host.role }})</a-checkbox>
                 </a-grid-item>
             </a-grid>
         </a-checkbox-group>
@@ -252,6 +257,7 @@
     const master1 = ref();
     const batchAddNodeVisible = ref();
     const selectedBatchNodes = ref<string[]>([]);
+    const isSelectAllChecked = ref(false);
     const props = defineProps({
         upgradeK8sVersion: String,
         upgradeNetworkPlugin: String,
@@ -276,6 +282,24 @@
         );
     });
 
+    const isAllSelected = computed(() => {
+        const allNodes = filteredUnjoinedHosts.value.map((host) => host.ip);
+        return allNodes.length > 0 && allNodes.every((ip) => selectedBatchNodes.value.includes(ip));
+    });
+    
+    const toggleSelectAll = () => {
+        const allNodes = filteredUnjoinedHosts.value.map((host) => host.ip);
+
+        if ( isAllSelected && isSelectAllChecked.value) {
+            // 如果全选复选框已选中，点击时清空所有选中项
+            selectedBatchNodes.value = [];
+            isSelectAllChecked.value = false; // 更新全选状态为未选中
+        } else {
+            // 如果全选复选框未选中，点击时选中所有未加入的节点
+            selectedBatchNodes.value = Array.from(new Set([...selectedBatchNodes.value, ...allNodes]));
+            isSelectAllChecked.value = true; // 更新全选状态为选中
+        }
+    };
     // const isMasterResetting = computed(() => {
     //     return nodeList.value && nodeList.value.some(node => 
     //         props.taskProcess === 'resetting' && node.role === 'master' && node.status === 'Unknown' && node.activeStatus === '运行中'
@@ -421,8 +445,7 @@
 
     // 过滤未加入集群的节点
     const filteredUnjoinedHosts = computed(() => {
-        console.log('nodeList.value:', nodeList.value);
-        
+       
         if (!Array.isArray(nodeList.value)) return [];
         return nodeList.value.filter((node) => node.status === "Unknown");
     });
