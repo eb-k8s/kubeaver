@@ -10,6 +10,10 @@ dependency:
       version: v1.26.1
       path: others/crictl
       filename: crictl-v1.26.1-linux-{{image_arch}}.tar.gz
+    - name: etcd
+      version: v3.5.10
+      path: etcd
+      filename: etcd-v3.5.10-linux-{{ image_arch }}.tar.gz
     - name: runc
       version: v1.1.12
       path: others/runc
@@ -37,7 +41,7 @@ dependency:
   images:
     - name: etcd
       version: v3.5.10
-      name: store.e-byte.cn/k8s/etcd
+      tag: store.e-byte.cn/k8s/etcd
     - name: coredns
       version: v1.9.3
       tag: store.e-byte.cn/k8s/coredns
@@ -47,9 +51,9 @@ dependency:
     - name: pause
       version: '3.9'
       tag: store.e-byte.cn/k8s/pause
-    - name: k8s-dns-node-cache
-      version: "1.22.20"
-      tag: store.e-byte.cn/k8s/k8s-dns-node-cache
+    # - name: k8s-dns-node-cache
+    #   version: "1.22.20"
+    #   tag: store.e-byte.cn/k8s/k8s-dns-node-cache
     - name: kube_apiserver
       version: "{{kube_version}}"
       tag: store.e-byte.cn/k8s/kube-apiserver
