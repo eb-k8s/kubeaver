@@ -30,14 +30,15 @@ Install Docker on the host where you want to install Kubeaver using the official
 Pull Kubeaver's related images using Docker:
 ```
 # Pull frontend image
-docker pull ghcr.io/dbsave/kubeaver_frontend:v1.0.0
+docker pull ghcr.io/eb-k8s/kubeaver/kubeaver_frontend:v1.0.0
 
 # Pull backend image
-docker pull ghcr.io/dbsave/kubeaver_backend:v2.0.0
+docker pull ghcr.io/eb-k8s/kubeaver/kubeaver_backend:v1.0.0-125
 ```
 Start Kubeaver using Docker Compose:
 ```
 # Switch to the directory containing the Docker Compose file
+cd ./deploy
 # Start Kubeaver
 docker compose up -d
 ```
