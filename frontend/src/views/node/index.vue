@@ -204,24 +204,53 @@
        <p>确定将 <span style="color: red; font-weight: bold;">{{ name }}</span> 节点从集群中移除吗？</p>
        <p style="color: red; font-weight: bold;">警告：移除操作不可恢复，请谨慎操作！</p>
     </a-modal>
-    <a-modal v-model:visible="batchAddNodeVisible" @ok="handleBatchJoinOk" @cancel="handleBatchJoinCancel" width="800px">
+
+    <a-modal v-model:visible="batchAddNodeVisible" 
+        @ok="handleBatchJoinOk" 
+        @cancel="handleBatchJoinCancel"
+        width="800px"
+        :afterClose="handleBatchJoinCancel"
+    >
         <div style="display: flex; align-items: center; justify-content: flex-end; margin-bottom: 10px;">
-            <a-checkbox :checked="isSelectAllChecked" @change="toggleSelectAll">
-                全选
-            </a-checkbox>
+            <!-- <a-checkbox 
+                :checked="isSelectAllChecked" 
+                @change="toggleSelectAll"
+            >
+                {{ isSelectAllChecked ? '取消全选' : '全选' }}
+            </a-checkbox> -->
+            <a-button 
+                type="primary" 
+                @click="toggleSelectAll"
+            >
+                {{ isSelectAllChecked ? '取消全选' : '全选' }}
+            </a-button>
         </div>
         <a-checkbox-group v-model="selectedBatchNodes">
             <a-grid :cols="5" :colGap="24" :rowGap="16">
-                <a-grid-item v-for="host in filteredUnjoinedHosts" :key="host.ip" :style="{ width: '200px' }">
-                <a-checkbox :value="host.ip">{{ host.ip }}({{ host.role }})</a-checkbox>
+                <a-grid-item 
+                    v-for="host in filteredUnjoinedHosts" 
+                    :key="host.ip"
+                    class="node-item"
+                >
+                    <a-checkbox 
+                        :value="host.ip"
+                        @change="val => {
+                            if (!val && isSelectAllChecked) {
+                                isSelectAllChecked = false;
+                            }
+                        }"
+                    >
+                        {{ host.ip }}({{ host.role }})
+                    </a-checkbox>
                 </a-grid-item>
             </a-grid>
         </a-checkbox-group>
     </a-modal>
+
 </template>
 <script lang="ts" setup>
 
-    import { reactive, ref, onMounted, computed, watch } from 'vue';
+    import { reactive, ref, onMounted, computed, watch, nextTick } from 'vue';
     import { getNodeList, deleteNode, removeNode, addNode, joinCluster } from '@/api/node';
     import { getResources } from '@/api/resources';
     import { deployCluster } from '@/api/cluster';
@@ -258,6 +287,7 @@
     const batchAddNodeVisible = ref();
     const selectedBatchNodes = ref<string[]>([]);
     const isSelectAllChecked = ref(false);
+    const originalAllNodes = ref([]);
     const props = defineProps({
         upgradeK8sVersion: String,
         upgradeNetworkPlugin: String,
@@ -281,42 +311,48 @@
             node.role === 'master' && node.status === 'Unknown' && node.activeStatus === '暂无状态' && node.activeJobType === '暂无任务'
         );
     });
-    
-    const toggleSelectAll = () => {
-        const allNodes = filteredUnjoinedHosts.value.map((host) => host.ip);
 
-        if ( isSelectAllChecked.value) {
-            // 如果全选复选框已选中，点击时清空所有选中项
+    const handleBatchJoinCancel = () => {
+        nextTick(() => {
+            // 点击取消时清空选中项，并且将全选按钮重置为未选中状态
             selectedBatchNodes.value = [];
-            isSelectAllChecked.value = false; // 更新全选状态为未选中
-        } else {
-            // 如果全选复选框未选中，点击时选中所有未加入的节点
-            selectedBatchNodes.value = Array.from(new Set([...selectedBatchNodes.value, ...allNodes]));
-            isSelectAllChecked.value = true; // 更新全选状态为选中
-        }
+            isSelectAllChecked.value = false;  // 恢复为全选按钮
+        });
     };
 
-    watch(selectedBatchNodes, (newSelectedBatchNodes) => {
-        const allNodes = filteredUnjoinedHosts.value.map((host) => host.ip);
-        isSelectAllChecked.value = allNodes.length > 0 && allNodes.every((ip) => newSelectedBatchNodes.includes(ip));
-    });
-    // const isMasterResetting = computed(() => {
-    //     return nodeList.value && nodeList.value.some(node => 
-    //         props.taskProcess === 'resetting' && node.role === 'master' && node.status === 'Unknown' && node.activeStatus === '运行中'
-    //     );
-    // });
+    // 全选按钮的切换逻辑
+    const toggleSelectAll = () => {
+        const currentNodes = filteredUnjoinedHosts.value.map(h => h.ip);
 
-    // const isNodeUpgrading = computed(() => {
-    //     return nodeList.value && nodeList.value.some(node =>
-    //         node.status === 'Ready' && node.activeStatus === "运行中" && node.activeJobType === '升级集群' && props.taskProcess === 'upgrading'
-    //     );
-    // });
-    
-    // const isNodeTrying = computed(() => {
-    //     return nodeList.value && nodeList.value.some(node =>
-    //       props.taskProcess === 'upgrading' && node.status === 'Ready' && node.activeJobType === '升级集群' && node.activeStatus === '运行中'
-    //     );
-    // });
+        if (isSelectAllChecked.value) {
+            // 取消全选时，从 selectedBatchNodes 中移除所有可见节点
+            selectedBatchNodes.value = selectedBatchNodes.value.filter(
+                ip => !currentNodes.includes(ip)
+            );
+        } else {
+            // 全选时，将所有当前可见节点加入 selectedBatchNodes 中
+            const newSelected = Array.from(new Set([
+                ...selectedBatchNodes.value,
+                ...currentNodes  // 合并已选择节点和所有可见节点
+            ]));
+            selectedBatchNodes.value = newSelected;
+        }
+
+        // 切换全选按钮状态
+        isSelectAllChecked.value = !isSelectAllChecked.value;
+    };
+
+    // 监听 selectedBatchNodes 变化，保持全选按钮文本与当前选择状态一致
+    watch(selectedBatchNodes, (newVal) => {
+        const currentAllNodes = filteredUnjoinedHosts.value.map(h => h.ip);
+        const shouldCheck = currentAllNodes.length > 0 && 
+            currentAllNodes.every(ip => newVal.includes(ip));
+        
+        // 更新全选按钮的状态，确保其与 selectedBatchNodes 保持一致
+        if (isSelectAllChecked.value !== shouldCheck) {
+            isSelectAllChecked.value = shouldCheck;
+        }
+    });
 
     const isBatchJoinDisabled = computed(() => {
         // 判断是否有任务在运行
@@ -440,6 +476,7 @@
     const handleBatchJoin = async () => {
         
         batchAddNodeVisible.value = true;
+        originalAllNodes.value = filteredUnjoinedHosts.value.map(h => h.ip);
         cluster.controlPlaneHosts = [];
         cluster.workerHosts = [];
         
@@ -528,9 +565,23 @@
             Message.error("批量加入时发生错误！");
         }
     };
-    const handleBatchJoinCancel = async () => {
-        batchAddNodeVisible.value = false;
-    }
+    // const handleBatchJoinCancel = () => {
+    //     selectedBatchNodes.value = []; // 清空选中项
+    //     originalAllNodes.value = []; // 重置原始节点缓存
+    //     isSelectAllChecked.value = false; // 强制重置全选状态
+    //     batchAddNodeVisible.value = false;
+    // };
+    // const handleBatchJoinCancel = () => {
+    //     nextTick(() => {
+    //         selectedBatchNodes.value = [];
+    //         isSelectAllChecked.value = false;
+    //     });
+    // };
+    // const handleBatchJoinCancel = async () => {
+    //     batchAddNodeVisible.value = false;
+    //     isSelectAllChecked.value = false;
+    //     selectedBatchNodes.value = [];
+    // }
    
     const handleJoinOk = async () => {
         joinVisible.value = true;
