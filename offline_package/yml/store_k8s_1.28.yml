@@ -107,9 +107,9 @@ network_plugins:
           tag: store.e-byte.cn/sysapp/network/calico/pod2daemon-flexvol
 system_app:
   - name: metrics_server
-    version: v0.7.0
+    version: v0.6.4
     dependency:
       images:
         - name: metrics_server
-          version: v0.7.0
+          version: v0.6.4
           tag: store.e-byte.cn/sysapp/metrics-server/metrics-server
