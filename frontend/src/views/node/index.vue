@@ -281,16 +281,11 @@
             node.role === 'master' && node.status === 'Unknown' && node.activeStatus === '暂无状态' && node.activeJobType === '暂无任务'
         );
     });
-
-    const isAllSelected = computed(() => {
-        const allNodes = filteredUnjoinedHosts.value.map((host) => host.ip);
-        return allNodes.length > 0 && allNodes.every((ip) => selectedBatchNodes.value.includes(ip));
-    });
     
     const toggleSelectAll = () => {
         const allNodes = filteredUnjoinedHosts.value.map((host) => host.ip);
 
-        if ( isAllSelected && isSelectAllChecked.value) {
+        if ( isSelectAllChecked.value) {
             // 如果全选复选框已选中，点击时清空所有选中项
             selectedBatchNodes.value = [];
             isSelectAllChecked.value = false; // 更新全选状态为未选中
@@ -300,6 +295,11 @@
             isSelectAllChecked.value = true; // 更新全选状态为选中
         }
     };
+
+    watch(selectedBatchNodes, (newSelectedBatchNodes) => {
+        const allNodes = filteredUnjoinedHosts.value.map((host) => host.ip);
+        isSelectAllChecked.value = allNodes.length > 0 && allNodes.every((ip) => newSelectedBatchNodes.includes(ip));
+    });
     // const isMasterResetting = computed(() => {
     //     return nodeList.value && nodeList.value.some(node => 
     //         props.taskProcess === 'resetting' && node.role === 'master' && node.status === 'Unknown' && node.activeStatus === '运行中'
@@ -347,28 +347,6 @@
         }
         return '';
     };
-
-    const getMappedK8sVersion = (version: string)=> {
-        try {
-            const majorMinor = extractMajorMinor(version); 
-            if (!majorMinor) return '';
-
-            const versionMapStr = localStorage.getItem('k8sVersionMap');
-            if (!versionMapStr) return '';
-            
-            const versionMap: Record<string, string> = JSON.parse(versionMapStr);
-            
-            return versionMap[majorMinor] || '';
-        } catch (err) {
-            console.error('解析版本映射失败:', err);
-            return '';
-        }
-    }
-
-    const extractMajorMinor = (version: string)=> {
-        const match = version.match(/(v?\d+\.\d+)/);
-        return match ? match[1] : '';
-    }
 
     const hosts = computed(() => {
         return [
@@ -552,7 +530,6 @@
     };
     const handleBatchJoinCancel = async () => {
         batchAddNodeVisible.value = false;
-        selectedBatchNodes.value = [];
     }
    
     const handleJoinOk = async () => {
