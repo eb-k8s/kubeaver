@@ -213,7 +213,7 @@
     >
         <div style="display: flex; align-items: center; justify-content: flex-end; margin-bottom: 10px;">
             <!-- <a-checkbox 
-                :checked="isSelectAllChecked" 
+                :checked="
                 @change="toggleSelectAll"
             >
                 {{ isSelectAllChecked ? '取消全选' : '全选' }}

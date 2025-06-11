@@ -561,6 +561,11 @@ onBeforeUnmount(() => {
 
 
 function calculateExecutionTime(processedOn, finishedOn) {
+
+    if (isNaN(processedOn) || isNaN(finishedOn)) {
+        return "0秒"; 
+    }
+
     let timeDifference = finishedOn - processedOn;
 
     if (timeDifference < 0) {
@@ -622,7 +627,7 @@ const fetchTaskList = async () => {
                         status: statusMap[data.status] ,
                         createTime: formatTime(data.task), 
                         timestamp: data.task, 
-                        executionTime: calculateExecutionTime(data.processedOn, data.finishedOn),
+                        executionTime: `${calculateExecutionTime(data.processedOn, data.finishedOn)} || ${0}秒`,
                         IP: entry.ip,
                         statistics: Array.isArray(data.statistics) ? data.statistics : [],
                     });
