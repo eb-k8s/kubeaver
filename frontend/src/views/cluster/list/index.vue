@@ -667,6 +667,8 @@
             return;
         }
 
+        console.log("部署集群参数：", k8sVersion);
+    
         // 调用部署接口
         try {
             const params = { id: id.value };

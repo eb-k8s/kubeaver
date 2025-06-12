@@ -29,13 +29,6 @@ export default mergeConfig(
           secure: false,
           rewrite: (path: string) => path.replace(/^\/v128\/api/, '/api'),
         },
-        // '/ws/': {
-        //   target: 'http://127.0.0.1:8000',
-        //   changeOrigin: true,
-        //   secure: false,
-        //   ws: true,
-        //   rewrite: (path) => path.replace(/^\/ws/, '/'),
-        // },
         '/v125/ws/': {
           target: 'http://kubeaver_backend_v1-125:8000/',
           changeOrigin: true,

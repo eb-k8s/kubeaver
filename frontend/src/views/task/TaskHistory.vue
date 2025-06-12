@@ -561,6 +561,11 @@ onBeforeUnmount(() => {
 
 
 function calculateExecutionTime(processedOn, finishedOn) {
+
+    if (isNaN(processedOn) || isNaN(finishedOn)) {
+        return "0秒"; 
+    }
+
     let timeDifference = finishedOn - processedOn;
 
     if (timeDifference < 0) {
