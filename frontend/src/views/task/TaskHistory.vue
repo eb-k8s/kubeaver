@@ -627,7 +627,7 @@ const fetchTaskList = async () => {
                         status: statusMap[data.status] ,
                         createTime: formatTime(data.task), 
                         timestamp: data.task, 
-                        executionTime: `${calculateExecutionTime(data.processedOn, data.finishedOn)} || ${0}秒`,
+                        executionTime: calculateExecutionTime(data.processedOn, data.finishedOn),
                         IP: entry.ip,
                         statistics: Array.isArray(data.statistics) ? data.statistics : [],
                     });

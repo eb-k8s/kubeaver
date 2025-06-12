@@ -213,10 +213,10 @@
     >
         <div style="display: flex; align-items: center; justify-content: flex-end; margin-bottom: 10px;">
             <!-- <a-checkbox 
-                :checked="
+                :checked="isSelectAllChecked"
                 @change="toggleSelectAll"
             >
-                {{ isSelectAllChecked ? '取消全选' : '全选' }}
+              全选
             </a-checkbox> -->
             <a-button 
                 type="primary" 
@@ -314,54 +314,44 @@
 
     const handleBatchJoinCancel = () => {
         nextTick(() => {
-            // 点击取消时清空选中项，并且将全选按钮重置为未选中状态
             selectedBatchNodes.value = [];
-            isSelectAllChecked.value = false;  // 恢复为全选按钮
+            isSelectAllChecked.value = false; 
         });
     };
 
-    // 全选按钮的切换逻辑
     const toggleSelectAll = () => {
         const currentNodes = filteredUnjoinedHosts.value.map(h => h.ip);
 
         if (isSelectAllChecked.value) {
-            // 取消全选时，从 selectedBatchNodes 中移除所有可见节点
             selectedBatchNodes.value = selectedBatchNodes.value.filter(
                 ip => !currentNodes.includes(ip)
             );
         } else {
-            // 全选时，将所有当前可见节点加入 selectedBatchNodes 中
             const newSelected = Array.from(new Set([
                 ...selectedBatchNodes.value,
-                ...currentNodes  // 合并已选择节点和所有可见节点
+                ...currentNodes  
             ]));
             selectedBatchNodes.value = newSelected;
         }
 
-        // 切换全选按钮状态
         isSelectAllChecked.value = !isSelectAllChecked.value;
     };
 
-    // 监听 selectedBatchNodes 变化，保持全选按钮文本与当前选择状态一致
     watch(selectedBatchNodes, (newVal) => {
         const currentAllNodes = filteredUnjoinedHosts.value.map(h => h.ip);
         const shouldCheck = currentAllNodes.length > 0 && 
             currentAllNodes.every(ip => newVal.includes(ip));
         
-        // 更新全选按钮的状态，确保其与 selectedBatchNodes 保持一致
         if (isSelectAllChecked.value !== shouldCheck) {
             isSelectAllChecked.value = shouldCheck;
         }
     });
 
     const isBatchJoinDisabled = computed(() => {
-        // 判断是否有任务在运行
         const hasRunningTasks = nodeList.value?.some(node => node.activeJobType !== '暂无任务');
 
-        // 判断是否有未加入的主机
         const hasUnjoinedHosts = filteredUnjoinedHosts.value.length > 0;
 
-        // 如果有任务在运行或没有未加入的主机，则禁用按钮
         return hasRunningTasks || !hasUnjoinedHosts;
     });
 
@@ -556,32 +546,14 @@
                 }
             }
 
-            // 刷新节点列表
             fetchNodeList();
-            batchAddNodeVisible.value = false; // 关闭模态框
-            selectedBatchNodes.value = []; // 清空选中项
+            batchAddNodeVisible.value = false; 
+            selectedBatchNodes.value = []; 
         } catch (err) {
             console.error(err);
             Message.error("批量加入时发生错误！");
         }
     };
-    // const handleBatchJoinCancel = () => {
-    //     selectedBatchNodes.value = []; // 清空选中项
-    //     originalAllNodes.value = []; // 重置原始节点缓存
-    //     isSelectAllChecked.value = false; // 强制重置全选状态
-    //     batchAddNodeVisible.value = false;
-    // };
-    // const handleBatchJoinCancel = () => {
-    //     nextTick(() => {
-    //         selectedBatchNodes.value = [];
-    //         isSelectAllChecked.value = false;
-    //     });
-    // };
-    // const handleBatchJoinCancel = async () => {
-    //     batchAddNodeVisible.value = false;
-    //     isSelectAllChecked.value = false;
-    //     selectedBatchNodes.value = [];
-    // }
    
     const handleJoinOk = async () => {
         joinVisible.value = true;
