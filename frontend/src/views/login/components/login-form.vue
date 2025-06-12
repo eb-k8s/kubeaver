@@ -184,8 +184,9 @@
           testedVersions.add(mappedVersion);
           try {
             const result: any = await availableBackend(mappedVersion);
-            console.log(`Version ${mappedVersion} result:`, result);
-            connected = true;
+            if (result.status === 'ok') {
+              connected = true;
+            }
             availableVersions.push(mappedVersion);
             versionList.forEach(version => {
               availableVersionMap[version] = mappedVersion;

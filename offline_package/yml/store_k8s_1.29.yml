@@ -10,6 +10,10 @@ dependency:
       version: v1.29.0
       path: others/crictl
       filename: crictl-v1.29.0-linux-{{image_arch}}.tar.gz
+    - name: etcd
+      version: v3.5.12
+      path: etcd
+      filename: etcd-v3.5.12-linux-{{ image_arch }}.tar.gz
     - name: runc
       version: v1.1.13
       path: others/runc
@@ -47,9 +51,9 @@ dependency:
     - name: pause
       version: '3.9'
       tag: store.e-byte.cn/k8s/pause
-    - name: k8s-dns-node-cache
-      version: '1.22.28'
-      tag: store.e-byte.cn/k8s/k8s-dns-node-cache
+    # - name: k8s-dns-node-cache
+    #   version: '1.22.28'
+    #   tag: store.e-byte.cn/k8s/k8s-dns-node-cache
     - name: kube_apiserver
       version: "{{kube_version}}"
       tag: store.e-byte.cn/k8s/kube-apiserver
@@ -103,9 +107,9 @@ network_plugins:
           tag: store.e-byte.cn/sysapp/network/calico/pod2daemon-flexvol
 system_app:
   - name: metrics_server
-    version: v0.7.0
+    version: v0.6.4
     dependency:
       images:
         - name: metrics_server
-          version: v0.7.0
+          version: v0.6.4
           tag: store.e-byte.cn/sysapp/metrics-server/metrics-server
