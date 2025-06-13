@@ -41,6 +41,7 @@ services:
       - ./data/kubeaver/offline:/root/backend/data/offline
       - ./data/kubeaver/redis:/root/backend/data/redis
       - ./data/kubeaver/inventory:/root/backend/data/inventory
+      - ./data/kubeaver/config:/root/backend/data/config
       - ./data/kubeadmin:/root/backend/data/kubeadmin
     depends_on:
       redis:
