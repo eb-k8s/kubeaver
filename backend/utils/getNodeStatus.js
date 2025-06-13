@@ -7,7 +7,7 @@ const { exec } = require('child_process');
 const { getHostsYamlFile } = require('./getHostsYamlFile');
 
 const redisConfig = {
-  host: process.env.REDIS_HOST, 
+  host: process.env.REDIS_HOST,
   port: process.env.REDIS_PORT,
 };
 
@@ -87,7 +87,12 @@ async function getConfigFile(id, hostPath, masterIP) {
     }
   }
 
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'config-'));
+  // const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'config-'));
+  // const outputPath = path.join(tmpDir, 'config');
+  let tmpDir = path.join(__dirname, '../data/config', `config-${id}`);
+  if (!fs.existsSync(tmpDir)) {
+    fs.mkdirSync(tmpDir, { recursive: true });
+  }
   const outputPath = path.join(tmpDir, 'config');
   const privateKeyPath = path.join(__dirname, '../ssh', 'id_rsa');
   const ansibleCommand = `ansible kube_control_plane[0] --private-key ${privateKeyPath} -i ${hostPath} -m fetch -a "src=/etc/kubernetes/admin.conf dest=${outputPath} flat=yes" -b`;
@@ -165,8 +170,14 @@ async function getNodeStatus(id, hostName, hostPath, masterIP) {
         return { status: "Unknown", version: "Unknown" };
       }
     }
-
-    const configFilePath = path.join(os.tmpdir(), `config-${id}`);
+    const tmpconfig = path.join(__dirname, '../data/config', `config-${id}`);
+    if (!fs.existsSync(tmpconfig)) {
+      fs.mkdirSync(tmpconfig, { recursive: true });
+    }
+    //const configFilePath = path.join(tmpDir, 'config');
+    const configFilePath = path.join(tmpconfig, 'config');
+    //console.log(configFilePath)
+    // const configFilePath = path.join(os.tmpdir(), `config-${id}`);
     fs.writeFileSync(configFilePath, configContent, 'utf8');
 
     const result = await new Promise((resolve, reject) => {
