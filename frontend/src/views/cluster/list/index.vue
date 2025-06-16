@@ -195,6 +195,7 @@
     import { getClusterList, deleteBeforeDeployCluster, deployCluster, resetCluster, downloadConfig } from '@/api/cluster';
     import { upgradeCluster } from '@/api/tasks';
     import { getHostList } from '@/api/hosts';
+    import { getNodeList } from '@/api/node';
     import { Message } from '@arco-design/web-vue';
     import { formatTime } from '@/utils/time';
     import { saveAs } from 'file-saver';
@@ -216,24 +217,12 @@
     const networkPlugins = ref();
     const originalPlugin = ref();
     const upgradeK8sVersion = ref();
+    const nodeList = ref([]);
     const cluster = reactive({
         version: '',
         networkPlugins: ''
     });
     const name = ref();
-
-    // 比较版本号的工具函数
-    const compareVersions = (version1: string, version2: string) => {
-        const v1 = version1.replace('v', '').split('.').map(Number);
-        const v2 = version2.replace('v', '').split('.').map(Number);
-        for (let i = 0; i < Math.max(v1.length, v2.length); i++) {
-            const num1 = v1[i] || 0;
-            const num2 = v2[i] || 0;
-            if (num1 > num2) return 1;
-            if (num1 < num2) return -1;
-        }
-        return 0;
-    };
 
     const getFirstK8sVersionFromStorage = (key = 'k8sVersionList'): string => {
         const versionArrayStr = localStorage.getItem(key);
@@ -542,6 +531,7 @@
     const onClickDeploy = async (record: any) => {
         version.value = record.version;
         id.value = record.id;
+        fetchNodeList(id.value);
         if(record.upgradeK8sVersion){
             upgradeK8sVersion.value = record.upgradeK8sVersion
         };
@@ -637,7 +627,40 @@
         resetVisible.value = false;
     }
 
+    //获取集群节点列表
+    const fetchNodeList = async (id:any) => { 
+      try {
+        // 检查次版本是否存在
+        const versionMapStr = localStorage.getItem('k8sVersionMap');
+        if (!versionMapStr) {
+            Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
+            return;
+        }
+        setLoading(true);
+        const k8sVersion = getFirstK8sVersionFromStorage();
+        const result = await getNodeList(id, k8sVersion);
+        console.log("获取集群节点列表：", result);
+        nodeList.value = result.data;
+      } catch (err) {
+        console.log(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     const handleDeployOk = async () => {
+
+        let count = 0;
+        nodeList.value.forEach(itme => {
+            if(itme.role === 'master'){
+                count += 1;
+            }
+        });
+        // 校验控制节点个数是否为单数
+        if (count % 2 ===0 ) {
+            Message.warning(`列表中现有${count}个master，建议保持单数以保证高可用！`);
+            return;
+        }
 
         let versionMap: Record<string, string>;
         try {
