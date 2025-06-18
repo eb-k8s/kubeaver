@@ -9,6 +9,9 @@
                     <a-button type="primary" @click="handleAddNode()" :style="{ marginBottom: '10px' }">
                         添加节点
                     </a-button>
+                    <a-button type="primary" :disabled="isBatchJoinDisabled" @click="handleBatchJoin()" :style="{ marginBottom: '10px', marginLeft: '2px'}">
+                        批量加入
+                    </a-button>
                 </div>
                 <a-table :columns="columns" :data="nodeList" :loading="loading">
                     <template #icon="{ record }">
@@ -201,10 +204,53 @@
        <p>确定将 <span style="color: red; font-weight: bold;">{{ name }}</span> 节点从集群中移除吗？</p>
        <p style="color: red; font-weight: bold;">警告：移除操作不可恢复，请谨慎操作！</p>
     </a-modal>
+
+    <a-modal v-model:visible="batchAddNodeVisible" 
+        @ok="handleBatchJoinOk" 
+        @cancel="handleBatchJoinCancel"
+        width="800px"
+        :afterClose="handleBatchJoinCancel"
+    >
+        <div style="display: flex; align-items: center; justify-content: flex-end; margin-bottom: 10px;">
+            <!-- <a-checkbox 
+                :checked="isSelectAllChecked"
+                @change="toggleSelectAll"
+            >
+              全选
+            </a-checkbox> -->
+            <a-button 
+                type="primary" 
+                @click="toggleSelectAll"
+            >
+                {{ isSelectAllChecked ? '取消全选' : '全选' }}
+            </a-button>
+        </div>
+        <a-checkbox-group v-model="selectedBatchNodes">
+            <a-grid :cols="5" :colGap="24" :rowGap="16">
+                <a-grid-item 
+                    v-for="host in filteredUnjoinedHosts" 
+                    :key="host.ip"
+                    class="node-item"
+                >
+                    <a-checkbox 
+                        :value="host.ip"
+                        @change="val => {
+                            if (!val && isSelectAllChecked) {
+                                isSelectAllChecked = false;
+                            }
+                        }"
+                    >
+                        {{ host.ip }}({{ host.role }})
+                    </a-checkbox>
+                </a-grid-item>
+            </a-grid>
+        </a-checkbox-group>
+    </a-modal>
+
 </template>
 <script lang="ts" setup>
 
-    import { reactive, ref, onMounted, computed, watch } from 'vue';
+    import { reactive, ref, onMounted, computed, watch, nextTick } from 'vue';
     import { getNodeList, deleteNode, removeNode, addNode, joinCluster } from '@/api/node';
     import { getResources } from '@/api/resources';
     import { deployCluster } from '@/api/cluster';
@@ -238,6 +284,10 @@
     const upgradeVersion = ref();
     const clusterName = ref();
     const master1 = ref();
+    const batchAddNodeVisible = ref();
+    const selectedBatchNodes = ref<string[]>([]);
+    const isSelectAllChecked = ref(false);
+    const originalAllNodes = ref([]);
     const props = defineProps({
         upgradeK8sVersion: String,
         upgradeNetworkPlugin: String,
@@ -262,23 +312,48 @@
         );
     });
 
-    // const isMasterResetting = computed(() => {
-    //     return nodeList.value && nodeList.value.some(node => 
-    //         props.taskProcess === 'resetting' && node.role === 'master' && node.status === 'Unknown' && node.activeStatus === '运行中'
-    //     );
-    // });
+    const handleBatchJoinCancel = () => {
+        nextTick(() => {
+            selectedBatchNodes.value = [];
+            isSelectAllChecked.value = false; 
+        });
+    };
 
-    // const isNodeUpgrading = computed(() => {
-    //     return nodeList.value && nodeList.value.some(node =>
-    //         node.status === 'Ready' && node.activeStatus === "运行中" && node.activeJobType === '升级集群' && props.taskProcess === 'upgrading'
-    //     );
-    // });
-    
-    // const isNodeTrying = computed(() => {
-    //     return nodeList.value && nodeList.value.some(node =>
-    //       props.taskProcess === 'upgrading' && node.status === 'Ready' && node.activeJobType === '升级集群' && node.activeStatus === '运行中'
-    //     );
-    // });
+    const toggleSelectAll = () => {
+        const currentNodes = filteredUnjoinedHosts.value.map(h => h.ip);
+
+        if (isSelectAllChecked.value) {
+            selectedBatchNodes.value = selectedBatchNodes.value.filter(
+                ip => !currentNodes.includes(ip)
+            );
+        } else {
+            const newSelected = Array.from(new Set([
+                ...selectedBatchNodes.value,
+                ...currentNodes  
+            ]));
+            selectedBatchNodes.value = newSelected;
+        }
+
+        isSelectAllChecked.value = !isSelectAllChecked.value;
+    };
+
+    watch(selectedBatchNodes, (newVal) => {
+        const currentAllNodes = filteredUnjoinedHosts.value.map(h => h.ip);
+        const shouldCheck = currentAllNodes.length > 0 && 
+            currentAllNodes.every(ip => newVal.includes(ip));
+        
+        if (isSelectAllChecked.value !== shouldCheck) {
+            isSelectAllChecked.value = shouldCheck;
+        }
+    });
+
+    const isBatchJoinDisabled = computed(() => {
+        const hasRunningTasks = nodeList.value?.some(node => node.activeJobType !== '暂无任务');
+
+        const hasUnjoinedHosts = filteredUnjoinedHosts.value.length > 0;
+
+        return hasRunningTasks || !hasUnjoinedHosts;
+    });
 
     const isAnyNodeBusy = computed(() => {
         return nodeList.value && nodeList.value.some(node => node.activeJobType !== '暂无任务');
@@ -298,28 +373,6 @@
         }
         return '';
     };
-
-    const getMappedK8sVersion = (version: string)=> {
-        try {
-            const majorMinor = extractMajorMinor(version); 
-            if (!majorMinor) return '';
-
-            const versionMapStr = localStorage.getItem('k8sVersionMap');
-            if (!versionMapStr) return '';
-            
-            const versionMap: Record<string, string> = JSON.parse(versionMapStr);
-            
-            return versionMap[majorMinor] || '';
-        } catch (err) {
-            console.error('解析版本映射失败:', err);
-            return '';
-        }
-    }
-
-    const extractMajorMinor = (version: string)=> {
-        const match = version.match(/(v?\d+\.\d+)/);
-        return match ? match[1] : '';
-    }
 
     const hosts = computed(() => {
         return [
@@ -394,6 +447,13 @@
         return nodeList.value && nodeList.value.some(node => node.role === 'master' && node.status === 'Unknown' && node.deploymentStatus === 'NotDeploy');
     });
 
+    // 过滤未加入集群的节点
+    const filteredUnjoinedHosts = computed(() => {
+       
+        if (!Array.isArray(nodeList.value)) return [];
+        return nodeList.value.filter((node) => node.status === "Unknown");
+    });
+
     const handleAddNode = async() => {
         addNodeVisible.value = true;
         fetchHostList();
@@ -402,6 +462,98 @@
     const handleAddNodeCancel = async () => {
         addNodeVisible.value = false;
     }
+
+    const handleBatchJoin = async () => {
+        
+        batchAddNodeVisible.value = true;
+        originalAllNodes.value = filteredUnjoinedHosts.value.map(h => h.ip);
+        cluster.controlPlaneHosts = [];
+        cluster.workerHosts = [];
+        
+    }
+    
+    const handleBatchJoinOk = async () => {
+        if (selectedBatchNodes.value.length === 0) {
+            Message.warning("请选择至少一个节点进行加入！");
+            return;
+        }
+
+        try {
+            const data = {
+                id: id.value,
+                hosts: selectedBatchNodes.value.map((ip) => {
+                    const node = nodeList.value.find((n) => n.ip === ip);
+                    return {
+                        ip: node?.ip,
+                        role: node?.role, 
+                        hostName: node?.hostName, 
+                    };
+                }),
+            };
+
+            // 检查 Kubernetes 版本映射
+            const versionMapStr = localStorage.getItem("k8sVersionMap");
+            if (!versionMapStr) {
+                Message.error("未检测到可用的 Kubernetes 版本对应的后端，请退出重新登录！");
+                return;
+            }
+
+            const versionMap: Record<string, string> = JSON.parse(versionMapStr);
+            const majorMinorVersion = version.value.match(/^v?\d+\.\d+/)?.[0];
+            if (!majorMinorVersion) {
+                Message.error("无法解析集群版本，请检查版本格式！");
+                return;
+            }
+
+            const k8sVersion = versionMap[majorMinorVersion];
+            if (!k8sVersion) {
+                Message.error("所选的 Kubernetes 版本对应的后端不存在或未启动，请选择其他版本或启动对应的后端！");
+                return;
+            }
+
+            // 批量处理 master 和 node 节点
+            for (const host of data.hosts) {
+                if (host.role === "master") {
+                    // 校验 master 节点数量是否为单数
+                    const masterCount = nodeList.value.filter((node) => node.role === "master").length;
+                    if ((masterCount) % 2 === 0) {
+                        Message.warning(`添加后有 ${masterCount} 个 master 节点，建议保持单数以保证高可用！`);
+                        continue;
+                    }
+
+                    // 调用 deployCluster 接口
+                    const result: any = await deployCluster({ id: data.id, hosts: [host] }, k8sVersion);
+                    if (result.status === "ok") {
+                        Message.success(`master 节点 ${host.ip} 正在加入集群，请稍后...`);
+                    } else {
+                        Message.error(`master 节点 ${host.ip} 加入失败：${result.msg}`);
+                    }
+                } else if (host.role === "node") {
+                    // 校验 master 节点是否已准备好
+                    const masterReady = nodeList.value.some((node) => node.role === "master" && node.status === "Ready");
+                    if (!masterReady) {
+                        Message.warning(`请先确保至少一个 master 节点已准备好！跳过节点 ${host.ip}`);
+                        continue;
+                    }
+
+                    // 调用 joinCluster 接口
+                    const result: any = await joinCluster({ id: data.id, hosts: [host] }, k8sVersion);
+                    if (result.status === "ok") {
+                        Message.success(`node 节点 ${host.ip} 正在加入集群，请稍后...`);
+                    } else {
+                        Message.error(`node 节点 ${host.ip} 加入失败：${result.msg}`);
+                    }
+                }
+            }
+
+            fetchNodeList();
+            batchAddNodeVisible.value = false; 
+            selectedBatchNodes.value = []; 
+        } catch (err) {
+            console.error(err);
+            Message.error("批量加入时发生错误！");
+        }
+    };
    
     const handleJoinOk = async () => {
         joinVisible.value = true;
@@ -410,6 +562,7 @@
                 id : id.value,
                 hosts: [node.value],
             };
+            
             let count = 0;
             nodeList.value.forEach(itme => {
                 if(itme.role === 'master'){
