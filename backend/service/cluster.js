@@ -52,8 +52,8 @@ async function getK8sCluster() {
       }
       const nodeData = await getNodeList(output.id)
       output.nodeTotalNum = nodeData.data.length || 0;
-      output.nodeReadyNum = nodeData.data.filter(node => node.status === 'Ready').length || 0;
       output.masterCount = nodeData.data.filter(node => node.role === 'master').length || 0;
+      output.masterReadyNum = nodeData.data.filter(node => node.status === 'Ready').length || 0;
       output.nodeCount = nodeData.data.filter(node => node.role === 'node').length || 0;
       // //获取每个类型任务中活跃任务数和等待任务数
       // const taskNames = [
@@ -96,6 +96,8 @@ async function getK8sCluster() {
           console.error(`集群不存在，跳过更新状态`);
           return;
         }
+        // 节点只要有一个master是ready,整个集群状态为ready
+        let isClusterReady = false;
         for (const node of resultData.hosts) {
           if (node.role === "master") {
             const hostName = node.hostName;
@@ -105,12 +107,15 @@ async function getK8sCluster() {
               const updateTime = Date.now();
               result = await getNodeStatus(item.id, hostName, '', masterIP);
               if (result.status) {
-                // 如果 status 有值，更新 Redis 中的状态
-                const nodeKey = `k8s_cluster:${item.id}:baseInfo`;
-                await redis.hset(nodeKey,
-                  'status', result.status,
-                  'updateTime', updateTime
-                );
+                if (result.status === 'Ready') {
+                  isClusterReady = true;
+                  const nodeKey = `k8s_cluster:${item.id}:baseInfo`;
+                  await redis.hset(nodeKey,
+                    'status', 'Ready',
+                    'updateTime', updateTime
+                  );
+                  break; // Exit the loop early if a ready master is found
+                }
               } else {
                 console.error(`未能获取到${item.id}:${hostName}节点状态，直接返回`);
                 return;
@@ -120,7 +125,13 @@ async function getK8sCluster() {
             }
           }
         }
-
+        if (!isClusterReady) {
+          const nodeKey = `k8s_cluster:${item.id}:baseInfo`;
+          await redis.hset(nodeKey,
+            'status', 'Unknown',
+            'updateTime', Date.now()
+          );
+        }
       } catch (error) {
         console.error(`获取 Redis 数据时出错: ${error.message}`);
       }
