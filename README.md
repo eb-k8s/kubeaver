@@ -1,4 +1,4 @@
-# Kuberaver
+# Kubeaver
 
 <img src="./docs/imgs/logo_without_k.svg" height="100px"  />
 
