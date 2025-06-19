@@ -33,12 +33,9 @@ Kubeaver具有以下优点：
 
 ### 部署Kubeaver
 
-使用Docker拉取Kubeaver的相关镜像：
+下载Kubeaver代码：
 ```
-# 拉取前端镜像
-docker pull ghcr.io/eb-k8s/kubeaver/kubeaver_frontend:v1.0.0
-# 拉取后台镜像
-docker pull ghcr.io/eb-k8s/kubeaver/kubeaver_backend:v1.0.0-125
+git clone https://github.com/eb-k8s/kubeaver.git
 ```
 使用Docker Compose启动Kubeaver:
 ```
