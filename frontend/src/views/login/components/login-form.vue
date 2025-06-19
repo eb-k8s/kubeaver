@@ -4,9 +4,10 @@
       <a-card-meta style="margin-top: -20px; text-align: center;">
           <template #description>
             <div style=" font-size: 22px; max-width: 100%; max-height: 100px; margin-bottom: 80px; ">
-              <img :src="logo" style="width: 120px; height: 120px; margin-top: -10px;" /><br />
+              <img :src="logo" style="width: 120px; height: 120px; margin-bottom: -120px; margin-top: -10px;" /><br />
               <!-- <span style="font-weight: bold; ">新讯 | {{ $t('login.form.title') }}</span> -->
-              <span style="font-weight: bold; ">新讯 | Kubeaver</span>
+              <!-- <span style="font-weight: bold; ">新讯 | Kubeaver</span> -->
+              <!-- <span style="font-weight: bold; ">Kubeaver</span> -->
             </div>
           </template>
         </a-card-meta>
@@ -22,7 +23,7 @@
           :rules="[{ required: true, message: $t('login.form.userName.errMsg') }]"
           :validate-trigger="['change', 'blur']"
           hide-label
-          style="margin-bottom: 10%; margin-left: 4%;  width: 90%;"
+          style="margin-top: 55px; margin-bottom: 10%; margin-left: 4%;  width: 90%;"
         >
           <a-input
             v-model="userInfo.username"
