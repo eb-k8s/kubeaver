@@ -180,18 +180,45 @@
       const availableVersionMap: Record<string, string> = {};
       let connected = false;
 
+      // for (const [mappedVersion, versionList] of Object.entries(reverseMap)) {
+      //   if (!testedVersions.has(mappedVersion)) {
+      //     testedVersions.add(mappedVersion);
+      //     try {
+      //       const result: any = await availableBackend(mappedVersion);
+      //       if (result.status === 'ok') {
+      //         connected = true;
+      //       }
+      //       availableVersions.push(mappedVersion);
+      //       versionList.forEach(version => {
+      //         availableVersionMap[version] = mappedVersion;
+      //       });
+      //     } catch (e) {
+      //       console.warn(`Failed for version ${mappedVersion}:`, e);
+      //     }
+      //   }
+      // }
+
       for (const [mappedVersion, versionList] of Object.entries(reverseMap)) {
         if (!testedVersions.has(mappedVersion)) {
           testedVersions.add(mappedVersion);
           try {
             const result: any = await availableBackend(mappedVersion);
-            if (result.status === 'ok') {
+
+            console.log(`Testing version ${mappedVersion}...`, result);
+            
+            if (
+              result.status === 'ok' &&
+              typeof result === 'object' &&
+              !result.toString().includes('<!DOCTYPE html>') 
+            ) {
               connected = true;
+              availableVersions.push(mappedVersion);
+              versionList.forEach(version => {
+                availableVersionMap[version] = mappedVersion;
+              });
+            } else {
+              console.warn(`后端服务响应异常，版本 ${mappedVersion} 被忽略`);
             }
-            availableVersions.push(mappedVersion);
-            versionList.forEach(version => {
-              availableVersionMap[version] = mappedVersion;
-            });
           } catch (e) {
             console.warn(`Failed for version ${mappedVersion}:`, e);
           }
