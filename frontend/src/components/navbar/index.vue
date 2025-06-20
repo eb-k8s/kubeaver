@@ -2,12 +2,13 @@
   <div class="navbar">
     <div class="left-side">
       <a-space>
-        <img :src="logo" style="width: 60px; height: 60px; margin-top: -22px;" /><br />
+        <img :src="logo" style="width: 40px; height: 40px;" /><br />
         <a-typography-title
           :style="{ marginLeft: '-12px', marginTop: '10px', fontSize: '18px' }"
           :heading="5"
         >
-          新讯 | Kubeaver
+          <!-- 新讯 | Kubeaver -->
+          | Kubeaver
         </a-typography-title>
         <icon-menu-fold
           v-if="!topMenu && appStore.device === 'mobile'"
@@ -20,44 +21,6 @@
       <Menu v-if="topMenu" />
     </div>
     <ul class="right-side">
-      <!-- <li>
-        <a-tooltip :content="$t('settings.search')">
-          <a-button class="nav-btn" type="outline" :shape="'circle'">
-            <template #icon>
-              <icon-search />
-            </template>
-          </a-button>
-        </a-tooltip>
-      </li> -->
-      <!-- <li>
-        <a-tooltip :content="$t('settings.language')">
-          <a-button
-            class="nav-btn"
-            type="outline"
-            :shape="'circle'"
-            @click="setDropDownVisible"
-          >
-            <template #icon>
-              <icon-language />
-            </template>
-          </a-button>
-        </a-tooltip>
-        <a-dropdown trigger="click" @select="changeLocale as any">
-          <div ref="triggerBtn" class="trigger-btn"></div>
-          <template #content>
-            <a-doption
-              v-for="item in locales"
-              :key="item.value"
-              :value="item.value"
-            >
-              <template #icon>
-                <icon-check v-show="item.value === currentLocale" />
-              </template>
-              {{ item.label }}
-            </a-doption>
-          </template>
-        </a-dropdown>
-      </li> -->
       <li>
         <a-tooltip
           :content="
@@ -79,33 +42,6 @@
           </a-button>
         </a-tooltip>
       </li>
-      <!-- <li>
-        <a-tooltip :content="$t('settings.navbar.alerts')">
-          <div class="message-box-trigger">
-            <a-badge :count="9" dot>
-              <a-button
-                class="nav-btn"
-                type="outline"
-                :shape="'circle'"
-                @click="setPopoverVisible"
-              >
-                <icon-notification />
-              </a-button>
-            </a-badge>
-          </div>
-        </a-tooltip>
-        <a-popover
-          trigger="click"
-          :arrow-style="{ display: 'none' }"
-          :content-style="{ padding: 0, minWidth: '400px' }"
-          content-class="message-popover"
-        >
-          <div ref="refBtn" class="ref-btn"></div>
-          <template #content>
-            <message-box />
-          </template>
-        </a-popover>
-      </li> -->
       <li>
         <a-tooltip
           :content="
@@ -127,28 +63,8 @@
           </a-button>
         </a-tooltip>
       </li>
-      <!-- <li>
-        <a-tooltip :content="$t('settings.title')">
-          <a-button
-            class="nav-btn"
-            type="outline"
-            :shape="'circle'"
-            @click="setVisible"
-          >
-            <template #icon>
-              <icon-settings />
-            </template>
-          </a-button>
-        </a-tooltip>
-      </li> -->
       <li>
         <a-dropdown trigger="click">
-          <!-- <a-avatar
-            :size="32"
-            :style="{ marginRight: '8px', cursor: 'pointer' }"
-          >
-            <img alt="avatar" :src="avatar" />
-          </a-avatar> -->
           <div>
             <a-avatar :style="{ backgroundColor: '#3370ff' }">
               <IconUser />
@@ -158,30 +74,6 @@
             </span>
           </div>
           <template #content>
-            <!-- <a-doption>
-              <a-space @click="switchRoles">
-                <icon-tag />
-                <span>
-                  {{ $t('messageBox.switchRoles') }}
-                </span>
-              </a-space>
-            </a-doption>
-            <a-doption>
-              <a-space @click="$router.push({ name: 'Info' })">
-                <icon-user />
-                <span>
-                  {{ $t('messageBox.userCenter') }}
-                </span>
-              </a-space>
-            </a-doption>
-            <a-doption>
-              <a-space @click="$router.push({ name: 'Setting' })">
-                <icon-settings />
-                <span>
-                  {{ $t('messageBox.userSettings') }}
-                </span>
-              </a-space>
-            </a-doption> -->
             <a-doption>
               <a-space @click="handleLogout">
                 <icon-export />
@@ -211,7 +103,7 @@
   import useLocale from '@/hooks/locale';
   import useUser from '@/hooks/user';
   import Menu from '@/components/menu/index.vue';
-  import logo from '@/assets/images/logo.png'
+  import logo from '@/assets/images/logo2.png'
   import MessageBox from '../message-box/index.vue';
 
   const appStore = useAppStore();
