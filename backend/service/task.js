@@ -73,7 +73,12 @@ async function addK8sMasterJob(clusterInfo) {
   let ipAddress;
   configContent = await redis.get(configHashKey);
   if (configContent) {
-    const configFilePath = path.join(os.tmpdir(), `config-${id}`);
+    //const configFilePath = path.join(os.tmpdir(), `config-${id}`);
+    let tmpDir = path.join(__dirname, '../data/config', `config-${id}`);
+      if (!fs.existsSync(tmpDir)) {
+        fs.mkdirSync(tmpDir, { recursive: true });
+      }
+    const configFilePath = path.join(tmpDir, 'config');
     const fileContents = fs.readFileSync(configFilePath, 'utf8');
     // 解析 YAML
     parsedData = yaml.load(fileContents);
@@ -128,10 +133,12 @@ async function addK8sMasterJob(clusterInfo) {
           ip: node.ip,
           hostsPath: hostsPath,
           offlineCacheDir: offlineCacheDir,
-          kubeVersion: resultData.k8sVersion,
+          //kubeVersion: resultData.k8sVersion,
+          kubeVersion: "1.31.9", //默认
           imageArch: resultPackageData.imageArch,
           networkPlugin: resultData.networkPlugin,
-          networkVersion: resultData.networkVersion,
+          //networkVersion: resultData.networkVersion,
+          networkVersion: "0.22.0", //默认
           workDir: workDir,
           configFile: configFile,
         }
@@ -158,10 +165,12 @@ async function addK8sMasterJob(clusterInfo) {
           ip: node.ip,
           hostsPath: hostsPath,
           offlineCacheDir: offlineCacheDir,
-          kubeVersion: resultData.k8sVersion,
+          //kubeVersion: resultData.k8sVersion,
+          kubeVersion: "1.31.9", //默认
           imageArch: resultPackageData.imageArch,
           networkPlugin: resultData.networkPlugin,
-          networkVersion: resultData.networkVersion,
+          //networkVersion: resultData.networkVersion,
+          networkVersion: "0.22.0", //默认
           workDir: workDir,
           configFile: configFile,
         }
@@ -235,10 +244,12 @@ async function addK8sNodeJob(clusterInfo) {
           ip: node.ip,
           hostsPath: hostsPath,
           offlineCacheDir: offlineCacheDir,
-          kubeVersion: resultData.k8sVersion,
+          //kubeVersion: resultData.k8sVersion,
+          kubeVersion: "1.31.9", //默认
           imageArch: resultPackageData.imageArch,
           networkPlugin: resultData.networkPlugin,
-          networkVersion: resultData.networkVersion,
+          //networkVersion: resultData.networkVersion,
+          networkVersion: "0.22.0", //默认
           workDir: workDir,
           configFile: configFile,
         }
