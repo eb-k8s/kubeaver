@@ -351,6 +351,14 @@ def main():
       modified_lines = insert_line_after_pattern(modified_lines, "libselinux-python", "        CentOS: {}", 2)
       # 将更改写入文件
       write_yaml_file(f"{kubespray_path}/roles/kubernetes/preinstall/vars/main.yml", modified_lines)
+    
+    elif kubespray_version == "2.28.0":
+        lines = read_yaml_file(f"{kubespray_path}/roles/system_packages/vars/main.yml")
+        # 去掉CentOS
+        modified_lines = replace_line_with_pattern(lines, '''- "{{ ansible_distribution in ['RedHat', 'CentOS'] }}"''', '''- "{{ ansible_distribution in ['RedHat'] }}"''')
+        modified_lines = replace_line_with_pattern(lines, '''- "{{ ansible_distribution == 'Amazon' }}"''', '''- "{{ ansible_distribution in ['Amazon', 'CentOS'] }}"''')
+        # 将更改写入文件
+        write_yaml_file(f"{kubespray_path}/roles/system_packages/vars/main.yml", modified_lines)
 
     # 拷贝group_vars目录，解决变量传递问题
     if kubespray_version == "2.23.3":
