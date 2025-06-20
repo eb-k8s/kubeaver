@@ -541,11 +541,11 @@
             return;
         }
 
-        // const k8sVersion = versionMap[majorMinorVersion];
-        // if (!k8sVersion) {
-        //     Message.error("所选的 Kubernetes 版本对应的后端不存在或未启动，请选择其他版本或启动对应的后端！");
-        //     return;
-        // }
+        const k8sVersion = versionMap[majorMinorVersion];
+        if (!k8sVersion) {
+            Message.error("所选的 Kubernetes 版本对应的后端不存在或未启动，请选择其他版本或启动对应的后端！");
+            return;
+        }
 
         const data = {
             clusterName: cluster.clusterName,

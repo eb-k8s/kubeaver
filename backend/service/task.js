@@ -133,12 +133,10 @@ async function addK8sMasterJob(clusterInfo) {
           ip: node.ip,
           hostsPath: hostsPath,
           offlineCacheDir: offlineCacheDir,
-          //kubeVersion: resultData.k8sVersion,
-          kubeVersion: "1.31.9", //默认
+          kubeVersion: resultData.k8sVersion,
           imageArch: resultPackageData.imageArch,
           networkPlugin: resultData.networkPlugin,
-          //networkVersion: resultData.networkVersion,
-          networkVersion: "0.22.0", //默认
+          networkVersion: resultData.networkVersion,
           workDir: workDir,
           configFile: configFile,
         }
@@ -165,12 +163,10 @@ async function addK8sMasterJob(clusterInfo) {
           ip: node.ip,
           hostsPath: hostsPath,
           offlineCacheDir: offlineCacheDir,
-          //kubeVersion: resultData.k8sVersion,
-          kubeVersion: "1.31.9", //默认
+          kubeVersion: resultData.k8sVersion,
           imageArch: resultPackageData.imageArch,
           networkPlugin: resultData.networkPlugin,
-          //networkVersion: resultData.networkVersion,
-          networkVersion: "0.22.0", //默认
+          networkVersion: resultData.networkVersion,
           workDir: workDir,
           configFile: configFile,
         }
@@ -244,12 +240,10 @@ async function addK8sNodeJob(clusterInfo) {
           ip: node.ip,
           hostsPath: hostsPath,
           offlineCacheDir: offlineCacheDir,
-          //kubeVersion: resultData.k8sVersion,
-          kubeVersion: "1.31.9", //默认
+          kubeVersion: resultData.k8sVersion,
           imageArch: resultPackageData.imageArch,
           networkPlugin: resultData.networkPlugin,
-          //networkVersion: resultData.networkVersion,
-          networkVersion: "0.22.0", //默认
+          networkVersion: resultData.networkVersion,
           workDir: workDir,
           configFile: configFile,
         }
