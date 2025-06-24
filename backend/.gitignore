@@ -13,3 +13,5 @@ ansible/v2.28.0.zip
 ansible/kubespray-2.26.0.zip
 ansible/callback_plugins/__pycache__
 .python-version
+pnpm-lock.yaml
+package-lock.json
