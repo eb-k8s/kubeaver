@@ -48,9 +48,21 @@ docker compose up -d
 
 ### 离线包导入
 
-如果您需要在离线环境下部署K8s集群，或者因为网络问题无法下载K8s集群相关的文件和镜像，您可以根据要安装的K8s集群版本，下载对应版本的离线包，然后导入Kubeaver，并在部署集群时选择离线模式，即可离线部署K8s集群。
+下载对应的离线包:
+```
+docker pull ghcr.io/eb-k8s/kubeaver/kubeaver_offline:v1.27.10
+docker pull ghcr.io/eb-k8s/kubeaver/kubeaver_oslib:v1.0
+docker run -d ghcr.io/eb-k8s/kubeaver/kubeaver_offline:v1.27.10 --name kubeaver_offline 
+docker run -d ghcr.io/eb-k8s/kubeaver/kubeaver_oslib:v1.0 --name kubeaver_oslib
+# 获取到基础包
+docker cp kubeaver_offline:/root/base_k8s_v1.27.10.tgz .
+# 获取到操作系统依赖包
+docker cp kubeaver_oslib:/root/extend_CentOS_7_Core.tgz .
+```
+然后你就可以获得离线包 `base_k8s_v1.27.10.tgz、extend_CentOS_7_Core.tgz` 并且将其导入Kubeaver中.
 
 离线包所包含的内容如下图所示：
+
 <img src="./imgs/offline_package.png" height="400px"  />
 
 ### 部署K8s集群
