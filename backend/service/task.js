@@ -73,7 +73,12 @@ async function addK8sMasterJob(clusterInfo) {
   let ipAddress;
   configContent = await redis.get(configHashKey);
   if (configContent) {
-    const configFilePath = path.join(os.tmpdir(), `config-${id}`);
+    //const configFilePath = path.join(os.tmpdir(), `config-${id}`);
+    let tmpDir = path.join(__dirname, '../data/config', `config-${id}`);
+      if (!fs.existsSync(tmpDir)) {
+        fs.mkdirSync(tmpDir, { recursive: true });
+      }
+    const configFilePath = path.join(tmpDir, 'config');
     const fileContents = fs.readFileSync(configFilePath, 'utf8');
     // 解析 YAML
     parsedData = yaml.load(fileContents);

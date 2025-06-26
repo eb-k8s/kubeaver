@@ -48,7 +48,7 @@ services:
         condition: service_started
 
   kubeadmin:
-    image: kubeadmin:v0.4.0
+    image: ghcr.io/eb-k8s/kubeaver/kubeadmin:v0.4.0
     container_name: kubeadmin
     user: root
     restart: always
@@ -101,7 +101,7 @@ services:
      # - ./registry.password:/etc/docker/registry/registry.password
     
   apploader:
-    image: apploader:v1.0.0
+    image: ghcr.io/eb-k8s/kubeaver/apploader:v1.0.0
     container_name: apploader
     user: root
     restart: always

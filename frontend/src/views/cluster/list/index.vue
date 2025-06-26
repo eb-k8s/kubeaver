@@ -83,7 +83,7 @@
                                 type="text" 
                                 size="small" 
                                 @click="handleLink(record)">
-                                容器云
+                                应用管理
                             </a-button>
                             <a-button 
                                 v-if="record.taskProcess === 'Unknown' && record.status === 'Unknown'" 
