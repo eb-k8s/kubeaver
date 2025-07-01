@@ -3,7 +3,7 @@
 <img src="./docs/imgs/logo_without_k.svg" height="100px"  />
 
 
-Kubeaver is a tool for quickly deploying high-availability Kubernetes (K8s) clusters, supporting **online and offline** methods. The project is based on kubespray, leveraging Ansible to automate deployment tasks, and provides a user-friendly **graphical user interface**.
+Kubeaver is a tool for quickly deploying high-availability Kubernetes (K8s) clusters, supporting **online(in progress) and offline** methods. The project is based on [kubespray](https://github.com/kubernetes-sigs/kubespray), leveraging Ansible to automate deployment tasks, and provides a user-friendly **graphical user interface**.
 
 Advantages of Kubeaver:
 
@@ -25,7 +25,7 @@ Advantages of Kubeaver:
 
 ### Install Docker and Docker Compose
 
-Install Docker on the host where you want to install Kubeaver using the official Docker guide: [Install Docker Engine](https://docs.docker.com/engine/install/). After installation, run the `docker compose version` command to ensure Docker Compose is correctly installed. If not, manually install Docker Compose.
+Install Docker on the host where you want to install Kubeaver using the official Docker guide: [Install Docker Engine](https://docs.docker.com/engine/install). After installation, run the `docker compose version` command to ensure Docker Compose is correctly installed. If not, manually install Docker Compose.
 
 ### Deploy Kubeaver
 
@@ -46,7 +46,17 @@ After this, Kubeaver will be successfully installed on your host. You can now ac
 
 ### Offline Package Import
 
-If you need to deploy a K8s cluster in an offline environment or encounter network issues downloading K8s-related files and images, download the corresponding version of the offline package based on the K8s cluster version you plan to install. Import the package into Kubeaver and select **offline mode** when deploying the cluster to deploy it offline.
+Download the corresponding version of the offline package based on the K8s cluster version you plan to install. 
+Download the offline package:
+```
+docker pull ghcr.io/eb-k8s/kubeaver/kubeaver_offline:v1.27.10
+docker pull ghcr.io/eb-k8s/kubeaver/kubeaver_oslib:v1.0
+docker run -d ghcr.io/eb-k8s/kubeaver/kubeaver_offline:v1.27.10 --name kubeaver_offline 
+docker run -d ghcr.io/eb-k8s/kubeaver/kubeaver_oslib:v1.0 --name kubeaver_oslib
+docker cp kubeaver_offline:/root/base_k8s_v1.27.10.tgz .
+docker cp kubeaver_oslib:/root/extend_CentOS_7_Core.tgz .
+```
+You can then obtain the offline package `base_k8s_v1.27.10.tgz、extend_CentOS_7_Core.tgz` and import it into Kubeaver.
 
 ### Deploy a K8s Cluster
 
