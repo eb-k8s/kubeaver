@@ -267,6 +267,21 @@ def main():
         modified_lines = insert_line_after_pattern(modified_lines, "sha256: \"{{ dnsautoscaler_digest_checksum | default(None) }}\"", "    groups:\n    - k8s_cluster")
         # 将更改写入文件
         write_yaml_file(f"{kubespray_path}/roles/kubespray-defaults/defaults/main/download.yml", modified_lines)
+    
+    elif kubespray_version == "2.28.0":
+        # 修改roles/kubespray-defaults/defaults/main/download.yml
+        lines = read_yaml_file(f"{kubespray_path}/roles/kubespray_defaults/defaults/main/download.yml")
+        # 删除sha256: "{{ metrics_server_digest_checksum | default(None) }}"的后面两行内容
+        modified_lines = remove_lines_after_pattern(lines, "sha256: \"{{ metrics_server_digest_checksum | default(None) }}\"")
+        # 在sha256: "{{ metrics_server_digest_checksum | default(None) }}"后新增    groups:和    - k8s_cluster
+        modified_lines = insert_line_after_pattern(modified_lines, "sha256: \"{{ metrics_server_digest_checksum | default(None) }}\"", "    groups:\n    - k8s_cluster")
+
+        # 删除sha256: "{{ dnsautoscaler_digest_checksum | default(None) }}"
+        modified_lines = remove_lines_after_pattern(modified_lines, "sha256: \"{{ dnsautoscaler_digest_checksum | default(None) }}\"")
+        # 在sha256: "{{ dnsautoscaler_digest_checksum | default(None) }}"后新增    groups:和    - k8s_cluster
+        modified_lines = insert_line_after_pattern(modified_lines, "sha256: \"{{ dnsautoscaler_digest_checksum | default(None) }}\"", "    groups:\n    - k8s_cluster")
+        # 将更改写入文件
+        write_yaml_file(f"{kubespray_path}/roles/kubespray_defaults/defaults/main/download.yml", modified_lines)
 
     # 在kubespray中新增代码实现高并发部署集群
     # 修改playbooks/scale.yml文件，新增node等待master与certificate_key获取
@@ -355,8 +370,8 @@ def main():
     elif kubespray_version == "2.28.0":
         lines = read_yaml_file(f"{kubespray_path}/roles/system_packages/vars/main.yml")
         # 去掉CentOS
-        modified_lines = replace_line_with_pattern(lines, '''- "{{ ansible_distribution in ['RedHat', 'CentOS'] }}"''', '''- "{{ ansible_distribution in ['RedHat'] }}"''')
-        modified_lines = replace_line_with_pattern(lines, '''- "{{ ansible_distribution == 'Amazon' }}"''', '''- "{{ ansible_distribution in ['Amazon', 'CentOS'] }}"''')
+        modified_lines = replace_line_with_pattern(lines, '''    - "{{ ansible_distribution in ['RedHat', 'CentOS'] }}"''', '''    - "{{ ansible_distribution in ['RedHat'] }}"''')
+        modified_lines = replace_line_with_pattern(lines, '''    - "{{ ansible_distribution == 'Amazon' }}"''', '''    - "{{ ansible_distribution in ['Amazon', 'CentOS'] }}"''')
         # 将更改写入文件
         write_yaml_file(f"{kubespray_path}/roles/system_packages/vars/main.yml", modified_lines)
 
@@ -379,6 +394,9 @@ def main():
     elif kubespray_version == "2.26.0":
         shutil.copytree(f"{kubespray_path}/inventory/sample/group_vars/all", f"{kubespray_path}/roles/kubespray-defaults/defaults/main/all")
         shutil.copytree(f"{kubespray_path}/inventory/sample/group_vars/k8s_cluster", f"{kubespray_path}/roles/kubespray-defaults/defaults/main/k8s_cluster")
+    elif kubespray_version == "2.28.0":
+        shutil.copytree(f"{kubespray_path}/inventory/sample/group_vars/all", f"{kubespray_path}/roles/kubespray_defaults/defaults/main/all")
+        shutil.copytree(f"{kubespray_path}/inventory/sample/group_vars/k8s_cluster", f"{kubespray_path}/roles/kubespray_defaults/defaults/main/k8s_cluster")
 
     # 修改playbooks/cluster.yml，新增重启nginx
     lines = read_yaml_file(f"{kubespray_path}/playbooks/cluster.yml")
