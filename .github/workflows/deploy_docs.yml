@@ -24,33 +24,33 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # 构建工作
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # 如果未启用 lastUpdated，则不需要
-      # - uses: pnpm/action-setup@v3 # 如果使用 pnpm，请取消此区域注释
-      #   with:
-      #     version: 9
-      # - uses: oven-sh/setup-bun@v1 # 如果使用 Bun，请取消注释
-      - name: Setup Node
-        uses: actions/setup-node@v4
+          fetch-depth: 0
+      
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm # 或 pnpm / yarn
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
+          cache: npm
+          cache-dependency-path: blog/package-lock.json  
+      
+      - uses: actions/configure-pages@v4
+      
       - name: Install dependencies
-        run: npm ci # 或 pnpm install / yarn install / bun install
+        working-directory: ./blog  
+        run: npm ci
+      
       - name: Build with VitePress
-        run: npm run docs:build # 或 pnpm docs:build / yarn docs:build / bun run docs:build
+        working-directory: ./blog
+        run: npm run docs:build 
+      
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: docs/.vitepress/dist
+          path: blog/docs/.vitepress/dist
 
   # 部署工作
   deploy:
