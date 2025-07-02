@@ -25,7 +25,7 @@ export default defineConfig({
   themeConfig: {
     //https://vitepress.dev/reference/default-theme-config
     nav: [
-      { text: '文档', link: '/kubeaver/introduce/overview.md' },
+      { text: '文档', link: '/introduce/overview.md' },
     ],
 
     sidebar: [
