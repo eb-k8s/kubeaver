@@ -24,29 +24,29 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # 构建工作
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # 如果未启用 lastUpdated，则不需要
-      - name: Setup Node
-        uses: actions/setup-node@v4
+          fetch-depth: 0
+      
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm # 或 pnpm / yarn
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
+          cache: npm
+          cache-dependency-path: blog/package-lock.json  
+      
+      - uses: actions/configure-pages@v4
+      
       - name: Install dependencies
-        run: |
-            cd blog
-            npm ci 
+        working-directory: ./blog  
+        run: npm ci
+      
       - name: Build with VitePress
-        run: |
-            cd blog
-            npm run docs:build  -- --root ../docs # 或 pnpm docs:build / yarn docs:build / bun run docs:build
+        working-directory: ./blog
+        run: npm run docs:build -- --root ../docs
+      
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
