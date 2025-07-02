@@ -45,12 +45,12 @@ jobs:
       
       - name: Build with VitePress
         working-directory: ./blog
-        run: npm run docs:build -- --root ../docs
+        run: npm run docs:build 
       
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ${{ github.workspace }}/docs/.vitepress/dist
+          path: blog/docs/.vitepress/dist
 
   # 部署工作
   deploy:
