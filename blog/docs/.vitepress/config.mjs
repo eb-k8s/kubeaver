@@ -7,6 +7,7 @@ export default defineConfig({
   // export default withMermaid({
   title: "Kubeaver",
   description: "Kubeaver",
+  base: '/kubeaver/',
   vite: {
     build: {
       chunkSizeWarningLimit: Infinity, // 调整警告阈值为 1000 kB
@@ -31,39 +32,39 @@ export default defineConfig({
       {
         text: '产品介绍',
         items: [
-          { text: '概述', link: '/kubeaver/introduce/overview.md' },
-          { text: '平台功能', link: '/kubeaver/introduce/use.md' },
-          { text: '架构说明', link: '/kubeaver/introduce/framework.md' },
-          { text: '环境要求', link: '/kubeaver/introduce/prepare.md' },
+          { text: '概述', link: '/introduce/overview.md' },
+          { text: '平台功能', link: '/introduce/use.md' },
+          { text: '架构说明', link: '/introduce/framework.md' },
+          { text: '环境要求', link: '/introduce/prepare.md' },
         ]
       },
       {
         text: 'kubeaver安装',
         items: [
-          { text: '快速开始', link: '/kubeaver/deploy/start.md' },
-          { text: '扩展说明', link: '/kubeaver/deploy/extend.md' },
+          { text: '快速开始', link: '/deploy/start.md' },
+          { text: '扩展说明', link: '/deploy/extend.md' },
         ]
       },
       {
         text: '离线包管理',
         items: [
-          { text: '基础包功能', link: '/kubeaver/offline/base.md' },
-          { text: '扩展包功能', link: '/kubeaver/offline/extend.md' },
+          { text: '基础包功能', link: '/offline/base.md' },
+          { text: '扩展包功能', link: '/offline/extend.md' },
         ]
       },
       {
         text: '集群管理',
         items: [
-          { text: '集群管理', link: '/kubeaver/cluster/manage.md' },
+          { text: '集群管理', link: '/cluster/manage.md' },
         ]
       },
       {
         text: '应用管理',
         items: [
-          { text: 'kubeadmin平台', link: '/kubeaver/app/kubeadmin.md' },
-          { text: '应用导入', link: '/kubeaver/app/load.md' },
-          { text: '应用商店', link: '/kubeaver/app/store.md' },
-          { text: '应用部署', link: '/kubeaver/app/deploy.md' },
+          { text: 'kubeadmin平台', link: '/app/kubeadmin.md' },
+          { text: '应用导入', link: '/app/load.md' },
+          { text: '应用商店', link: '/app/store.md' },
+          { text: '应用部署', link: '/app/deploy.md' },
         ]
       }
     ],
