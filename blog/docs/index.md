@@ -56,7 +56,7 @@ features:
     </div>
     <div class="tech-content">
       <p>简化运维、提升效率、保障稳定性，支持高可用集群部署</p>
-      <a href="/cluster/manage" class="tech-link">了解更多 →</a>
+      <a href="./cluster/manage" class="tech-link">了解更多 →</a>
     </div>
   </div>
 
@@ -68,7 +68,7 @@ features:
     </div>
     <div class="tech-content">
       <p>兼容多种操作系统部署 Kubernetes，提供离线安装，支持一键升级与扩容集群</p>
-      <a href="/deploy/start" class="tech-link">了解更多 →</a>
+      <a href="./deploy/start" class="tech-link">了解更多 →</a>
     </div>
   </div>
 
@@ -79,18 +79,18 @@ features:
     </div>
     <div class="tech-content">
       <p>提供各种Kubernetes离线包、网络插件包、操作系统包和应用包管理</p>
-      <a href="/offline/base" class="tech-link">了解更多 →</a>
+      <a href="./offline/base" class="tech-link">了解更多 →</a>
     </div>
   </div>
 </div>
 
 
-<div style="background-color: #f7fbff; padding: 20px 0; width: 100vw; box-sizing: border-box; position: relative; left: 50%; transform: translateX(-50%);margin-bottom: 40px !important; display: block;">
+<!-- <div style="background-color: #f7fbff; padding: 20px 0; width: 100vw; box-sizing: border-box; position: relative; left: 50%; transform: translateX(-50%);margin-bottom: 40px !important; display: block;">
   <div style="max-width: 1200px; margin: 0 auto; padding: 0 20px;">
   <h1 style="text-align: center;">使用说明</h1>
     <div style="background-color: #E8F7FF; padding: 20px; box-shadow: none; position: relative; display: flex; gap: 20px;">
       <div style="flex: 1; display: flex; align-items: center; justify-content: center; flex-direction: column;">
-        <h2 style="border-top: none; margin: 0;">环境准备</h2> <!-- Positioned below the image and number -->
+        <h2 style="border-top: none; margin: 0;">环境准备</h2> 
       </div>
       <div style="flex: 1; display: flex;">
         <a-card title="要求" style="height: 270px; width: 358px">
@@ -142,11 +142,9 @@ features:
       </div>
     </div>
     <div style="background-color: #FCFFE8; padding: 20px; box-shadow: none; position: relative; display: flex; gap: 20px;">
-      <!-- Left side: 部署kubeaver -->
       <div style="flex: 1; display: flex; align-items: center; justify-content: center; flex-direction: column;">
-        <h2 style="border-top: none; margin: 0;">部署Kubeaver</h2> <!-- Positioned below the image and number -->
+        <h2 style="border-top: none; margin: 0;">部署Kubeaver</h2> 
       </div>
-      <!-- Middle: 软件包下载 -->
       <div style="flex: 1; display: flex;">
       <a-card title="下载" style="height: 240px; width: 358px">
         <div style="display: flex; align-items: flex-start;">
@@ -181,7 +179,6 @@ features:
         </div>
       </a-card>
       </div>
-      <!-- Right side: 运行kubeaver -->
       <div style="flex: 1;">
         <a-card title="运行" style="height: 240px; width: 358px;">
         <div><strong>在控制主机上执行:</strong></div>
@@ -195,7 +192,7 @@ features:
     </div>
       <div style="background-color: #E8FFEA; padding: 20px; box-shadow: none; position: relative; display: flex; gap: 20px;">
       <div style="flex: 1; display: flex; align-items: center; justify-content: center; flex-direction: column;">
-        <h2 style="border-top: none; margin: 0;">离线包导入</h2> <!-- Positioned below the image and number -->
+        <h2 style="border-top: none; margin: 0;">离线包导入</h2> 
       </div>
       <div style="flex: 1; display: flex;">
       <a-card title="下载" style="height: 300px; width: 358px">
@@ -260,7 +257,7 @@ features:
     </div>
     <div style="background-color: #E8F7FF; padding: 20px; box-shadow: none; position: relative; display: flex; gap: 20px;">
       <div style="flex: 1; display: flex; align-items: center; justify-content: center; flex-direction: column;">
-        <h2 style="border-top: none; margin: 0;">部署K8s集群</h2> <!-- Positioned below the image and number -->
+        <h2 style="border-top: none; margin: 0;">部署K8s集群</h2> 
       </div>
       <div style="flex: 1; display: flex;">
         <a-card title="部署" style="height: 250px; width: 358px">
@@ -282,7 +279,7 @@ features:
       </div>
     </div>
 </div>
-</div>
+</div> -->
 
 <!-- 新增的 KubeSphere 内容 -->
 <div style="background-color: white; padding: 20px 0; width: 100vw; box-sizing: border-box; position: relative; left: 50%; transform: translateX(-50%); margin-bottom: 40px;">
@@ -292,7 +289,7 @@ features:
       <!-- <img src="/images/k8s.png" alt="KubeSphere Logo" style="height: 80px;"> -->
     </div>  
     <p style="text-align: center; font-size: 1.1rem; margin-bottom: 30px;">
-      <a href="/app/kubeadmin" style="color: #3491FA; text-decoration: none;">
+      <a href="./app/kubeadmin" style="color: #3491FA; text-decoration: none;">
         Kubeadmin
       </a> 是在 Kubernetes 之上构建的以应用为中心的容器平台，提供了运维友好的向导式操作界面,帮助用户快速部署应用的平台。
     </p>
@@ -307,7 +304,7 @@ features:
         <p style="text-align: center;">统一控制台管理应用状态、日志、监控。</p>
       </div>    
       <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
-        <a href="/app/deploy" style="text-decoration: none; color: inherit;">
+        <a href="./app/deploy" style="text-decoration: none; color: inherit;">
           <div style="display: flex; flex-direction: column; align-items: center;">
             <div style="width: 80px; height: 80px; margin-bottom: 15px; background-color: #f0f9ff; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
               <img src="/images/easy-to-run.svg" alt="开源图标" style="width: 50px; height: 50px;">
@@ -318,7 +315,7 @@ features:
         </a>
       </div>    
       <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
-        <a href="/app/store" style="text-decoration: none; color: inherit;">
+        <a href="./app/store" style="text-decoration: none; color: inherit;">
         <div style="display: flex; flex-direction: column; align-items: center;">
           <div style="width: 80px; height: 80px; margin-bottom: 15px; background-color: #f0f9ff; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
             <img src="/images/store.svg" alt="开源图标" style="width: 50px; height: 50px;">

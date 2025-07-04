@@ -6,43 +6,18 @@ title: kubeaver扩展功能
 
 kubeaver离线包默认只支持三个版本k8s，比如kubeaver1.0.0版本支持k8s 1.25-1.27版本，若想同时也支持k8s 1.28-1.30版本，这就需要扩展，具体操作如下：
 
-1. 下载后端扩展包
+1. 下载kubeaver后端扩展包
 
-<center>
-    <div style="display: flex;">
-    <a-form-item field="name" label="镜像" style="margin-left: 20px;">
-      <a-select
-        :model-value="backendVersion"
-        @change="handleChangedBackend"
-        :style="{ width: '130px', height: '40px' }"
-        placeholder="请选择版本"
-      >
-        <a-option v-for="version in backendVersions" :key="version" :value="version">
-          {{ version }}
-        </a-option>
-      </a-select>
-    </a-form-item>
-    <a-button type="primary" shape="round" size="medium" :style="{ width: '80px',height: '40px',left: '-400px'}" @click="handleKubeaverbackendDownload(backendVersion)">
-      <template #icon>
-        <icon-download />
-      </template>
-      <template #default>下载</template>
-    </a-button>
-  </div>
-</center>
+~~~shell
+docker pull ghcr.io/eb-k8s/kubeaver/kubeaver_backend:v1.0.0-128
+~~~
 
-2. 导入
+2. 配置docker compose
+
+停掉服务（确保kubeaver平台没有任务在执行），执行
 
   ~~~shell
-  docker load -i kubeaver_backend_v1.0.0-128.tar
-  ~~~
-
-3. 配置docker compose
-
-停掉服务（确保kubeaver平台没有任务在执行），执行stop.sh脚本
-
-  ~~~shell
-  ./stop.sh
+  docker compose down
   ~~~
 
 在 <span style="color: blue;" >docker-compose.yml</span> 文件中添加如下内容：
@@ -93,39 +68,11 @@ kubeaver离线包默认只支持三个版本k8s，比如kubeaver1.0.0版本支�
           }
   ~~~
 
-4. 启动kubeaver服务
-
-    执行./start.sh
+3. 启动kubeaver服务
 
     ~~~shell
-    ./start.sh
-    ~~~
+    docker compose up -d
+    ~~~ 
 
-5. kubeaver服务启动成功之后，要导入k8s v1.28-1.30基础包才能进行部署相应版本k8s。注意，如果想部署calico，k8s v1.28-1.30版本下载calico-v3.26.1。
+4. kubeaver服务启动成功之后，要导入k8s v1.28-1.30基础包才能进行部署相应版本k8s。注意，如果想部署calico，k8s v1.28-1.30版本下载calico-v3.26.1。
 
-
-
-
-<script setup>
-import { ref, computed } from 'vue'
-const backendVersion = ref("v1.0.0-128");
-
-const backendVersions = ref([
-  "v1.0.0-128",
-])
-const handleChangedBackend = async (version) => {
-  console.log(version)
-  backendVersion.value = version;
-}
-
-
-const handleKubeaverbackendDownload = async (version) => {
-  var a = document.createElement('a');
-  a.href = `/offline/kubeaver_backend_${version}.tar`; // Change this to the path of your file
-  a.download = `kubeaver_backend_${version}.tar`; // You can set this to a default filename
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-}
-
-</script>

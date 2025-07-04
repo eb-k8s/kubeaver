@@ -8,31 +8,15 @@ k8s基础包中包含k8s组件、flannelv0.22.0和metrics-server，[<span style=
  
 ### 下载网络插件扩展包
  
-<center>
-      <div style="display: flex; margin-top: 30px">
-        <a-form-item field="extendNetwork" style="margin-left: 10px;">
-          <template #label>
-            <strong>网络插件</strong>
-          </template>
-          <a-select
-            :model-value="extendNetwork"
-            @change="handleExtendNetworkChanged"
-            :style="{ width: '170px', height: '40px' }"
-            placeholder="请选择版本"
-          >
-          <a-option v-for="networkPlugin in networkPlugins" :key="networkPlugin" :value="networkPlugin">
-          {{ networkPlugin }}
-          </a-option>
-          </a-select>
-        </a-form-item>
-        <a-button type="primary" shape="round" size="medium" :style="{ width: '80px', height: '40px',left: '-330px' }" @click="handleDownloadExtendNetwork(extendNetwork)">
-          <template #icon>
-            <icon-download />
-          </template>
-          <template #default>下载</template>
-        </a-button>
-      </div>
-</center>
+以flannel_v0.26.5为例
+~~~shell
+docker pull ghcr.io/eb-k8s/kubeaver/kubeaver_oslib:v1.0
+docker run -d ghcr.io/eb-k8s/kubeaver/kubeaver_oslib:v1.0 --name kubeaver_oslib
+# 获取到网络插件依赖包
+docker cp kubeaver_oslib:/root/extend_CentOS_7_Core.tgz .
+~~~
+
+
 说明：calico v3.25.2支持k8s v1.25.x-1.27.x版本;
 calico v3.26.1支持k8s v1.28.x-1.30.x版本。
 

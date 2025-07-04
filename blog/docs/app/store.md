@@ -61,7 +61,7 @@ const selectedCategories = ref([]);
 const applications = ref([
   {
     name: 'nginx',
-    logo: '/images/nginx.png',
+    logo: '../public/images/nginx.png',
     versions: ['0.1.0', '0.2.0', '1.0.0'],
     selectedVersion: '0.1.0',
     apptype: 'webserver',
@@ -69,7 +69,7 @@ const applications = ref([
   },
   {
     name: 'mysql',
-    logo: '/images/mysql.png',
+    logo: '../public/images/mysql.png',
     versions: ['8.0.36', '5.4.47'],
     selectedVersion: '8.0.36',
     apptype: 'database',
@@ -77,7 +77,7 @@ const applications = ref([
   },
   {
     name: 'redis',
-    logo: '/images/redis.png',
+    logo: '../public/images/redis.png',
     versions: ['5.0.7'],
     selectedVersion: '5.0.7',
     apptype: 'database',
@@ -85,7 +85,7 @@ const applications = ref([
   },
   {
     name: 'adminer',
-    logo: '/images/adminer.png',
+    logo: '../public/images/adminer.png',
     versions: ['4.8.0'],
     selectedVersion: '4.8.0',
     apptype: 'database',
@@ -93,7 +93,7 @@ const applications = ref([
   },
   {
     name: 'nfs-provisioner',
-    logo: '/images/nfs.png',
+    logo: '../public/images/nfs.png',
     versions: ['4.0.18'],
     selectedVersion: '4.0.18',
     apptype: 'sysapp',
@@ -101,7 +101,7 @@ const applications = ref([
   },
   {
     name: 'kube-prometheus-stack',
-    logo: '/images/prometheus_logo.png',
+    logo: '../public/images/prometheus_logo.png',
     versions: ['43.0.0'],
     selectedVersion: '43.0.0',
     apptype: 'sysapp',
