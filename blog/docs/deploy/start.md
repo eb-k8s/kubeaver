@@ -12,24 +12,39 @@ Kubeaver平台是一个在离线环境下可快速管理kubernetes集群的一�
 
 - 
   <div style="margin-top: 10px;">
-    <a href="/introduce/prepare" style="color: #3491FA; font-size: 16px; text-decoration: none;">
+    <a href="../introduce/prepare" style="color: #3491FA; font-size: 16px; text-decoration: none;">
       <strong>主机要求</strong>
     </a>
   </div>
 - 
   <div style="margin-top: 10px;">
-    <a href="/introduce/prepare" style="color: #3491FA; font-size: 16px; text-decoration: none;">
+    <a href="../introduce/prepare" style="color: #3491FA; font-size: 16px; text-decoration: none;">
       <strong>docker compose命令</strong>
     </a>
   </div>
 - 
   <div style="margin-top: 10px;">
-    <a href="/introduce/prepare" style="color: #3491FA; font-size: 16px; text-decoration: none;">
+    <a href="../introduce/prepare" style="color: #3491FA; font-size: 16px; text-decoration: none;">
       <strong>tar命令</strong>
     </a>
   </div>
 
-### 下载Kubeaver软件包
+### 部署kubeaver
+
+下载kubeaver代码：
+~~~shell
+git clone https://github.com/eb-k8s/kubeaver.git
+~~~
+
+使用Docker Compose启动Kubeaver：
+~~~shell
+# 切换到Docker Compose文件所在目录
+cd ./deploy
+# 启动Kubeaver
+docker compose up -d
+~~~
+
+<!-- ### 下载Kubeaver软件包
 
 在控制主机下载软件包：
   <div style="display: flex; align-items: flex-start;margin-top: 10px;">
@@ -74,13 +89,13 @@ tar xfvz kubeaver-1.0.0.tgz
 ~~~shell
 cd kubeaver-1.0.0
 ./start.sh
-~~~
+~~~ -->
 
 访问方式：
 通过浏览器访问控制主机上的80端口，即可进入kubeaver管理页面。
 
   <div style="margin-top: 10px;">
-    <a href="/offline/base" style="color: #3491FA; font-size: 16px; text-decoration: none;">
+    <a href="../offline/base" style="color: #3491FA; font-size: 16px; text-decoration: none;">
       <strong>kubernetes离线包导入</strong>
     </a>
   </div>
@@ -110,7 +125,5 @@ const handleKubeaverDownload = async (version) => {
   a.click();
   document.body.removeChild(a);
 }
-
-
 
 </script>
