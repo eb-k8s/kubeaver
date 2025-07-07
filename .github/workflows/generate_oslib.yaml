@@ -97,7 +97,7 @@ jobs:
         
         # 拷贝脚本到容器
         cd offline_package
-        docker cp ./* oslib-container:/workspace
+        docker cp . oslib-container:/workspace
         # 赋予脚本执行权限
         chmod +x ${{ github.event.inputs.operation_system }}.sh
         ./${{ github.event.inputs.operation_system }}.sh
