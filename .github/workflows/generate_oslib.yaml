@@ -98,9 +98,8 @@ jobs:
         # 拷贝脚本到容器
         cd offline_package
         docker cp . oslib-container:/workspace
-        # 赋予脚本执行权限
-        docker exec oslib-container chmod +x ./osbash/${{ github.event.inputs.operation_system }}.sh
-        docker exec oslib-container ./osbash/${{ github.event.inputs.operation_system }}.sh
+        # 赋予脚本执行权限并执行
+        docker exec oslib-container bash -c "cd osbash && chmod +x ${{ github.event.inputs.operation_system }}.sh && ./${{ github.event.inputs.operation_system }}.sh"
         # 从容器中将 /workspace 目录下所有 .tgz 后缀的文件拷贝到本地
         docker cp oslib-container:/workspace/. .
         find . -maxdepth 1 -type f -name "*.tgz" -exec mv {} ./ \;
