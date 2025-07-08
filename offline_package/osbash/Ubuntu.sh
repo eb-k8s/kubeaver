@@ -41,7 +41,23 @@ apt-ftparchive contents . > Contents-amd64 && gzip -c9 Contents-amd64 > Contents
 apt-ftparchive release . > Release
 popd
 
-# 用tar打包为extend_Ubuntu_22.04.5_LTS.tgz
-tar -czf extend_Ubuntu_22.04.5_LTS.tgz $DEBDIR
+# 设置变量，描述新建目录名
+EXTEND_DIR=Ubuntu_22.04.5_LTS
+# 新建目录
+mkdir -p extend_$EXTEND_DIR/repo_files/$EXTEND_DIR
+# 先重命名为repo
+mv $DEBDIR repo
+# 用tar打包为repo.tgz
+tar -czf repo.tgz repo
+# 将repo.tgz放入repo_files目录下
+mv repo.tgz extend_$EXTEND_DIR/repo_files/$EXTEND_DIR
+# 将repo/pkgs目录下的tar开头的文件拷贝到extend_$EXTEND_DIR/repo_files/$EXTEND_DIR目录下
+cp repo/pkgs/tar*.deb extend_$EXTEND_DIR/repo_files/$EXTEND_DIR
+# 并且将该文件重命名为tar.deb
+mv extend_$EXTEND_DIR/repo_files/$EXTEND_DIR/tar*.deb extend_$EXTEND_DIR/repo_files/$EXTEND_DIR/tar.deb
+# 将extend_$EXTEND_DIR压缩为extend_$EXTEND_DIR.tgz
+tar -czf ../extend_$EXTEND_DIR.tgz extend_$EXTEND_DIR
+
+
 
 echo "Done."
