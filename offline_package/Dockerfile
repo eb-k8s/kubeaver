@@ -4,4 +4,4 @@ FROM alpine
 WORKDIR /root
 
 # 拷贝文件
-COPY *.tgz /root/
+COPY . /root/
