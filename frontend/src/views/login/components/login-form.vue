@@ -4,9 +4,10 @@
       <a-card-meta style="margin-top: -20px; text-align: center;">
           <template #description>
             <div style=" font-size: 22px; max-width: 100%; max-height: 100px; margin-bottom: 80px; ">
-              <img :src="logo" style="width: 120px; height: 120px; margin-top: -10px;" /><br />
+              <img :src="logo" style="width: 120px; height: 120px; margin-bottom: -120px; margin-top: -10px;" /><br />
               <!-- <span style="font-weight: bold; ">新讯 | {{ $t('login.form.title') }}</span> -->
-              <span style="font-weight: bold; ">新讯 | Kubeaver</span>
+              <!-- <span style="font-weight: bold; ">新讯 | Kubeaver</span> -->
+              <!-- <span style="font-weight: bold; ">Kubeaver</span> -->
             </div>
           </template>
         </a-card-meta>
@@ -22,7 +23,7 @@
           :rules="[{ required: true, message: $t('login.form.userName.errMsg') }]"
           :validate-trigger="['change', 'blur']"
           hide-label
-          style="margin-bottom: 10%; margin-left: 4%;  width: 90%;"
+          style="margin-top: 55px; margin-bottom: 10%; margin-left: 4%;  width: 90%;"
         >
           <a-input
             v-model="userInfo.username"
@@ -179,18 +180,45 @@
       const availableVersionMap: Record<string, string> = {};
       let connected = false;
 
+      // for (const [mappedVersion, versionList] of Object.entries(reverseMap)) {
+      //   if (!testedVersions.has(mappedVersion)) {
+      //     testedVersions.add(mappedVersion);
+      //     try {
+      //       const result: any = await availableBackend(mappedVersion);
+      //       if (result.status === 'ok') {
+      //         connected = true;
+      //       }
+      //       availableVersions.push(mappedVersion);
+      //       versionList.forEach(version => {
+      //         availableVersionMap[version] = mappedVersion;
+      //       });
+      //     } catch (e) {
+      //       console.warn(`Failed for version ${mappedVersion}:`, e);
+      //     }
+      //   }
+      // }
+
       for (const [mappedVersion, versionList] of Object.entries(reverseMap)) {
         if (!testedVersions.has(mappedVersion)) {
           testedVersions.add(mappedVersion);
           try {
             const result: any = await availableBackend(mappedVersion);
-            if (result.status === 'ok') {
+
+            console.log(`Testing version ${mappedVersion}...`, result);
+            
+            if (
+              result.status === 'ok' &&
+              typeof result === 'object' &&
+              !result.toString().includes('<!DOCTYPE html>') 
+            ) {
               connected = true;
+              availableVersions.push(mappedVersion);
+              versionList.forEach(version => {
+                availableVersionMap[version] = mappedVersion;
+              });
+            } else {
+              console.warn(`后端服务响应异常，版本 ${mappedVersion} 被忽略`);
             }
-            availableVersions.push(mappedVersion);
-            versionList.forEach(version => {
-              availableVersionMap[version] = mappedVersion;
-            });
           } catch (e) {
             console.warn(`Failed for version ${mappedVersion}:`, e);
           }

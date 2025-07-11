@@ -1,0 +1,132 @@
+name: Generate OSlib Package
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation_system:
+        description: 'Select operating system'
+        required: true
+        type: choice
+        options:
+          - CentOS
+          - Rocky
+          - openEuler
+          - Ubuntu
+      version:
+        description: 'Select version based on operating system (CentOS: 7; Rocky: 9; openEuler: 22.03; Ubuntu: 22.04)'
+        required: true
+        type: choice
+        options:
+          - '7'
+          - '9'
+          - '22.03'
+          - '22.04'
+      image_arch:
+        description: 'Image arch'
+        required: true
+        default: 'amd64'
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.9'
+
+    - name: Validate OS and version combination
+      run: |
+        OS="${{ github.event.inputs.operation_system }}"
+        VERSION="${{ github.event.inputs.version }}"
+        
+        case $OS in
+          "CentOS")
+            if [[ "$VERSION" != "7" ]]; then
+              echo "Error: CentOS only supports version 7"
+              exit 1
+            fi
+            echo "IMAGE_NAME=eb-k8s/kubeaver/oslib_centos" >> $GITHUB_ENV
+            echo "CONTAINER_IMAGE=centos:7" >> $GITHUB_ENV
+            ;;
+          "Rocky")
+            if [[ "$VERSION" != "9" ]]; then
+              echo "Error: Rocky only supports version 9"
+              exit 1
+            fi
+            echo "IMAGE_NAME=eb-k8s/kubeaver/oslib_rocky" >> $GITHUB_ENV
+            echo "CONTAINER_IMAGE=rockylinux:9" >> $GITHUB_ENV
+            ;;
+          "openEuler")
+            if [[ "$VERSION" != "22.03" ]]; then
+              echo "Error: openEuler only supports version 22.03"
+              exit 1
+            fi
+            echo "IMAGE_NAME=eb-k8s/kubeaver/oslib_openeuler" >> $GITHUB_ENV
+            echo "CONTAINER_IMAGE=openeuler/openeuler:22.03" >> $GITHUB_ENV
+            ;;
+          "Ubuntu")
+            if [[ "$VERSION" != "22.04" ]]; then
+              echo "Error: Ubuntu only supports version 22.04"
+              exit 1
+            fi
+            echo "IMAGE_NAME=eb-k8s/kubeaver/oslib_ubuntu" >> $GITHUB_ENV
+            echo "CONTAINER_IMAGE=ubuntu:22.04" >> $GITHUB_ENV
+            ;;
+          *)
+            echo "Error: Unknown operating system $OS"
+            exit 1
+            ;;
+        esac
+
+    - name: Pull and start container
+      run: |
+        # 拉取对应操作系统镜像
+        echo "Pulling container image: ${{ env.CONTAINER_IMAGE }}"
+        docker pull ${{ env.CONTAINER_IMAGE }}
+        
+        # 启动容器
+        echo "Starting container..."
+        docker run -d --name oslib-container -v ${{ github.workspace }}:/workspace -w /workspace ${{ env.CONTAINER_IMAGE }} tail -f /dev/null
+        
+        # 拷贝脚本到容器
+        cd offline_package
+        docker cp . oslib-container:/workspace
+        # 赋予脚本执行权限并执行
+        docker exec oslib-container bash -c "cd osbash && chmod +x ${{ github.event.inputs.operation_system }}.sh && ./${{ github.event.inputs.operation_system }}.sh"
+        # 从容器中将 /workspace 目录下所有 .tgz 后缀的文件拷贝到本地
+        docker cp oslib-container:/workspace/. .
+        # 删除容器
+        docker rm -f oslib-container
+        # 删除镜像
+        docker rmi ${{ env.CONTAINER_IMAGE }}
+        
+    - name: Log in to the Container registry
+      uses: docker/login-action@v2
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.repository_owner }}
+        password: ${{ secrets.GITHUB_TOKEN }} 
+        
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@988b5a0280414f521da01fcc63a27aeeb4b104db # v3.6.1      
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v6
+      with:
+        context: offline_package
+        file: offline_package/Dockerfile
+        push: true
+        pull: true
+        platforms: linux/amd64
+        tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME}}:v1.0
+        provenance: true
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+    

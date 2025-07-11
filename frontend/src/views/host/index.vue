@@ -157,6 +157,8 @@ const handleAddOk = async () => {
     }
   } catch (error) {
     Message.error('添加主机时发生异常');
+  } finally{
+    setLoading(false);
   }
 };
 
@@ -243,8 +245,7 @@ const fetchHostList = async () => {
     if (!versionMapStr) {
         Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
         return;
-    }
-    
+    }  
     setLoading(true);
     const k8sVersion = getFirstK8sVersionFromStorage();
     const result = await getHostList(k8sVersion);
