@@ -61,7 +61,7 @@ async function addHost(hostIP, hostPort, user, password) {
     await redis.hmset(`${HOSTS_PREFIX}${hostIP}`, hostDetails);
 
     // 异步获取详细信息
-    fetchAndSaveHostDetails(hostIP, user);
+    fetchAndSaveHostDetails(hostIP, user,hostPort);
 
     return {
       code: 20000,
@@ -81,13 +81,13 @@ async function addHost(hostIP, hostPort, user, password) {
 }
 
 // 异步获取并保存主机详细信息
-async function fetchAndSaveHostDetails(hostIP, user) {
+async function fetchAndSaveHostDetails(hostIP, user, hostPort) {
   const playbookPath = path.join(__dirname, '../playbook/gather_system_info.yml');
   const remoteFilePath = `/tmp/system_info_${hostIP}.json`;
   const localFilePath = path.join(__dirname, `system_info_${hostIP}.json`);
 
   try {
-    await runAnsiblePlaybook(hostIP, playbookPath, user);
+    await runAnsiblePlaybook(hostIP, playbookPath, user, hostPort);
     await fetchFileFromRemote(hostIP, remoteFilePath, localFilePath, user);
 
     if (!fs.existsSync(localFilePath)) {
@@ -113,10 +113,10 @@ async function fetchAndSaveHostDetails(hostIP, user) {
 }
 
 // 运行 Ansible Playbook
-async function runAnsiblePlaybook(hostIP, playbookPath, user) {
+async function runAnsiblePlaybook(hostIP, playbookPath, user, hostPort) {
   const privateKeyPath = path.join(__dirname, '../ssh', 'id_rsa');
   return new Promise((resolve, reject) => {
-    exec(`ansible-playbook --private-key ${privateKeyPath} -e ansible_user=${user} -i ${hostIP}, ${playbookPath}`, (error, stdout, stderr) => {
+    exec(`ansible-playbook --private-key ${privateKeyPath} -e ansible_user=${user} -i ${hostIP}::${hostPort}, ${playbookPath}`, (error, stdout, stderr) => {
       if (error) {
         console.error(`Playbook execution failed: ${error}`);
         reject(new Error(`Playbook 执行失败: ${error}`));
