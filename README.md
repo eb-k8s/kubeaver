@@ -17,9 +17,8 @@ Advantages of Kubeaver:
 
 ⚠️ Note: If you can access the internet but face issues downloading K8s-related images and files due to network problems, we strongly recommend using the offline mode for rapid K8s cluster deployment.
 
-🚧 This project is currently in the development phase (in progress). If you have any ideas or suggestions for our project, please submit an issue, and we will respond promptly.
 
-[简体中文](./docs/README_CN.md)
+文档语言：[简体中文](./docs/README_CN.md)
 
 ## Quick Start
 
@@ -46,17 +45,22 @@ After this, Kubeaver will be successfully installed on your host. You can now ac
 
 ### Offline Package Import
 
-Download the corresponding version of the offline package based on the K8s cluster version you plan to install. 
-Download the offline package:
+Before deploying a Kubernetes cluster, you need to import the base package and extension packages according to your requirements. The base package contains essential components required for K8s cluster deployment, including the basic Flannel network plugin. If you intend to use Calico, you will need to import the Calico extension package. It’s important to note that you must import the corresponding operating system extension package based on the OS of your target cluster nodes.
+
+Below shows how to download the Kubernetes base package for version v1.27.10 and the extension package for CentOS 7 operating system:
 ```
+# download base package
 docker pull ghcr.io/eb-k8s/kubeaver/kubeaver_offline:v1.27.10
-docker pull ghcr.io/eb-k8s/kubeaver/kubeaver_oslib:v1.0
 docker run -d ghcr.io/eb-k8s/kubeaver/kubeaver_offline:v1.27.10 --name kubeaver_offline 
-docker run -d ghcr.io/eb-k8s/kubeaver/kubeaver_oslib:v1.0 --name kubeaver_oslib
 docker cp kubeaver_offline:/root/base_k8s_v1.27.10.tgz .
+# download os package
+docker pull ghcr.io/eb-k8s/kubeaver/oslib_centos:v1.0
+docker run -d ghcr.io/eb-k8s/kubeaver/oslib_centos:v1.0 --name kubeaver_oslib
 docker cp kubeaver_oslib:/root/extend_CentOS_7_Core.tgz .
 ```
 You can then obtain the offline package `base_k8s_v1.27.10.tgz、extend_CentOS_7_Core.tgz` and import it into Kubeaver.
+
+Click here to view more detailed offline package download methods: [Offline package download](./docs/offline_package.md)
 
 ### Deploy a K8s Cluster
 
