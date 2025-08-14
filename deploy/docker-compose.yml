@@ -1,0 +1,114 @@
+# 定义 compose 文件的版本号，这里使用的是版本3
+#version: '3'
+services:
+  redis:
+    image: redis:alpine
+    container_name: redis
+    command: redis-server --appendonly yes
+    ports:
+      - 26379:6379  
+    volumes:
+      - ./data/kubeaver/redis:/data  # 挂载数据目录
+
+  kubeaver_frontend:
+    image: ghcr.io/eb-k8s/kubeaver/kubeaver_frontend:v1.0.0
+    container_name: frontend
+    restart: always 
+    ports:
+      - 80:80
+    environment:
+      - TZ=Asia/Shanghai
+    dns_search: .
+    volumes:
+      - ./nginx-proxy.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - registry
+      - chartmuseum
+      - kubeadmin
+      - apploader
+      - kubeaver_backend_v1-125
+
+  kubeaver_backend_v1-125:
+    image: ghcr.io/eb-k8s/kubeaver/kubeaver_backend:v1.0.0-125
+    container_name: kubeaver_backend_v1-125
+    restart: always
+    environment:
+      - HOST_IP=${HOST_IP}
+      - HOST_NAME=${HOST_NAME}  
+      - REDIS_HOST=redis       # 关键配置
+      - REDIS_PORT=6379        # 关键配置
+    volumes:
+      - ./data/kubeaver/offline:/root/backend/data/offline
+      - ./data/kubeaver/redis:/root/backend/data/redis
+      - ./data/kubeaver/inventory:/root/backend/data/inventory
+      - ./data/kubeaver/config:/root/backend/data/config
+      - ./data/kubeadmin:/root/backend/data/kubeadmin
+    depends_on:
+      redis:
+        condition: service_started
+
+  kubeadmin:
+    image: ghcr.io/eb-k8s/kubeaver/kubeadmin:v0.4.0
+    container_name: kubeadmin
+    user: root
+    restart: always
+    volumes:
+      - ./data/kubeadmin:/backend/data
+    extra_hosts:
+      - "store.e-byte.cn:${HOST_IP}"
+
+  init-db:
+    image: sqlite:3
+    container_name: db
+    volumes: 
+      - ./data/kubeadmin:/data/kubeadmin
+    working_dir: /data/kubeadmin
+    depends_on:
+      kubeadmin:
+        condition: service_started
+      
+
+  chartmuseum:
+    image: ghcr.io/helm/chartmuseum:v0.16.2
+    container_name: chartmuseum
+    user: root
+    restart: always
+    environment:
+     PORT: 8080
+     DEPTH_DYNAMIC: 1
+     DEBUG: 1
+     STORAGE: "local"
+     STORAGE_LOCAL_ROOTDIR: /charts
+    volumes:
+      - ./data/charts:/charts
+
+  registry:
+    image: registry:2
+    container_name: registry
+    restart: always
+    environment:
+      REGISTRY_HTTP_HEADERS_Access-Control-Allow-Origin: '[http://store.e-byte.cn]'
+      REGISTRY_HTTP_HEADERS_Access-Control-Allow-Methods: '[HEAD,GET,OPTIONS,DELETE]'
+      REGISTRY_HTTP_HEADERS_Access-Control-Allow-Credentials: '[true]'
+      REGISTRY_HTTP_HEADERS_Access-Control-Allow-Headers: '[Authorization,Accept,Cache-Control]'
+      REGISTRY_HTTP_HEADERS_Access-Control-Expose-Headers: '[Docker-Content-Digest]'
+      REGISTRY_STORAGE_DELETE_ENABLED: 'true'
+     # REGISTRY_AUTH: htpasswd
+     # REGISTRY_AUTH_HTPASSWD_REALM: Registry Realm
+     # REGISTRY_AUTH_HTPASSWD_PATH: /etc/docker/registry/registry.password
+    volumes:
+      - ./data/registry:/var/lib/registry
+     # - ./registry.password:/etc/docker/registry/registry.password
+    
+  apploader:
+    image: ghcr.io/eb-k8s/kubeaver/apploader:v1.0.0
+    container_name: apploader
+    user: root
+    restart: always
+    volumes:
+      - ./data/apps:/srv/apps
+      - ./data/kubeaver/offline:/srv/offline  
+      - /var/run/docker.sock:/var/run/docker.sock
+    extra_hosts:
+      - "store.e-byte.cn:${HOST_IP}"
+

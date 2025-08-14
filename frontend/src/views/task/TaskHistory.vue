@@ -76,6 +76,7 @@ import { getTaskList, getTaskDetail } from '@/api/tasks';
 import { useRoute } from 'vue-router';
 import { formatTime } from '@/utils/time';
 import * as echarts from 'echarts';
+import { Message } from '@arco-design/web-vue';
 
 const route = useRoute();
 const id = ref(route.query.id);
@@ -98,6 +99,21 @@ const onClickDetailTime = (record) => {
     nextTick(() => {
         drawChart(record.statistics);
     });
+};
+
+const getFirstK8sVersionFromStorage = (key = 'k8sVersionList'): string => {
+    const versionArrayStr = localStorage.getItem(key);
+    if (versionArrayStr) {
+        try {
+            const versionArray = JSON.parse(versionArrayStr);
+            if (Array.isArray(versionArray) && versionArray.length > 0) {
+                return versionArray[0]; // 返回第一个版本
+            }
+        } catch (parseError) {
+            console.error('版本信息解析失败:', parseError);
+        }
+    }
+    return '';
 };
 
 const drawChart = (data) => {
@@ -252,6 +268,13 @@ const handleTaskDetail = async (task: any) => {
     webTaskDetailVisible.value = true;
 
     try {
+        // 检查次版本是否存在
+        const versionMapStr = localStorage.getItem('k8sVersionMap');
+        if (!versionMapStr) {
+            Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
+            return;
+        }
+
         const taskNameMap: Record<string, string> = {
             '添加节点': 'addNode',
             '初始化集群': 'initCluster',
@@ -262,7 +285,8 @@ const handleTaskDetail = async (task: any) => {
 
         const taskName = taskNameMap[task.taskName] || task.taskName;
 
-        const result: any = await getTaskDetail(id.value, task.IP, task.timestamp, taskName);
+        const k8sVersion = getFirstK8sVersionFromStorage();
+        const result: any = await getTaskDetail(id.value, task.IP, task.timestamp, taskName, k8sVersion);
         const rawContent = result.data || '';
 
         // 匹配所有的 play
@@ -386,7 +410,7 @@ const processNodeReset = (plays, task, rawContent) => {
 const processPlayStages = (plays, task, rawContent, playStages, stageToTimeMapping) => {
     function getStageTime(stageName) {
         const taskName = stageToTimeMapping[stageName];
-        if (taskName && task.statistics) {
+        if (taskName && Array.isArray(task.statistics)) {
             const stageData = task.statistics.find(item => item.name === taskName);
             return stageData ? stageData.time : 0;
         }
@@ -537,6 +561,11 @@ onBeforeUnmount(() => {
 
 
 function calculateExecutionTime(processedOn, finishedOn) {
+
+    if (isNaN(processedOn) || isNaN(finishedOn)) {
+        return "0秒"; 
+    }
+
     let timeDifference = finishedOn - processedOn;
 
     if (timeDifference < 0) {
@@ -563,8 +592,16 @@ function calculateExecutionTime(processedOn, finishedOn) {
 
 const fetchTaskList = async () => {
     try {
+        // 检查次版本是否存在
+        const versionMapStr = localStorage.getItem('k8sVersionMap');
+        if (!versionMapStr) {
+            Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
+            return;
+        }
+            
         setLoading(true);
-        const result = await getTaskList(id.value);
+        const k8sVersion = getFirstK8sVersionFromStorage();
+        const result = await getTaskList(id.value, k8sVersion);
         taskList.value = result.data;
 
         const allTasks: any[] = [];
@@ -592,7 +629,7 @@ const fetchTaskList = async () => {
                         timestamp: data.task, 
                         executionTime: calculateExecutionTime(data.processedOn, data.finishedOn),
                         IP: entry.ip,
-                        statistics: data.statistics
+                        statistics: Array.isArray(data.statistics) ? data.statistics : [],
                     });
                 });
             });

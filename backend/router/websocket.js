@@ -4,10 +4,12 @@ const Redis = require('ioredis');
 const { getTaskOutput } = require('../utils/getTaskOutput');
 const { getActiveTasks } = require('../service/task')
 
-const redis = new Redis({
-  port: 6379,
-  host: "127.0.0.1",
-});
+const redisConfig = {
+  host: process.env.REDIS_HOST,
+  port: process.env.REDIS_PORT,
+};
+
+const redis = new Redis(redisConfig);
 
 //任务实时输出接口
 router.all('/websocket/:id/:ip/:timeID', async (ctx) => {
@@ -17,10 +19,7 @@ router.all('/websocket/:id/:ip/:timeID', async (ctx) => {
   const ip = urlParts[2];
   const timeID = urlParts[3];
   // Redis Pub/Sub 客户端
-  const subscriber = new Redis({
-    port: 6379,
-    host: "127.0.0.1",
-  });
+  const subscriber = new Redis(redisConfig);
   const data = await getTaskOutput(id, ip, timeID);
   ws.send(data.stdout);
   const channel = `k8s_cluster:${id}:tasks:${ip}:${data.task}:${timeID}`;
@@ -44,10 +43,7 @@ router.all('/activeTasks/:id', async (ctx) => {
   let taskData;
   let channelsToSubscribe = [];
   // Redis Pub/Sub 客户端
-  const subscriber = new Redis({
-    port: 6379,
-    host: "127.0.0.1",
-  });
+  const subscriber = new Redis(redisConfig);
   const fetchAndUpdateTaskData = async () => {
     try {
       const result = await getActiveTasks(id);

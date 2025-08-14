@@ -6,10 +6,12 @@ const yaml = require('js-yaml');
 const { exec } = require('child_process');
 const { getHostsYamlFile } = require('./getHostsYamlFile');
 
-const redis = new Redis({
-  port: 6379,
-  host: "127.0.0.1",
-});
+const redisConfig = {
+  host: process.env.REDIS_HOST,
+  port: process.env.REDIS_PORT,
+};
+
+const redis = new Redis(redisConfig);
 
 async function getRedis(id) {
   const clusterKey = `k8s_cluster:${id}:baseInfo`;
@@ -19,10 +21,12 @@ async function getRedis(id) {
   } catch (error) {
     console.log(error)
   }
+  const [networkPlugin, networkVersion] = clusterInfo.networkPlugin.split(' - ');
   const formattedInfo = {
     clusterName: clusterInfo.clusterName,
     k8sVersion: clusterInfo.version,
-    networkPlugin: clusterInfo.networkPlugin,
+    networkPlugin: networkPlugin,
+    networkVersion: networkVersion,
     clusterId: clusterInfo.clusterId || '',
     hosts: []
   };
@@ -37,10 +41,11 @@ async function getRedis(id) {
     const hostInfo = await redis.hgetall(hosthash);
     formattedInfo.hosts.push({
       ip: nodeInfo.ip,
-      user: nodeInfo.user,
+      user: hostInfo.user,
       hostName: nodeInfo.hostName,
       password: hostInfo.password,
       role: nodeInfo.role,
+      k8sVersion: nodeInfo.k8sVersion,
       status: nodeInfo.status
     });
   }
@@ -82,50 +87,72 @@ async function getConfigFile(id, hostPath, masterIP) {
     }
   }
 
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'config-'));
+  // const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'config-'));
+  // const outputPath = path.join(tmpDir, 'config');
+  let tmpDir = path.join(__dirname, '../data/config', `config-${id}`);
+  if (!fs.existsSync(tmpDir)) {
+    fs.mkdirSync(tmpDir, { recursive: true });
+  }
   const outputPath = path.join(tmpDir, 'config');
   const privateKeyPath = path.join(__dirname, '../ssh', 'id_rsa');
   const ansibleCommand = `ansible kube_control_plane[0] --private-key ${privateKeyPath} -i ${hostPath} -m fetch -a "src=/etc/kubernetes/admin.conf dest=${outputPath} flat=yes" -b`;
   //console.log(outputPath)
-  await new Promise((resolve, reject) => {
-    exec(ansibleCommand, (error, stdout, stderr) => {
-      if (error) {
-        //console.log("config文件不存在")
-        return reject(`执行命令时出错: ${error.message}`);
-      }
-      if (stderr) {
-        console.error(`错误输出: ${stderr}`);
-      }
-      resolve();
+  try {
+    await new Promise((resolve, reject) => {
+      exec(ansibleCommand, (error, stdout, stderr) => {
+        // console.log(stdout)
+        if (error) {
+          //console.log("config文件不存在")
+          return reject(`执行命令时出错: ${error.message}`);
+        }
+        if (stderr) {
+          console.error(`错误输出: ${stderr}`);
+        }
+        resolve();
+      });
     });
-  });
-
-  const fileContents = fs.readFileSync(outputPath, 'utf8');
-  // 解析 YAML
-  parsedData = yaml.load(fileContents);
-  const newServerValue = `https://${masterIP}:6443`;
-  if (parsedData.clusters) {
-    parsedData.clusters.forEach(cluster => {
-      if (cluster.cluster && cluster.cluster.server) {
-        cluster.cluster.server = newServerValue; // 更新 server 字段
-      }
-    });
-  } else {
-    console.log('没有找到 clusters 字段。');
-  }
-  const newYaml = yaml.dump(parsedData);
-  //fs.writeFileSync(outputPath, newYaml, 'utf8');
-  //将config文件存入数据库
-  // 将更新后的文件内容存储到 Redis（同步）
-  const configHashKey = `k8s_cluster:${id}:config`
-  redis.set(configHashKey, newYaml, (redisError) => {
-    if (redisError) {
-      console.error(`存储到 Redis 时出错: ${redisError.message}`);
-      return;
+  } catch (error) {
+    //console.error('执行命令时出错:', error.message || '配置文件不存在');
+    try {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    } catch (cleanupError) {
+      console.error('清理临时目录时出错:', cleanupError.message);
     }
-    //console.log('配置文件已成功存储到 Redis！');
-  });
-  //return outputPath;  //返回文件路径 
+    return;
+  }
+  try {
+    if (!fs.existsSync(outputPath)) {
+      throw new Error(`配置文件${outputPath}不存在`);
+    }
+    const fileContents = fs.readFileSync(outputPath, 'utf8');
+    // 解析 YAML
+    parsedData = yaml.load(fileContents);
+    const newServerValue = `https://${masterIP}:6443`;
+    if (parsedData.clusters) {
+      parsedData.clusters.forEach(cluster => {
+        if (cluster.cluster && cluster.cluster.server) {
+          cluster.cluster.server = newServerValue; // 更新 server 字段
+        }
+      });
+    } else {
+      console.log('没有找到 clusters 字段。');
+    }
+    const newYaml = yaml.dump(parsedData);
+    //fs.writeFileSync(outputPath, newYaml, 'utf8');
+    //将config文件存入数据库
+    // 将更新后的文件内容存储到 Redis（同步）
+    const configHashKey = `k8s_cluster:${id}:config`
+    redis.set(configHashKey, newYaml, (redisError) => {
+      if (redisError) {
+        console.error(`存储到 Redis 时出错: ${redisError.message}`);
+        return;
+      }
+      //console.log('配置文件已成功存储到 Redis！');
+    });
+  } catch (error) {
+    //console.error('读取配置文件时发生错误:', error.message || '配置文件不存在');
+    return;
+  }
 }
 
 async function getNodeStatus(id, hostName, hostPath, masterIP) {
@@ -138,13 +165,19 @@ async function getNodeStatus(id, hostName, hostPath, masterIP) {
       await getConfigFile(id, hostPath, masterIP);
       configContent = await redis.get(configHashKey);
       if (!configContent) {
-        console.error('获取配置文件失败');
+        //console.error(`获取集群${id}配置文件失败`);
         //return "Unknown";
         return { status: "Unknown", version: "Unknown" };
       }
     }
-
-    const configFilePath = path.join(os.tmpdir(), `config-${id}`);
+    const tmpconfig = path.join(__dirname, '../data/config', `config-${id}`);
+    if (!fs.existsSync(tmpconfig)) {
+      fs.mkdirSync(tmpconfig, { recursive: true });
+    }
+    //const configFilePath = path.join(tmpDir, 'config');
+    const configFilePath = path.join(tmpconfig, 'config');
+    //console.log(configFilePath)
+    // const configFilePath = path.join(os.tmpdir(), `config-${id}`);
     fs.writeFileSync(configFilePath, configContent, 'utf8');
 
     const result = await new Promise((resolve, reject) => {

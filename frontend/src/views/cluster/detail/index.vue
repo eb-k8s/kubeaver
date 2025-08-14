@@ -14,46 +14,12 @@
               <a-row :gutter="[24, 24]">
                 <a-col :xs="24" :md="12">
                   <a-card title="基础信息" style="position: relative;">
-                    <!-- <a-form-item
-                        label="集群名称："
-                        field="clusterName"
-                        style="display: flex; align-items: center;"
-                    >
-                    <a-input v-model="cluster.clusterName" style="width: 60% !important; color: #000000;" readonly />
-                    </a-form-item>
-              
-                    <a-form-item
-                        label="离线包："
-                        field="offlinePackage"
-                    >
-                        <a-input v-model="cluster.offlinePackage" style="width: 60% !important; color: #000000;" readonly />
-                    </a-form-item>
-                
-                    <a-form-item label="版本：" field="version">
-                        <a-input v-model="cluster.version" style="width: 60% !important; color: #000000;" readonly />
-                    </a-form-item>
-              
-                    <a-form-item
-                        label="网络插件："
-                        field="networkPlugin"
-                    >
-                      <a-input v-model="cluster.networkPlugin" placeholder="网络插件" style="width: 60% !important; color: #000000;" readonly />
-                    </a-form-item>
-             -->
-
                     <a-form-item
                           label="集群名称："
                           field="clusterName"
                           style="display: flex; align-items: center;"
                       >
                           <span style="width: 60%; color: #000000;">{{ cluster.clusterName }}</span>
-                      </a-form-item>
-
-                      <a-form-item
-                          label="离线包："
-                          field="offlinePackage"
-                      >
-                          <span style="width: 60%; color: #000000;">{{ cluster.offlinePackage }}</span>
                       </a-form-item>
 
                       <a-form-item label="版本：" field="version">
@@ -241,11 +207,11 @@
           </a-card>
           <a-card title="节点与任务">
             <a-tabs v-model:activeKey="activeTab" @change="handleTabChange">
-              <a-tab-pane key="1" title="节点管理">
-                <Node :key="tabKeys['1']" />
+              <a-tab-pane key="1" title="节点管理" >
+                <Node :key="tabKeys['1']" :upgradeK8sVersion = upgradeK8sVersion :upgradeNetworkPlugin = upgradeNetworkPlugin :taskProcess = taskProcess />
               </a-tab-pane>
-              <a-tab-pane key="2" title="任务队列">
-                <TaskQueue :key="tabKeys['2']" />
+              <a-tab-pane key="2" title="任务队列" >
+                <TaskQueue :key="tabKeys['2']" :upgradeK8sVersion = upgradeK8sVersion   />
               </a-tab-pane>
               <a-tab-pane key="3" title="任务历史">
                 <TaskHistory :key="tabKeys['3']" />
@@ -264,13 +230,14 @@
   import Node from '@/views/node/index.vue';
   import TaskQueue from '@/views/task/TaskQueue.vue';
   import TaskHistory from '@/views/task/TaskHistory.vue';
-  import { getClusterList} from '@/api/cluster';
+  import { getClusterList } from '@/api/cluster';
+  import { Message } from '@arco-design/web-vue';
   
   const { loading, setLoading } = useLoading();
   const route = useRoute();
-  const clusterName = ref(route.params.name);
   const clusterList = ref();
   const id = ref(route.query.id);
+  const taskProcess = ref();
 
   const activeTab = ref('1'); // 当前激活的标签
   const tabKeys = ref({
@@ -278,6 +245,21 @@
     '2': 2,
     '3': 3,
   });
+
+  const getFirstK8sVersionFromStorage = (key = 'k8sVersionList'): string => {
+      const versionArrayStr = localStorage.getItem(key);
+      if (versionArrayStr) {
+          try {
+              const versionArray = JSON.parse(versionArrayStr);
+              if (Array.isArray(versionArray) && versionArray.length > 0) {
+                  return versionArray[0]; // 返回第一个版本
+              }
+          } catch (parseError) {
+              console.error('版本信息解析失败:', parseError);
+          }
+      }
+      return '';
+  };
 
   const config = reactive({
         loadbalancer_apiserver_port: 6443,
@@ -319,6 +301,8 @@
       version: '',
       taskNum: '0',
   });
+  const upgradeK8sVersion = ref();
+  const upgradeNetworkPlugin =ref();
   
   // 切换标签时更新对应子组件的 key
   const handleTabChange = (key: string) => {
@@ -327,35 +311,48 @@
 
   //获取集群列表
   const fetchClustersList = async () => {
-        try {
-            setLoading(true);
-            const result = await getClusterList();
-            clusterList.value = result.data;
-        } catch (err) {
-            console.log(err);
-        } finally {
-            setLoading(false);
-        }
-    };
-
+    // 检查次版本是否存在
+    const versionMapStr = localStorage.getItem('k8sVersionMap');
+    if (!versionMapStr) {
+        Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
+        return;
+    }
+    try {
+        setLoading(true);
+        const k8sVersion = getFirstK8sVersionFromStorage();
+        const result = await getClusterList(k8sVersion);
+        clusterList.value = result.data;
+    } catch (err) {
+        console.log(err);
+    } finally {
+        setLoading(false);
+    }
+  };
 
   onMounted(async () => {
 
-await fetchClustersList();
-if (Array.isArray(clusterList.value)) {
-    clusterList.value.forEach(item => {
-        if (item.id === id.value) {
-            cluster.clusterName = item.clusterName || '';
-            cluster.offlinePackage = item.offlinePackage || '';
-            cluster.networkPlugin = item.networkPlugin || '';
-            cluster.version = item.version || '';
-            cluster.taskNum = item.taskNum || '0';
-        }
-    });
-} else {
-    console.error('clusterList is not an array or undefined');
-}
-});
+    await fetchClustersList();
+    if (Array.isArray(clusterList.value)) {
+        clusterList.value.forEach(item => { 
+            if (item.id === id.value) {
+                cluster.clusterName = item.clusterName || '';
+                cluster.offlinePackage = item.offlinePackage || '';
+                cluster.networkPlugin = item.networkPlugin || '';
+                cluster.version = item.version || '';
+                cluster.taskNum = item.taskNum || '0';
+                if(item.upgradeK8sVersion){
+                  upgradeK8sVersion.value = item.upgradeK8sVersion;
+                }
+                if(item.upgradeNetworkPlugin){
+                  upgradeNetworkPlugin.value = item.upgradeNetworkPlugin;
+                }
+                taskProcess.value = item.taskProcess
+            }
+        });
+    } else {
+        console.error('clusterList is not an array or undefined');
+    }
+  });
 
   </script>
   

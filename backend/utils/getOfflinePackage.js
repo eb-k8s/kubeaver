@@ -1,12 +1,14 @@
 const fs = require('fs');
 const Redis = require('ioredis');
 const path = require('path');
-const yaml = require('js-yaml');
+//const yaml = require('js-yaml');
 
-const redis = new Redis({
-  port: 6379,
-  host: "127.0.0.1",
-});
+const redisConfig = {
+  host: process.env.REDIS_HOST, 
+  port: process.env.REDIS_PORT,
+};
+
+const redis = new Redis(redisConfig);
 
 async function offlinePackagesPath() {
   let data = {
@@ -17,14 +19,14 @@ async function offlinePackagesPath() {
   }
   try {
     //读取配置文件，获取kubespray版本
-    const configPath = path.join(__dirname, '../config.yaml');
-    const config = yaml.load(fs.readFileSync(configPath, 'utf8'));
+    //const configPath = path.join(__dirname, '../config.yaml');
+    //const config = yaml.load(fs.readFileSync(configPath, 'utf8'));
     data.offlinePackagePath = path.join(__dirname, '../data/offline')
     //data.kubeVersion = packageInfo.kube_version;
     //data.imageArch = packageInfo.image_arch;
     data.imageArch = "amd64"
     //获取kubespray路径返回去
-    data.kubesprayPath = path.join(__dirname, `../ansible/kubespray/${config.kubespary_version}`);
+    data.kubesprayPath = path.join(__dirname, `../ansible`);
 
     fs.access(data.offlinePackagePath, fs.constants.F_OK, (err) => {
       if (err) {

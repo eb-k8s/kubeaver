@@ -1,0 +1,242 @@
+---
+- name: prepare for using kubespray playbook
+  hosts: "{{ node | default('k8s_cluster') }}"
+  become: true
+  tasks:
+    - name: Ensure the /etc/hosts file contains the required entry
+      lineinfile:
+        path: /etc/hosts
+        line: "{{registry_host_ip}} {{registry_host}}"
+        state: present
+        backup: yes
+
+    - name: Ensure /etc/resolv.conf exists
+      file:
+        path: /etc/resolv.conf
+        state: touch
+
+    - name: Check the OS pretty name
+      command: grep '^PRETTY_NAME=' /etc/os-release
+      register: temp_os_pretty_name
+    
+    - name: Extract the pretty name from the command output
+      set_fact:
+        extracted_os_pretty_name: "{{ temp_os_pretty_name.stdout.split('=')[1].strip('\"') }}"
+
+    - name: Gen the standard repo file name
+      set_fact:
+        os_pretty_name: "{{ extracted_os_pretty_name | regex_replace(' ', '_') | regex_replace('[()]', '') }}"
+
+    - name: Clean the variable
+      set_fact:
+        os_pretty_name: "{{ os_pretty_name | replace('_Linux', '') }}"
+
+    - name: Set OS version variable 
+      set_fact:
+        is_openeuler: "{{ os_pretty_name | regex_search('openEuler', ignorecase=True) }}"
+        is_rocky: "{{ os_pretty_name | regex_search('Rocky', ignorecase=True) }}"
+        is_ubuntu: "{{ os_pretty_name | regex_search('Ubuntu', ignorecase=True) }}"
+        is_centos: "{{ os_pretty_name | regex_search('CentOS', ignorecase=True) }}"
+    
+    - name: Remove the node cache dir if it exists
+      ansible.builtin.command:
+        cmd: rm -rf {{ node_repo_path }}
+
+    - name: Ensure the node cache directory exists and set permissions to 777
+      ansible.builtin.file:
+        path: "{{ node_repo_path }}"
+        state: directory
+    
+    - name: Check if tar is exists
+      ansible.builtin.command:
+        cmd: tar --version
+      register: tar_version
+      ignore_errors: true
+      
+    # 此处需要将rpm包名字写入config.yml
+    # 安装tar
+    # Rocky
+    - name: Copy tar rpm file from localhost to nodes (RedHat series)
+      ansible.builtin.copy:
+        src: "{{ localhost_repo_path }}/{{ os_pretty_name }}/{{ RedHat_tar_name }}"
+        dest: "{{ node_repo_path }}"
+      when: not is_ubuntu and tar_version.rc != 0
+
+    - name: Install tar using tar rpm (RedHat series)
+      command: rpm -ivh {{ node_repo_path }}/{{ RedHat_tar_name }}
+      when: not is_ubuntu and tar_version.rc != 0
+    # Debian
+    - name: Copy tar rpm file from localhost to nodes (Debian series)
+      ansible.builtin.copy:
+        src: "{{ localhost_repo_path }}/{{ os_pretty_name }}/{{ Debian_tar_name }}"
+        dest: "{{ node_repo_path }}"
+      when: is_ubuntu and tar_version.rc != 0
+
+    - name: Install tar using tar rpm (Debian series)
+      command: apt install {{ node_repo_path }}/{{ Debian_tar_name }}
+      when: is_ubuntu and tar_version.rc != 0
+
+    # 规避使用rsync，因为目标主机上可能没有
+    - name: Copy repo file from localhost to nodes 
+      ansible.builtin.copy:
+        src: "{{ localhost_repo_path }}/{{ os_pretty_name }}/{{ repo_filename }}"
+        dest: "{{ node_repo_path }}"
+
+    - name: Unarchive repo file
+      unarchive:
+        src: "{{ node_repo_path }}/{{ repo_filename }}"
+        dest: "{{ node_repo_path }}"
+        remote_src: yes 
+
+    - name: Find all .repo files(RedHat OS)
+      find:
+        paths: /etc/yum.repos.d
+        patterns: "*.repo"
+      register: repo_files
+      when: not is_ubuntu
+
+    - name: Backup exists .repo files(RedHat series)
+      command: mv {{ item.path }} {{ item.path }}.bak
+      with_items: "{{ repo_files.files }}"
+      when: 
+        - repo_files.matched > 0
+      when: not is_ubuntu
+
+    - name: Create local-repo.repo in /etc/yum.repos.d (RedHat OS) 
+      copy:
+        dest: /etc/yum.repos.d/local-repo.repo
+        content: |
+          [local-repo]
+          name=Local Repository
+          baseurl=file://{{node_repo_path}}/repo
+          enabled=1
+          gpgcheck=0
+      when: not is_ubuntu
+
+    - name: Clean all yum caches (RedHat series) 
+      ansible.builtin.command:
+        cmd: yum clean all
+      become: yes
+      when: not is_ubuntu
+
+    - name: Rebuild yum cache (RedHat series) 
+      ansible.builtin.command:
+        cmd: yum makecache
+      become: yes
+      when: not is_ubuntu
+
+    - name: Backup exists .list files(Debian series)
+      command: mv /etc/apt/sources.list /etc/apt/sources.list.bak
+      when: is_ubuntu
+
+    - name: Create sources.list in /etc/apt (Debian series) 
+      copy:
+        dest: /etc/apt/sources.list
+        content: deb [trusted=yes] file:{{ node_repo_path }}/repo ./ 
+      when: is_ubuntu
+
+    - name: apt-get update (Debian series) 
+      ansible.builtin.command:
+        cmd: apt-get update
+      become: yes
+      when: is_ubuntu
+
+    - name: Install libselinux-python3 if OS is openEuler
+      yum:
+        name: libselinux-python3
+        state: present
+      when: is_openeuler
+
+    - name: Install nfs-utils (RedHat series)
+      yum:
+        name: nfs-utils
+        state: present
+        allowerasing: true
+      become: yes
+      when: is_openeuler or is_rocky
+
+    - name: Install nfs-utils (CentOS series)
+      yum:
+        name: nfs-utils
+        state: present
+      become: yes
+      when: is_centos
+
+    - name: start NFS server (RedHat series)
+      service:
+        name: nfs-server
+        state: restarted
+        enabled: yes
+      when: not is_ubuntu
+
+    - name: install NFS server (Debian series)
+      apt:
+        name:
+          - nfs-kernel-server
+          # - rpcbind
+        state: present
+      become: yes
+      when: is_ubuntu
+
+    # - name: start rpcbind server (Debian series)
+    #   service:
+    #     name: rpcbind
+    #     state: started
+    #     enabled: yes
+    #   become: yes
+    #   when: is_ubuntu
+
+    - name: start NFS server (Debian series)
+      service:
+        name: nfs-kernel-server
+        state: restarted  
+        enabled: yes
+      become: yes
+      when: is_ubuntu
+
+    - name: install nessasry package for debug(CentOS series)
+      yum: 
+        name: "{{ item}}"
+        state: present
+      loop:
+        - net-tools
+        - nmap
+        - tcpdump
+        - sysstat
+        - iotop
+      when: not is_ubuntu
+
+    - name: install NFS server (Debian series)
+      apt:
+        name: "{{ item}}"
+        state: present
+      become: yes
+      loop: 
+        - net-tools
+        - nmap
+        - tcpdump
+        - sysstat
+        - iotop
+      when: is_ubuntu
+
+    - name: Manage firewalld service (RedHat series)
+      block:
+        - name: Stop firewalld
+          ansible.builtin.command: sudo systemctl stop firewalld
+          become: yes
+
+        - name: Disable firewalld
+          ansible.builtin.command: sudo systemctl disable firewalld
+          become: yes
+      when: not is_ubuntu
+      ignore_errors: true
+    
+    - name: Stop ufw (Debian series)
+      ansible.builtin.command:
+        cmd: sudo ufw disable
+      become: yes
+      when: is_ubuntu
+
+
+
+

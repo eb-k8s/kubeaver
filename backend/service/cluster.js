@@ -3,30 +3,16 @@ const Redis = require('ioredis');
 const fs = require('fs');
 const path = require('path');
 const { getNodeStatus, getRedis } = require('../utils/getNodeStatus');
-const { createAnsibleQueue, getActiveJobs, getWaitingJobs } = require('../utils/ansibleQueue');
+const { createAnsibleQueue, queues } = require('../utils/ansibleQueue');
 const { getNodeList } = require('./node')
+const { getDatabaseByK8sVersion } = require('../utils/getDatabase');
 //redis一直处于连接
-const redis = new Redis({
-  port: 6379,
-  host: "127.0.0.1",
-});
+const redisConfig = {
+  host: process.env.REDIS_HOST,
+  port: process.env.REDIS_PORT,
+};
 
-async function initQueue() {
-  const result = await getK8sCluster();
-  for (const item of result.data) {
-    const baseQueueId = item.id;
-    if (!item.taskNum) {
-      console.error(`未设置并发数: ${baseQueueId}`);
-      return {
-        code: 40000,
-        msg: `未设置并发数: ${baseQueueId}`,
-        status: "error"
-      };
-    }
-    await createAnsibleQueue(baseQueueId, parseInt(item.taskNum, 10));
-  }
-}
-
+const redis = new Redis(redisConfig);
 
 //查找具体的某个任务的哈希值,prefix 'k8s_cluster:test:tasks:' suffix  '123456789'  
 async function findHashKeys(prefix, suffix) {
@@ -66,37 +52,37 @@ async function getK8sCluster() {
       }
       const nodeData = await getNodeList(output.id)
       output.nodeTotalNum = nodeData.data.length || 0;
-      output.nodeReadyNum = nodeData.data.filter(node => node.status === 'Ready').length || 0;
       output.masterCount = nodeData.data.filter(node => node.role === 'master').length || 0;
+      output.masterReadyNum = nodeData.data.filter(node => node.status === 'Ready').length || 0;
       output.nodeCount = nodeData.data.filter(node => node.role === 'node').length || 0;
-      //获取每个类型任务中活跃任务数和等待任务数
-      const taskNames = [
-        "initCluster",
-        "addNode",
-        "resetNode",
-        "resetCluster",
-        "upgradeCluster",
-      ]
-      for (const taskName of taskNames) {
-        const queueId = `${output.id}_${taskName}`;
-        try {
-          activeJobsData = await getActiveJobs(queueId);
-        } catch (error) {
-          //console.error(`Error retrieving active jobs for queue ${queueId}:`, error);
-          activeJobsData = [];
-        }
+      // //获取每个类型任务中活跃任务数和等待任务数
+      // const taskNames = [
+      //   "initCluster",
+      //   "addNode",
+      //   "resetNode",
+      //   "resetCluster",
+      //   "upgradeCluster",
+      // ]
+      // for (const taskName of taskNames) {
+      //   const queueId = `${output.id}_${taskName}`;
+      //   try {
+      //     activeJobsData = await getActiveJobs(queueId);
+      //   } catch (error) {
+      //     //console.error(`Error retrieving active jobs for queue ${queueId}:`, error);
+      //     activeJobsData = [];
+      //   }
 
-        try {
-          waitingJobsData = await getWaitingJobs(queueId);
-        } catch (error) {
-          //console.error(`Error retrieving waiting jobs for queue ${queueId}:`, error);
-          waitingJobsData = [];
-        }
+      //   try {
+      //     waitingJobsData = await getWaitingJobs(queueId);
+      //   } catch (error) {
+      //     //console.error(`Error retrieving waiting jobs for queue ${queueId}:`, error);
+      //     waitingJobsData = [];
+      //   }
 
-        const activeCount = activeJobsData.length || 0;
-        const waitingCount = waitingJobsData.length || 0;
-        output[`${taskName}`] = activeCount + waitingCount;
-      }
+      //   const activeCount = activeJobsData.length || 0;
+      //   const waitingCount = waitingJobsData.length || 0;
+      //   output[`${taskName}`] = activeCount + waitingCount;
+      // }
 
       clusterInfoData.push(output);
     }
@@ -110,6 +96,8 @@ async function getK8sCluster() {
           console.error(`集群不存在，跳过更新状态`);
           return;
         }
+        // 节点只要有一个master是ready,整个集群状态为ready
+        let isClusterReady = false;
         for (const node of resultData.hosts) {
           if (node.role === "master") {
             const hostName = node.hostName;
@@ -119,12 +107,15 @@ async function getK8sCluster() {
               const updateTime = Date.now();
               result = await getNodeStatus(item.id, hostName, '', masterIP);
               if (result.status) {
-                // 如果 status 有值，更新 Redis 中的状态
-                const nodeKey = `k8s_cluster:${item.id}:baseInfo`;
-                await redis.hset(nodeKey,
-                  'status', result.status,
-                  'updateTime', updateTime
-                );
+                if (result.status === 'Ready') {
+                  isClusterReady = true;
+                  const nodeKey = `k8s_cluster:${item.id}:baseInfo`;
+                  await redis.hset(nodeKey,
+                    'status', 'Ready',
+                    'updateTime', updateTime
+                  );
+                  break; // Exit the loop early if a ready master is found
+                }
               } else {
                 console.error(`未能获取到${item.id}:${hostName}节点状态，直接返回`);
                 return;
@@ -134,7 +125,13 @@ async function getK8sCluster() {
             }
           }
         }
-
+        if (!isClusterReady) {
+          const nodeKey = `k8s_cluster:${item.id}:baseInfo`;
+          await redis.hset(nodeKey,
+            'status', 'Unknown',
+            'updateTime', Date.now()
+          );
+        }
       } catch (error) {
         console.error(`获取 Redis 数据时出错: ${error.message}`);
       }
@@ -172,7 +169,7 @@ async function createK8sCluster(clusterInfo) {
         return {
           code: 10001,
           status: "error",
-          message: "集群名称已经存在！"
+          msg: "集群名称已经存在！"
         };
       }
     }
@@ -182,28 +179,40 @@ async function createK8sCluster(clusterInfo) {
     const clusterKey = customNanoid();
     const nodeKey = `k8s_cluster:${clusterKey}:baseInfo`;
     const createTime = Date.now();
+    //找出role为master的第一个值clusterInfo.hosts
+    const masterNode = clusterInfo.hosts.find(node => node.role === 'master');
+    console.log(masterNode)
+    if (!masterNode) {
+      return {
+        code: 10004,
+        status: "error",
+        msg: "集群中必须包含至少一个master节点！"
+      };
+    }
     await redis.hset(
       nodeKey,
       'clusterName', clusterInfo.clusterName,
       'version', clusterInfo.version,
       'networkPlugin', clusterInfo.networkPlugin,
+      'taskProcess', 'Unknown',
       'status', 'Unknown',
       'taskNum', clusterInfo.taskNum,
       'createTime', createTime,
-      'updateTime', createTime
+      'updateTime', createTime,
+      'master1', masterNode.hostName,
     );
-    initQueue(); //初始化操作同步进行
+    //initQueue(); //初始化操作同步进行
+    //在不同库创建相应的队列
+    await createAnsibleQueue(clusterKey, parseInt(clusterInfo.taskNum, 10), clusterInfo.version);
     //目前先增加主机数据
     for (const newNode of clusterInfo.hosts) {
       const hostsNodeKey = `k8s_cluster:${clusterKey}:hosts:${newNode.ip}`;
-      //查询用户名
-      let hostKey = `host:${newNode.ip}`
-      const hostInfo = await redis.hgetall(hostKey);
       await redis.hset(hostsNodeKey,
         'ip', newNode.ip,
         'hostName', newNode.hostName,
-        'user', hostInfo.user,
+        'user', newNode.user,
         'role', newNode.role,
+        'os', newNode.os,
         'k8sVersion', 'Unknown',
         'status', 'Unknown',
         'createTime', createTime,
@@ -221,7 +230,7 @@ async function createK8sCluster(clusterInfo) {
     return {
       code: 50000,
       status: error,
-      message: error.message
+      msg: error.message
     }
   }
 }
@@ -252,7 +261,7 @@ async function updateK8sCluster(clusterInfo) {
       return {
         code: 50000,
         status: "error",
-        message: "删除hosts失败。"
+        msg: "删除hosts失败。"
       };
     }
   }
@@ -269,32 +278,39 @@ async function updateK8sCluster(clusterInfo) {
         return {
           code: 10001,
           status: "error",
-          message: "集群名称已经存在，请重新修改集群名称。"
+          msg: "集群名称已经存在，请重新修改集群名称。"
         };
       }
     }
+    const masterNode = clusterInfo.hosts.find(node => node.role === 'master');
     const nodeKey = `k8s_cluster:${clusterInfo.id}:baseInfo`;
     const updateTime = Date.now();
     await redis.hset(nodeKey,
       'clusterName', clusterInfo.clusterName,
       'version', clusterInfo.version,
-      'offlinePackage', clusterInfo.offlinePackage,
       'networkPlugin', clusterInfo.networkPlugin,
       'taskNum', clusterInfo.taskNum,
+      'taskProcess', 'Unknown',
       'status', 'Unknown',//集群实际状态
-      'updateTime', updateTime
+      'updateTime', updateTime,
+      'master1', masterNode.hostName,
     );
-    initQueue();
+    //initQueue();
+    await createAnsibleQueue(clusterInfo.id, parseInt(clusterInfo.taskNum, 10), clusterInfo.version);
     //目前先增加主机数据
     for (const newNode of clusterInfo.hosts) {
       const hostsNodeKey = `k8s_cluster:${clusterInfo.id}:hosts:${newNode.ip}`;
       await redis.hset(hostsNodeKey,
         'ip', newNode.ip,
         'hostName', newNode.hostName,
+        'user', newNode.user,
         'role', newNode.role,
+        'os', newNode.os,
         'status', 'Unknown',
         'createTime', updateTime,
-        'updateTime', updateTime
+        'updateTime', updateTime,
+        'lastJobType', newNode.lastJobType || '',
+        'lastJobStatus', newNode.lastJobStatus || '',
       );
     }
 
@@ -309,60 +325,138 @@ async function updateK8sCluster(clusterInfo) {
     return {
       code: 50000,
       status: error,
-      message: error.message
+      msg: error.message
     }
   }
 }
 
+// async function deleteK8sCluster(id) {
+//   //先删除inventory-clusterId文件夹
+//   //const currentDir = process.cwd();
+//   const inventoryDir = path.join(__dirname, '../data/inventory', `inventory-${id}`);
+//   // 使用相对路径
+//   //const inventoryDir = path.join(currentDir, '/data/inventory', `inventory-${id}`);
+//   try {
+//     if (fs.existsSync(inventoryDir)) {
+//       fs.rmSync(inventoryDir, { recursive: true, force: true });
+//       console.log(`成功删除目录: ${inventoryDir}`);
+//     } else {
+//       console.log(`目录不存在: ${inventoryDir}`);
+//     }
+//   } catch (error) {
+//     console.error(`删除目录时出错: ${error.message}`);
+//     return {
+//       code: 50001,
+//       msg: '删除目录时出错',
+//       status: 'error'
+//     };
+//   }
+//   //删除记录的集群信息
+//   bullHashKeys = `bull:${id}*:*`
+//   k8sHashKeys = `k8s_cluster:${id}:*`
+//   let deleteHashKeys = [bullHashKeys, k8sHashKeys]
+//   const keys = [];
+//   let cursor = '0';
+//   for (const pattern of deleteHashKeys) {
+//     do {
+//       const result = await redis.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
+//       cursor = result[0]; // 更新游标
+//       keys.push(...result[1]); // 添加找到的键
+//     } while (cursor !== '0'); // 当游标为 0 时停止
+//   }
+//   if (keys.length > 0) {
+//     // 删除找到的所有键
+//     await redis.del(...keys);
+//     //console.log(`Deleted keys: ${keys.join(', ')}`);
+//   } else {
+//     return {
+//       code: 20001,
+//       msg: '未找到删除相关的值',
+//       status: 'ok'
+//     };
+//   }
+//   return {
+//     code: 20000,
+//     msg: '删除成功',
+//     status: 'ok'
+//   };
+// }
 async function deleteK8sCluster(id) {
-  //先删除inventory-clusterId文件夹
-  const currentDir = process.cwd();
-  // 使用相对路径
-  const inventoryDir = path.join(currentDir, '/data/inventory', `inventory-${id}`);
+  // 1. 删除本地文件
+  const inventoryDir = path.join(__dirname, '../data/inventory', `inventory-${id}`);
   try {
     if (fs.existsSync(inventoryDir)) {
       fs.rmSync(inventoryDir, { recursive: true, force: true });
-      console.log(`成功删除目录: ${inventoryDir}`);
-    } else {
-      console.log(`目录不存在: ${inventoryDir}`);
+      console.log(`Deleted directory: ${inventoryDir}`);
     }
   } catch (error) {
-    console.error(`删除目录时出错: ${error.message}`);
-    return {
-      code: 50001,
-      msg: '删除目录时出错',
-      status: 'error'
-    };
+    console.error(`File deletion error: ${error.message}`);
+    return { code: 50001, msg: '文件删除失败', status: 'error' };
   }
-  //删除记录的集群信息
-  bullHashKeys = `bull:${id}*:*`
-  k8sHashKeys = `k8s_cluster:${id}:*`
-  let deleteHashKeys = [bullHashKeys, k8sHashKeys]
-  const keys = [];
-  let cursor = '0';
-  for (const pattern of deleteHashKeys) {
-    do {
-      const result = await redis.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
-      cursor = result[0]; // 更新游标
-      keys.push(...result[1]); // 添加找到的键
-    } while (cursor !== '0'); // 当游标为 0 时停止
+
+  // 2. 获取集群版本（从db0的Hash结构）
+  let k8sVersion;
+  let baseInfo;
+  try {
+    baseInfo = await redis.hgetall(`k8s_cluster:${id}:baseInfo`);
+    if (!baseInfo || Object.keys(baseInfo).length === 0) {
+      // 没有任何信息，直接清理所有相关key
+      k8sVersion = null;
+    } else if (!baseInfo.version) {
+      // 没有version字段，说明是脏数据，也要清理
+      console.log(`集群${id} baseInfo为脏数据，强制清理所有相关key`);
+      k8sVersion = null;
+    } else {
+      k8sVersion = baseInfo.version;
+    }
+  } catch (error) {
+    console.error(`Version check error: ${error.message}`);
+    return { code: 50002, msg: '获取版本失败', status: 'error' };
   }
-  if (keys.length > 0) {
-    // 删除找到的所有键
-    await redis.del(...keys);
-    //console.log(`Deleted keys: ${keys.join(', ')}`);
-  } else {
+
+  // 3. 删除操作（分数据库处理）
+  try {
+    // 3.1 始终在db0删除k8s_cluster键
+    await redis.select(0);
+    const clusterKeys = await scanKeys(`k8s_cluster:${id}:*`);
+    if (clusterKeys.length > 0) {
+      await redis.del(clusterKeys);
+      console.log(`Deleted ${clusterKeys.length} cluster keys in db0`);
+    }
+
+    // 3.2 在目标库删除bull键
+    const targetDb = await getDatabaseByK8sVersion(k8sVersion);
+    await redis.select(targetDb);
+    const bullKeys = await scanKeys(`bull:${id}*:*`);
+    if (bullKeys.length > 0) {
+      await redis.del(bullKeys);
+      console.log(`Deleted ${bullKeys.length} bull keys in db${targetDb}`);
+    }
+
     return {
-      code: 20001,
-      msg: '未找到删除相关的值',
+      code: 20000,
+      msg: `删除完成 (cluster:${clusterKeys.length}, bull:${bullKeys.length})`,
       status: 'ok'
     };
+
+  } catch (error) {
+    console.error(`Deletion error: ${error.message}`);
+    return { code: 50003, msg: '删除过程出错', status: 'error' };
+  } finally {
+    await redis.select(0); // 恢复默认db0
   }
-  return {
-    code: 20000,
-    msg: '删除成功',
-    status: 'ok'
-  };
+}
+
+// 辅助函数：SCAN遍历键
+async function scanKeys(pattern) {
+  let keys = [];
+  let cursor = '0';
+  do {
+    const reply = await redis.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
+    cursor = reply[0];
+    keys.push(...reply[1]);
+  } while (cursor !== '0');
+  return keys;
 }
 
 async function getK8sConfigFile(id) {
@@ -388,7 +482,7 @@ async function getK8sConfigFile(id) {
     console.error(`从 Redis 获取配置文件时出错: ${error.message}`);
     return {
       code: 50000,
-      message: error.message,
+      msg: error.message,
       status: error,
     };
   }
@@ -397,7 +491,6 @@ async function getK8sConfigFile(id) {
 
 
 module.exports = {
-  initQueue,
   getK8sCluster,
   createK8sCluster,
   updateK8sCluster,

@@ -9,6 +9,9 @@
                     <a-button type="primary" @click="handleAddNode()" :style="{ marginBottom: '10px' }">
                         添加节点
                     </a-button>
+                    <a-button type="primary" :disabled="isBatchJoinDisabled" @click="handleBatchJoin()" :style="{ marginBottom: '10px', marginLeft: '2px'}">
+                        批量加入
+                    </a-button>
                 </div>
                 <a-table :columns="columns" :data="nodeList" :loading="loading">
                     <template #icon="{ record }">
@@ -45,7 +48,11 @@
                                 class="circle Unknown"
                             ></span>
                             <span 
-                                v-if="record.status === 'NotReady'" 
+                                v-if="record.status === 'Ready,SchedulingDisabled'" 
+                                class="circle pause"
+                            ></span>
+                            <span 
+                                v-if="record.status === 'NotReady' || record.status === 'NotReady,SchedulingDisabled'" 
                                 class="circle failed"
                             ></span>
                             <span class="status-text">{{ record.status }}</span>
@@ -65,21 +72,50 @@
                             <span class="status-text1">{{ record.activeStatus }}</span>
                         </div>
                     </template>
+                    <template #lastJobStatus="{ record }">
+                        <div class="status-container">
+                            <span 
+                                v-if="record.lastJobStatus === 'worked'" 
+                                class="circle Ready"
+                            ></span>
+                            <span 
+                                v-if="record.lastJobStatus === 'failed'" 
+                                class="circle failed"
+                            ></span>
+                            <span class="status-text">{{ record.lastJobStatus }}</span>
+                        </div>
+                    </template>
                     <template #operations="{ record }">
                         <template v-if="record.role === 'master'">
-                            <a-button v-if="record.status === 'Unknown' && record.activeJobType === '暂无任务'" type="text" size="small" @click="onClickDelete(record)">
-                                删除
-                            </a-button>
-                        </template>
-                        <template v-else-if="record.role === 'node'">
-                            <a-button v-if="record.status === 'Unknown' && record.activeJobType === '暂无任务' && isMasterNotReadyAndDeploying" type="text" size="small" @click="onClickJoinNode(record)">
+                            <a-button v-if="record.status === 'Unknown' && record.activeJobType === '暂无任务' && !isAnyNodeBusy" type="text" size="small" @click="onClickJoinMaster(record)">
                                 加入
                             </a-button>
                             <a-button v-if="record.status === 'Unknown' && record.activeJobType === '暂无任务'" type="text" size="small" @click="onClickDelete(record)">
                                 删除
                             </a-button>
-                            <a-button v-if="record.status !== 'Unknown' && record.activeJobType === '暂无任务'" type="text" size="small" @click="onClickRemove(record)">
+                            <a-button v-if="master1.value !== record.name && record.status !== 'Unknown' && record.activeJobType === '暂无任务'" type="text" size="small" @click="onClickRemove(record)">
                                 移除
+                            </a-button>
+                            <a-button v-if="!isAnyNodeBusy && record.lastJobType === '升级集群' && record.lastJobStatus === '失败' && record.activeJobType === '暂无任务'" type="text" size="small" @click="onClickRetry(record)">
+                                重试
+                            </a-button>
+                        </template>
+                        <template v-else-if="record.role === 'node'">
+                            <!-- <a-button v-if="record.status === 'Unknown' && record.activeJobType === '暂无任务' &&  
+                                            (isMasterRunning || !isMasterResetting || !isNodeUpgrading || !isNodeTrying )" type="text" size="small" @click="onClickJoinNode(record)">
+                                加入
+                            </a-button> -->
+                            <a-button v-if="record.status === 'Unknown' && record.activeJobType === '暂无任务' && !isAnyNodeBusy" type="text" size="small" @click="onClickJoinNode(record)">
+                                加入
+                            </a-button>
+                            <a-button v-if="record.status === 'Unknown' && record.activeJobType === '暂无任务'" type="text" size="small" @click="onClickDelete(record)">
+                                删除
+                            </a-button>
+                            <a-button v-if="record.status !== 'Unknown' && record.activeJobType === '暂无任务' && isMasterNotReadyAndDeploying" type="text" size="small" @click="onClickRemove(record)">
+                                移除
+                            </a-button>
+                            <a-button v-if="!isAnyNodeBusy && record.lastJobType === '升级集群' && record.lastJobStatus === '失败' && record.activeJobType === '暂无任务'" type="text" size="small" @click="onClickRetry(record)">
+                                重试
                             </a-button>
                         </template>
                     </template>
@@ -91,7 +127,40 @@
         <p>确定将 <span style="color: red; font-weight: bold;">{{ name }}</span> 节点加入到集群吗？</p>
     </a-modal>
     <a-modal v-model:visible="addNodeVisible" @ok="handleAddNodeOk" @cancel="handleAddNodeCancel">
-        <a-card title="主机" style="margin-top: 20px;">
+        <a-card title="主机">
+            <a-form-item label="控制节点" field="controlPlaneHosts" >
+                <div style="display: flex; flex-direction: column; width: 100%;">
+                    <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                        <a-select
+                            v-model="controlPlaneHost"
+                            class="select-input"
+                            placeholder="请选择控制节点主机"
+                            style="flex: 1; margin-right: 10px;"
+                            multiple
+                        >
+                            <a-option v-for="item in filteredControlPlaneHosts" :key="item.hostIP" :value="item.hostIP">
+                                {{ `${item.hostIP} (${item.os})` }}
+                            </a-option>
+                        </a-select>
+                        <a-button type="primary" size="small" @click="addControlPlaneHost">添加</a-button>
+                    </div>
+                    <ul style="list-style: none; padding: 0; width: 100%;">
+                        <li
+                            v-for="(host, index) in cluster.controlPlaneHosts"
+                            :key="index"
+                            style="display: flex; align-items: center; margin-bottom: 8px; border: 1px dashed #d9d9d9; padding: 8px; border-radius: 4px;"
+                        >
+                            <span>{{ host.ip }}</span>
+                            <span style="margin-left:10%;">名字：</span>
+                            <a-input v-model="host.hostName" placeholder="请输入主机名" style="flex-grow: 1; width: 40%;" />
+                            <a-button type="text" size="small" @click="removeControlPlaneHost(index)" style="color: #ff4d4f; font-size: 16px; padding: 0;">
+                                <icon-close />
+                            </a-button>
+                        </li>
+                    </ul>
+                </div>
+            </a-form-item>
+        
             <a-form-item label="工作节点" field="workerHosts">
                 <div style="display: flex; flex-direction: column; width: 100%;">
                     <div style="display: flex; align-items: center; margin-bottom: 10px;">
@@ -99,37 +168,31 @@
                             v-model="workerHost"
                             class="select-input"
                             placeholder="请选择工作节点主机"
-                            style="width: 300px; margin-right: 10px;"
+                            style="flex: 1; margin-right: 10px;"
                             multiple
                         >
-                            <a-option v-for="item in filteredWorkerHosts" :key="item.hostId" :value="item.hostIP">
+                            <a-option v-for="item in filteredWorkerHosts" :key="item.hostIP" :value="item.hostIP">
                                 <!-- {{ item.hostIP }} -->
                                 {{ `${item.hostIP} (${item.os})` }}
                             </a-option>
+
                         </a-select>
                         <a-button type="primary" size="small" @click="addWorkerHost">添加</a-button>
                     </div>
-                    <div style="width: 100%;">
-                        <ul style="list-style: none; padding: 0; margin-left: -70px; max-width: calc(100% - 5px);">
-                            <li
-                                v-for="(host, index) in cluster.workerHosts"
-                                :key="index"
-                                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border: 1px dashed #d9d9d9; padding: 8px; border-radius: 4px; flex: 1;"
-                            >
-                                <span>{{ host.ip }}</span>
-                                <span style="margin-left:10px;margin-right:-20px;">主机名字：</span>
-                                <a-input 
-                                    v-model="host.hostName" 
-                                    placeholder="请输入主机名" 
-                                    style="margin-right: -10px; width: 160px;"
-                                    @blur="checkDuplicateHostName(host.hostName, index)"
-                                />
-                                <a-button type="text" size="small" @click="removeWorkerHost(index)" style="color: #ff4d4f; font-size: 16px; padding: 0;">
+                    <ul style="list-style: none; padding: 0; width: 100%;">
+                        <li
+                            v-for="(host, index) in cluster.workerHosts"
+                            :key="index"
+                            style="display: flex; align-items: center; margin-bottom: 8px; border: 1px dashed #d9d9d9; padding: 8px; border-radius: 4px;"
+                        >
+                            <span>{{ host.ip }}</span>
+                            <span style="margin-left:10%;">名字：</span>
+                            <a-input v-model="host.hostName" placeholder="请输入主机名" style="flex-grow: 1; width: 40%;" />
+                            <a-button type="text" size="small" @click="removeWorkerHost(index)" style="color: #ff4d4f; font-size: 16px; padding: 0;">
                                 <icon-close />
-                                </a-button>
-                            </li>
-                        </ul>
-                    </div>
+                            </a-button>
+                        </li>
+                    </ul>
                 </div>
             </a-form-item>
         </a-card>
@@ -141,16 +204,61 @@
        <p>确定将 <span style="color: red; font-weight: bold;">{{ name }}</span> 节点从集群中移除吗？</p>
        <p style="color: red; font-weight: bold;">警告：移除操作不可恢复，请谨慎操作！</p>
     </a-modal>
+
+    <a-modal v-model:visible="batchAddNodeVisible" 
+        @ok="handleBatchJoinOk" 
+        @cancel="handleBatchJoinCancel"
+        width="800px"
+        :afterClose="handleBatchJoinCancel"
+    >
+        <div style="display: flex; align-items: center; justify-content: flex-end; margin-bottom: 10px;">
+            <!-- <a-checkbox 
+                :checked="isSelectAllChecked"
+                @change="toggleSelectAll"
+            >
+              全选
+            </a-checkbox> -->
+            <a-button 
+                type="primary" 
+                @click="toggleSelectAll"
+            >
+                {{ isSelectAllChecked ? '取消全选' : '全选' }}
+            </a-button>
+        </div>
+        <a-checkbox-group v-model="selectedBatchNodes">
+            <a-grid :cols="5" :colGap="24" :rowGap="16">
+                <a-grid-item 
+                    v-for="host in filteredUnjoinedHosts" 
+                    :key="host.ip"
+                    class="node-item"
+                >
+                    <a-checkbox 
+                        :value="host.ip"
+                        @change="val => {
+                            if (!val && isSelectAllChecked) {
+                                isSelectAllChecked = false;
+                            }
+                        }"
+                    >
+                        {{ host.ip }}({{ host.role }})
+                    </a-checkbox>
+                </a-grid-item>
+            </a-grid>
+        </a-checkbox-group>
+    </a-modal>
+
 </template>
 <script lang="ts" setup>
 
-    import { reactive, ref, onMounted, computed, watch } from 'vue';
+    import { reactive, ref, onMounted, computed, watch, nextTick } from 'vue';
     import { getNodeList, deleteNode, removeNode, addNode, joinCluster } from '@/api/node';
+    import { getResources } from '@/api/resources';
     import { deployCluster } from '@/api/cluster';
+    import { upgradeCluster } from '@/api/tasks';
+    import { getAvailableHostList } from '@/api/hosts';
     import useLoading from '@/hooks/loading';
     import { useRoute } from 'vue-router';
     import { Message } from '@arco-design/web-vue';
-    import { getAvailableHostList } from '@/api/hosts';
     import { formatTime } from '@/utils/time';
 
     const { loading, setLoading } = useLoading();
@@ -162,23 +270,109 @@
     const nodeList = ref();
     const route = useRoute();
     const id = ref();
-    const offlinePackage = ref();
     const nodeip = ref();
     const node = ref();
-    // const workerHost = ref();
     const workerHost = ref<string[]>([]);
+    const controlPlaneHost = ref();
     const hostList = ref();
     const nodeRole = ref();
     const roleLogos = ref({});
+    const resourceList = ref();
     const supportedOS = ref();
+    const repoFiles = ref();
+    const version = ref();
+    const upgradeVersion = ref();
+    const clusterName = ref();
+    const master1 = ref();
+    const batchAddNodeVisible = ref();
+    const selectedBatchNodes = ref<string[]>([]);
+    const isSelectAllChecked = ref(false);
+    const originalAllNodes = ref([]);
+    const props = defineProps({
+        upgradeK8sVersion: String,
+        upgradeNetworkPlugin: String,
+        taskProcess: String,
+    })
     const cluster = reactive({
         id: '',
-        workerHosts: [] as Array<{ ip: string; hostName: string; role: string }>
+        controlPlaneHosts: [] as Array<{ ip: string; hostName: string; role: string; os: string }>,
+        workerHosts: [] as Array<{ ip: string; hostName: string; role: string; os: string }>
     });
     const name = ref();
 
     id.value = route.query.id;
-    offlinePackage.value = route.query.offlinePackage;
+    version.value = route.query.version;
+    clusterName.value = route.query.clusterName;
+    master1.value = route.query.master1;
+    upgradeVersion.value = route.query.upgradeVersion;
+
+    const isMasterRunning = computed(() => {
+        return nodeList.value && nodeList.value.some(node => 
+            node.role === 'master' && node.status === 'Unknown' && node.activeStatus === '暂无状态' && node.activeJobType === '暂无任务'
+        );
+    });
+
+    const handleBatchJoinCancel = () => {
+        nextTick(() => {
+            selectedBatchNodes.value = [];
+            isSelectAllChecked.value = false; 
+        });
+    };
+
+    const toggleSelectAll = () => {
+        const currentNodes = filteredUnjoinedHosts.value.map(h => h.ip);
+
+        if (isSelectAllChecked.value) {
+            selectedBatchNodes.value = selectedBatchNodes.value.filter(
+                ip => !currentNodes.includes(ip)
+            );
+        } else {
+            const newSelected = Array.from(new Set([
+                ...selectedBatchNodes.value,
+                ...currentNodes  
+            ]));
+            selectedBatchNodes.value = newSelected;
+        }
+
+        isSelectAllChecked.value = !isSelectAllChecked.value;
+    };
+
+    watch(selectedBatchNodes, (newVal) => {
+        const currentAllNodes = filteredUnjoinedHosts.value.map(h => h.ip);
+        const shouldCheck = currentAllNodes.length > 0 && 
+            currentAllNodes.every(ip => newVal.includes(ip));
+        
+        if (isSelectAllChecked.value !== shouldCheck) {
+            isSelectAllChecked.value = shouldCheck;
+        }
+    });
+
+    const isBatchJoinDisabled = computed(() => {
+        const hasRunningTasks = nodeList.value?.some(node => node.activeJobType !== '暂无任务');
+
+        const hasUnjoinedHosts = filteredUnjoinedHosts.value.length > 0;
+
+        return hasRunningTasks || !hasUnjoinedHosts;
+    });
+
+    const isAnyNodeBusy = computed(() => {
+        return nodeList.value && nodeList.value.some(node => node.activeJobType !== '暂无任务');
+    });
+
+    const getFirstK8sVersionFromStorage = (key = 'k8sVersionList'): string => {
+        const versionArrayStr = localStorage.getItem(key);
+        if (versionArrayStr) {
+            try {
+                const versionArray = JSON.parse(versionArrayStr);
+                if (Array.isArray(versionArray) && versionArray.length > 0) {
+                    return versionArray[0]; // 返回第一个版本
+                }
+            } catch (parseError) {
+                console.error('版本信息解析失败:', parseError);
+            }
+        }
+        return '';
+    };
 
     const hosts = computed(() => {
         return [
@@ -200,47 +394,64 @@
         );
     });
 
-    const filteredWorkerHosts = computed(() => {
+    const filteredControlPlaneHosts = computed(() => {
 
-        if (!hostList.value || !Array.isArray(hostList.value)) {
+        if (!Array.isArray(hostList.value)) {
             return []; 
         }
 
-        const osMatch = offlinePackage.value?.match(/_(\w+(?:-\w+)*)(_|\s|$)/);
-        const newOS = osMatch ? osMatch[1].replace('-Linux', '') : 'null';
-
-        if (supportedOS.value && newOS && supportedOS.value !== newOS) {
-            cluster.workerHosts = [];
-        }
-
-        supportedOS.value = newOS;
         return hostList.value.filter((host) => {
-            const osName = host.os.split(' ')[0];
-            const isOSCompatible = supportedOS.value
-                ? osName.includes(supportedOS.value)
+            const osName = host?.os ? host.os.split(' ')[0] : ''; 
+            const isOSCompatible = Array.isArray(supportedOS.value) && supportedOS.value.length
+                ? supportedOS.value.includes(osName)
                 : true;
 
             return (
                 isOSCompatible &&
-                !(cluster.workerHosts ?? []).some((selectedHost) => selectedHost.ip === host.hostIP)
+                Array.isArray(cluster.controlPlaneHosts) &&
+                !cluster.controlPlaneHosts.some((selectedHost) => selectedHost.ip === host.hostIP) &&
+                Array.isArray(cluster.workerHosts) &&
+                !cluster.workerHosts.some((selectedHost) => selectedHost.ip === host.hostIP)
+            );
+        });
+    });
+
+    const filteredWorkerHosts = computed(() => {
+
+        if (!Array.isArray(hostList.value)) {
+            return []; 
+        }
+        return hostList.value.filter((host) => {
+            
+            const osName = host.os.split(' ')[0];
+            const isOSCompatible = Array.isArray(supportedOS.value) && supportedOS.value.length 
+                ? supportedOS.value.includes(osName) 
+                : true;
+
+            return (
+                isOSCompatible &&
+                Array.isArray(cluster.controlPlaneHosts) &&
+                !cluster.controlPlaneHosts.some((selectedHost) => selectedHost.ip === host.hostIP) &&
+                Array.isArray(cluster.workerHosts) &&
+                !cluster.workerHosts.some((selectedHost) => selectedHost.ip === host.hostIP)
             );
         });
     });
 
     const handleRefresh = async () =>{
         fetchNodeList();
+        fetchHostList();
     }
-
-    const checkDuplicateHostName = (hostName, index) => {
-      const isDuplicate = cluster.workerHosts.some((host, i) => host.hostName === hostName && i !== index);
-      if (isDuplicate) {
-        Message.error('主机名字重复，请输入唯一的主机名');
-        cluster.workerHosts[index].hostName = ''; 
-      }
-    };
 
     const masterStatus = computed(() => {
         return nodeList.value && nodeList.value.some(node => node.role === 'master' && node.status === 'Unknown' && node.deploymentStatus === 'NotDeploy');
+    });
+
+    // 过滤未加入集群的节点
+    const filteredUnjoinedHosts = computed(() => {
+       
+        if (!Array.isArray(nodeList.value)) return [];
+        return nodeList.value.filter((node) => node.status === "Unknown");
     });
 
     const handleAddNode = async() => {
@@ -252,6 +463,98 @@
         addNodeVisible.value = false;
     }
 
+    const handleBatchJoin = async () => {
+        
+        batchAddNodeVisible.value = true;
+        originalAllNodes.value = filteredUnjoinedHosts.value.map(h => h.ip);
+        cluster.controlPlaneHosts = [];
+        cluster.workerHosts = [];
+        
+    }
+    
+    const handleBatchJoinOk = async () => {
+        if (selectedBatchNodes.value.length === 0) {
+            Message.warning("请选择至少一个节点进行加入！");
+            return;
+        }
+
+        try {
+            const data = {
+                id: id.value,
+                hosts: selectedBatchNodes.value.map((ip) => {
+                    const node = nodeList.value.find((n) => n.ip === ip);
+                    return {
+                        ip: node?.ip,
+                        role: node?.role, 
+                        hostName: node?.hostName, 
+                    };
+                }),
+            };
+
+            // 检查 Kubernetes 版本映射
+            const versionMapStr = localStorage.getItem("k8sVersionMap");
+            if (!versionMapStr) {
+                Message.error("未检测到可用的 Kubernetes 版本对应的后端，请退出重新登录！");
+                return;
+            }
+
+            const versionMap: Record<string, string> = JSON.parse(versionMapStr);
+            const majorMinorVersion = version.value.match(/^v?\d+\.\d+/)?.[0];
+            if (!majorMinorVersion) {
+                Message.error("无法解析集群版本，请检查版本格式！");
+                return;
+            }
+
+            const k8sVersion = versionMap[majorMinorVersion];
+            if (!k8sVersion) {
+                Message.error("所选的 Kubernetes 版本对应的后端不存在或未启动，请选择其他版本或启动对应的后端！");
+                return;
+            }
+
+            // 批量处理 master 和 node 节点
+            for (const host of data.hosts) {
+                if (host.role === "master") {
+                    // 校验 master 节点数量是否为单数
+                    const masterCount = nodeList.value.filter((node) => node.role === "master").length;
+                    if ((masterCount) % 2 === 0) {
+                        Message.warning(`添加后有 ${masterCount} 个 master 节点，建议保持单数以保证高可用！`);
+                        continue;
+                    }
+
+                    // 调用 deployCluster 接口
+                    const result: any = await deployCluster({ id: data.id, hosts: [host] }, k8sVersion);
+                    if (result.status === "ok") {
+                        Message.success(`master 节点 ${host.ip} 正在加入集群，请稍后...`);
+                    } else {
+                        Message.error(`master 节点 ${host.ip} 加入失败：${result.msg}`);
+                    }
+                } else if (host.role === "node") {
+                    // 校验 master 节点是否已准备好
+                    const masterReady = nodeList.value.some((node) => node.role === "master" && node.status === "Ready");
+                    if (!masterReady) {
+                        Message.warning(`请先确保至少一个 master 节点已准备好！跳过节点 ${host.ip}`);
+                        continue;
+                    }
+
+                    // 调用 joinCluster 接口
+                    const result: any = await joinCluster({ id: data.id, hosts: [host] }, k8sVersion);
+                    if (result.status === "ok") {
+                        Message.success(`node 节点 ${host.ip} 正在加入集群，请稍后...`);
+                    } else {
+                        Message.error(`node 节点 ${host.ip} 加入失败：${result.msg}`);
+                    }
+                }
+            }
+
+            fetchNodeList();
+            batchAddNodeVisible.value = false; 
+            selectedBatchNodes.value = []; 
+        } catch (err) {
+            console.error(err);
+            Message.error("批量加入时发生错误！");
+        }
+    };
+   
     const handleJoinOk = async () => {
         joinVisible.value = true;
         try {
@@ -259,17 +562,69 @@
                 id : id.value,
                 hosts: [node.value],
             };
+            
+            let count = 0;
+            nodeList.value.forEach(itme => {
+                if(itme.role === 'master'){
+                    count += 1;
+                }
+            });
+            // 校验控制节点个数是否为单数
+            if (count % 2 ===0 ) {
+                Message.warning(`列表中现有${count}个master，建议保持单数以保证高可用！`);
+                return;
+            }
+
+            // 检查次版本是否存在
+            const versionMapStr = localStorage.getItem('k8sVersionMap');
+            if (!versionMapStr) {
+                Message.error("未检测到可用的 Kubernetes 版本对应的后端，请退出重新登录！");
+                return;
+            }
+
+            const versionMap: Record<string, string> = JSON.parse(versionMapStr);
+
+            const majorMinorVersion = version.value.match(/^v?\d+\.\d+/)?.[0];
+            if (!majorMinorVersion) {
+                Message.error("无法解析集群版本，请检查版本格式！");
+                return;
+            }
+
+            const k8sVersion = versionMap[majorMinorVersion];
+            if (!k8sVersion) {
+                Message.error("所选的 Kubernetes 版本对应的后端不存在或未启动，请选择其他版本或启动对应的后端！");
+                return;
+            }
+            // const k8sVersion = getMappedK8sVersion(version.value);
             if(nodeRole.value === 'master'){
-                const result: any = await deployCluster(id.value);
+                const result: any = await deployCluster(data, k8sVersion);
                 if(result.status === 'ok'){
                     Message.info("正在安装master节点,请稍后......");
                     fetchNodeList();
+                }else{
+                    Message.error(result.msg);
                 }
             }else{
-                const result: any = await joinCluster(data);
+                let count = 0;
+                nodeList.value.forEach(itme => {
+                    if(itme.role === 'master'){
+                        count += 1;
+                    }
+                });
+                if(isMasterRunning.value){
+                    Message.warning("请先加入master！");
+                    return;
+                }
+                if (count % 2 ===0 ) {
+                    Message.warning(`列表中现有${count}个master，建议保持单数以保证高可用！`);
+                    return;
+                }
+                const result: any = await joinCluster(data, k8sVersion);
                 if(result.status === 'ok'){
                     Message.info("节点正在加入集群中，请稍后......");
                     fetchNodeList();
+                }else{
+                    Message.error(result.msg);
                 }
             }
             
@@ -284,29 +639,92 @@
         joinVisible.value = false;
     }
 
-    const isHostExist = (hostIP) => {
-      return cluster.workerHosts.some(host => host.ip === hostIP);
-    };
-    
-    const addWorkerHost = () => {
-        if (!Array.isArray(cluster.workerHosts)) {
-            cluster.workerHosts = []; 
+    const addControlPlaneHost = () => {
+        if (!controlPlaneHost.value || controlPlaneHost.value.length === 0) {
+            Message.error("请选择控制节点主机！");
+            return;
         }
-        if (workerHost.value && !isHostExist(workerHost.value)) {
-            workerHost.value.forEach(ip => {
-                if (!cluster.workerHosts.some(host => host.ip === ip)) {
-                    const selectedHost = hostList.value.find(host => host.hostIP === ip);
-                    const segments = selectedHost.hostIP.split('.');
-                    const result = segments[2] + segments[3];
-                    const hostName = `node${result}`;
 
-                    cluster.workerHosts.push({ ip, hostName, role: 'node' });
-                }
-            });
-            workerHost.value = [];
-        } else {
-            Message.error('该主机已存在');
+        controlPlaneHost.value.forEach(selectedIP => {
+            const selectedHost = hostList.value.find(host => host.hostIP === selectedIP);
+            if (!selectedHost) {
+                Message.error(`选择的主机 ${selectedIP} 不存在！`);
+                return;
+            }
+
+            // 检查主机是否已被添加为工作节点
+            if (cluster.workerHosts.some(host => host.ip === selectedIP)) {
+                Message.error(`主机 ${selectedIP} 已被添加为工作节点，无法添加为控制节点！`);
+                return;
+            }
+
+            // const selectedHostOS = selectedHost.os.split(' ')[0]; // 获取操作系统名称
+            
+            // 获取所有工作节点的操作系统集合
+            // const workerOSSet = new Set(cluster.workerHosts.map(host => (host.os ? host.os.split(' ')[0] : '')).filter(os => os));
+            
+            // 如果已经选择了工作节点，检查控制节点的操作系统是否一致
+            // if (workerOSSet.size > 0 && !workerOSSet.has(selectedHostOS)) {
+            //     Message.error(`控制节点 ${selectedIP} 的操作系统必须与工作节点的操作系统一致`);
+            //     return;
+            // }
+
+            // 检查是否已经添加过
+            if (!cluster.controlPlaneHosts.some(host => host.ip === selectedIP)) {
+                const segments = selectedHost.hostIP.split('.');
+                const result = segments[2] + segments[3];
+                const hostName = `master${result}`;
+                cluster.controlPlaneHosts.push({ ip: selectedIP, hostName, role: 'master', os: selectedHost.os });
+            }
+        });
+        
+        // 清空选择
+        controlPlaneHost.value = [];
+    };
+
+    const removeControlPlaneHost = (index) => {
+        cluster.controlPlaneHosts.splice(index, 1);
+    };
+
+    
+    // 添加工作节点
+    const addWorkerHost = () => {
+        if (!workerHost.value || workerHost.value.length === 0) {
+            Message.error("请选择工作节点主机！");
+            return;
         }
+
+        // 检查主机是否已被添加为控制节点
+        if (workerHost.value.some(ip => cluster.controlPlaneHosts.some(host => host.ip === ip))) {
+            Message.error("选中的主机中有已被添加为控制节点的主机，无法添加为工作节点！");
+            return;
+        }
+        
+        // 获取所有工作节点的操作系统集合
+        const controlPlaneOSSet = new Set(cluster.workerHosts.map(host => (host.os ? host.os.split(' ')[0] : '')).filter(os => os));
+
+
+        // 检查所有选中的工作节点的操作系统是否一致
+        const selectedWorkerHosts = workerHost.value.map(ip => hostList.value.find(host => host.hostIP === ip));
+        if (selectedWorkerHosts.some(host => !host)) {
+            Message.error("某些选中的主机不存在！");
+            return;
+        }
+        // 遍历添加工作节点
+        workerHost.value.forEach(ip => {
+            if (!cluster.workerHosts.some(host => host.ip === ip)) {
+                const selectedHost = hostList.value.find(host => host.hostIP === ip);
+                if (!selectedHost) return; // 如果没有找到主机，跳过
+
+                const segments = selectedHost.hostIP.split('.');
+                const result = segments[2] + segments[3];
+                const hostName = `node${result}`;
+
+                cluster.workerHosts.push({ ip, hostName, role: 'node', os: selectedHost.os });
+            }
+        });
+
+        workerHost.value = [];
     };
 
     const removeWorkerHost = (index: any) => {
@@ -321,7 +739,6 @@
         joinVisible.value = true;
         node.value = record;
         name.value = record.hostName;
-        // console.log(node.value);
     }
 
     const onClickJoinMaster = async (record: any) => {
@@ -347,16 +764,88 @@
         name.value = record.hostName;
     }
 
+    const onClickRetry = async (record: any) =>{
+        try {
+            const data = {
+                id : id.value,
+                clusterName: clusterName.value,
+                version: props.upgradeK8sVersion,
+                ip: record.ip,
+                networkPlugin: props.upgradeNetworkPlugin
+            }
+            const versionMapStr = localStorage.getItem('k8sVersionMap');
+            if (!versionMapStr) {
+                Message.error("未检测到可用的 Kubernetes 版本对应的后端，请退出重新登录！");
+                return;
+            }
+
+            const versionMap: Record<string, string> = JSON.parse(versionMapStr);
+
+            const majorMinorVersion = props.upgradeK8sVersion.match(/^v?\d+\.\d+/)?.[0];
+            if (!majorMinorVersion) {
+                Message.error("无法解析集群版本，请检查版本格式！");
+                return;
+            }
+
+            const k8sVersion = versionMap[majorMinorVersion];
+            if (!k8sVersion) {
+                Message.error("所选的 Kubernetes 版本对应的后端不存在或未启动，请选择其他版本或启动对应的后端！");
+                return;
+            }
+            // const k8sVersion = getMappedK8sVersion(props.upgradeK8sVersion);
+            const result: any = await upgradeCluster(data, k8sVersion);
+            if(result.status === 'ok'){
+                Message.info("节点正在升级,请稍后......");
+                fetchNodeList();
+            }else{
+                Message.error(result.msg);
+            }
+        } catch (err) {
+            console.log(err);
+        }
+    }
+
     const handleDeleteOk = async () => {
         try {
+
+            let versionMap: Record<string, string>;
+            try {
+                const versionMapStr = localStorage.getItem('k8sVersionMap');
+                if (!versionMapStr) {
+                    Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
+                    return;
+                }
+                versionMap = JSON.parse(versionMapStr);
+            } catch (err) {
+                Message.error("版本映射解析失败，请退出重新登录！");
+                return;
+            }
+
+            // 获取目标版本号
+            const selectedVersion = props.upgradeK8sVersion || version.value;
+            const majorMinorVersion = selectedVersion.match(/^v?\d+\.\d+/)?.[0];
+
+            if (!majorMinorVersion) {
+                Message.error("无法解析 Kubernetes 主次版本，请检查格式！");
+                return;
+            }
+
+            const k8sVersion = versionMap[majorMinorVersion];
+            if (!k8sVersion) {
+                Message.error("所选版本对应的后端不存在或未启动，请更换版本或启动后端！");
+                return;
+            }
+
             const data = {
                 id : id.value,
                 ip: nodeip.value
             };
-            const result: any = await deleteNode(data);
+            const result: any = await deleteNode(data, k8sVersion);
             if(result.status === 'ok'){
                 Message.success("节点删除成功！");
                 fetchNodeList();
+            }else{
+                Message.error(result.msg);
             }
         } catch (err) {
             console.log(err);
@@ -370,10 +859,16 @@
     const handleAddNodeOk = async () => {
         
         try {
-            if (cluster.workerHosts.length === 0) {
-                Message.error("请添加一个工作节点！");
+            if (cluster.controlPlaneHosts.length === 0 && cluster.workerHosts.length === 0) {
+                Message.error("至少需要添加一个控制节点或一个工作节点！");
                 return;
             }
+          
+            // 校验控制节点个数是否为单数
+            // if (cluster.controlPlaneHosts.length % 2 !== 0 && count % 2 !==0 ) {
+            //     Message.error(`添加后有 ${cluster.controlPlaneHosts.length + count} 个控制节点，建议保持单数以保证高可用！`);
+            //     return;
+            // }
 
             const hostNames = hosts.value.map(host => host.hostName); 
             const duplicateHostNames = hostNames.filter((name, index) => hostNames.indexOf(name) !== index);
@@ -387,15 +882,57 @@
                 Message.error("主机名称不能重复！");
                 return false;
             }
+
+            //   // 检查次版本是否存在
+            //   const versionMapStr = localStorage.getItem('k8sVersionMap');
+            // if (!versionMapStr) {
+            //     Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
+            //     return;
+            // }
+            let versionMap: Record<string, string>;
+            try {
+                const versionMapStr = localStorage.getItem('k8sVersionMap');
+                if (!versionMapStr) {
+                    Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
+                    return;
+                }
+                versionMap = JSON.parse(versionMapStr);
+            } catch (err) {
+                Message.error("版本映射解析失败，请退出重新登录！");
+                return;
+            }
+
+            // 获取目标版本号
+            const selectedVersion = props.upgradeK8sVersion || version.value;
+            const majorMinorVersion = selectedVersion.match(/^v?\d+\.\d+/)?.[0];
+
+            if (!majorMinorVersion) {
+                Message.error("无法解析 Kubernetes 主次版本，请检查格式！");
+                return;
+            }
+
+            const k8sVersion = versionMap[majorMinorVersion];
+            if (!k8sVersion) {
+                Message.error("所选版本对应的后端不存在或未启动，请更换版本或启动后端！");
+                return;
+            }
+
             const data = {
                 id : id.value,
-                hosts: hosts.value
+                hosts: [
+                    ...(Array.isArray(cluster.controlPlaneHosts) ? cluster.controlPlaneHosts : []),
+                    ...(Array.isArray(cluster.workerHosts) ? cluster.workerHosts : [])
+                ]
             };
-            const result: any = await addNode(data);
+            // const k8sVersion = getFirstK8sVersionFromStorage();
+            const result: any = await addNode(data, k8sVersion);
             if(result.status === 'ok'){
                 Message.success("节点添加成功！");
-                cluster.workerHosts = null;
+                cluster.workerHosts = []; 
+                cluster.controlPlaneHosts = []; 
                 fetchNodeList();
+            }else{
+                Message.error(result.msg);
             }
         } catch (err) {
             console.log(err);
@@ -404,14 +941,48 @@
 
     const handleRemoveOk = async () => {
         try {
+            if(master1.value === name.value){
+                Message.warning("不能移除最后一个master节点！");
+                return;
+            }
+
+            let versionMap: Record<string, string>;
+            try {
+                const versionMapStr = localStorage.getItem('k8sVersionMap');
+                if (!versionMapStr) {
+                    Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
+                    return;
+                }
+                versionMap = JSON.parse(versionMapStr);
+            } catch (err) {
+                Message.error("版本映射解析失败，请退出重新登录！");
+                return;
+            }
+
+            // 获取目标版本号
+            const selectedVersion = props.upgradeK8sVersion || version.value;
+            const majorMinorVersion = selectedVersion.match(/^v?\d+\.\d+/)?.[0];
+
+            if (!majorMinorVersion) {
+                Message.error("无法解析 Kubernetes 主次版本，请检查格式！");
+                return;
+            }
+
+            const k8sVersion = versionMap[majorMinorVersion];
+            if (!k8sVersion) {
+                Message.error("所选版本对应的后端不存在或未启动，请更换版本或启动后端！");
+                return;
+            }
             const data = {
                 id : id.value,
                 ip: nodeip.value
             };
-            const result: any = await removeNode(data);
+            const result: any = await removeNode(data, k8sVersion);
             if(result.status === 'ok'){
                 Message.info("节点正在移除中，请稍后......");
                 fetchNodeList();
+            }else{
+                Message.error(result.msg);
             }
         } catch (err) {
             console.log(err);
@@ -422,11 +993,57 @@
        removeVisible.value = false;
     }
 
+    
+    //获取离线包列表
+    const fetchResourcesList = async () => {
+        try {
+            // 检查次版本是否存在
+            const versionMapStr = localStorage.getItem('k8sVersionMap');
+            if (!versionMapStr) {
+                Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
+                return;
+            }
+            setLoading(true);
+            const k8sVersion = getFirstK8sVersionFromStorage();
+            const result = await getResources(k8sVersion);
+            resourceList.value = result.data;
+            resourceList.value.forEach(item => {
+                if (item.name === 'repo_files') {
+                    repoFiles.value = item;
+                } 
+            })
+            
+            const osList = new Set();
+            repoFiles.value.children.forEach(item => {
+                const osMatch = item?.name.match(/^([a-zA-Z]+)(?:[_\s-]|$)/);
+                const newOS = osMatch ? osMatch[1] : 'null';
+
+                if (newOS) {
+                    osList.add(newOS);
+                }
+            });
+
+            supportedOS.value = Array.from(osList);
+
+        } catch (err) {
+            console.log(err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     //获取集群节点列表
-    const fetchNodeList = async () => {
+    const fetchNodeList = async () => { 
       try {
+        // 检查次版本是否存在
+        const versionMapStr = localStorage.getItem('k8sVersionMap');
+        if (!versionMapStr) {
+            Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
+            return;
+        }
         setLoading(true);
-        const result = await getNodeList(id.value);
+        const k8sVersion = getFirstK8sVersionFromStorage();
+        const result = await getNodeList(id.value, k8sVersion);
         nodeList.value = result.data.map(node => ({
             ...node,
             createTime: formatTime(node.createTime), 
@@ -447,6 +1064,23 @@
                 };
                 return statusMap[node.activeStatus] || '暂无状态';
             })(),
+            lastJobType: (() => {
+                const typeMap = {
+                    initCluster: '初始化集群',
+                    addNode: '添加节点',
+                    upgradeCluster: '升级集群',
+                    resetCluster: '重置集群',
+                    resetNode: '重置节点',
+                };
+                return typeMap[node.lastJobType] || '暂无任务';
+            })(),
+            lastJobStatus: (() => {
+                const statusMap = {
+                    worked: '成功',
+                    failed: '失败',
+                };
+                return statusMap[node.lastJobStatus] || '暂无状态';
+            })(),
         }));
       } catch (err) {
         console.log(err);
@@ -456,18 +1090,31 @@
     };
      //获取主机列表
      const fetchHostList = async () => {
-      try {
-        const result = await getAvailableHostList();
-        hostList.value = result.data;
-      } catch (err) {
-        console.log(err);
-      } 
+        try {
+            // 检查次版本是否存在
+            const versionMapStr = localStorage.getItem('k8sVersionMap');
+            if (!versionMapStr) {
+                Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
+                return;
+            }
+            const k8sVersion = getFirstK8sVersionFromStorage();
+            const result = await getAvailableHostList(k8sVersion);
+            hostList.value = result.data;
+        } catch (err) {
+            console.log(err);
+        } 
     };
+
     onMounted(async() => {
         await fetchHostList();
         await fetchNodeList();
+        await fetchResourcesList();
         roleLogos.value['node'] = (await import('@/assets/images/logo/node.png')).default;
         roleLogos.value['master'] = (await import('@/assets/images/logo/master.png')).default;
+        watch(hostList.value, (newValue) => {
+            console.log('hostList updated:', newValue);
+            hostList.value = Array.isArray(newValue) ? [...newValue] : [];
+        });
     });
 
     const columns = [
@@ -491,6 +1138,11 @@
         slotName: 'role',
     },
     {
+        title: '操作系统',
+        dataIndex: 'os',
+        slotName: 'os',
+    },
+    {
         title: 'k8s版本',
         dataIndex: 'k8sVersion',
         slotName: 'k8sVersion',
@@ -509,6 +1161,16 @@
         title: '任务状态',
         dataIndex: 'activeStatus',
         slotName: 'activeStatus',
+    },
+    {
+        title: '上次任务类型',
+        dataIndex: 'lastJobType',
+        slotName: 'lastJobType',
+    },
+    {
+        title: '上次任务状态',
+        dataIndex: 'lastJobStatus',
+        slotName: 'lastJobStatus',
     },
     {
         title: '加入时间',
@@ -559,6 +1221,9 @@
 
     .failed {
         background-color: red; 
+    }
+    .pause {
+        background-color: #faad14; 
     }
 
     .status-text {

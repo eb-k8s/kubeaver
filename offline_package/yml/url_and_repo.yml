@@ -1,0 +1,79 @@
+
+# 最基础的文件依赖
+files:
+  # containerd
+  containerd_url: "https://github.com/containerd/containerd/releases/download/v{{ version }}/containerd-{{ version }}-linux-{{ image_arch }}.tar.gz"
+  # etcd
+  etcd_url: "https://github.com/etcd-io/etcd/releases/download/{{ version }}/etcd-{{ version }}-linux-{{ image_arch }}.tar.gz"
+  # cri-tools
+  crictl_url: "https://github.com/kubernetes-sigs/cri-tools/releases/download/{{ version }}/crictl-{{ version }}-linux-{{ image_arch }}.tar.gz"
+  # runc_download_url: "{{ files_repo }}/others/runc/runc-{{ runc_version }}.{{ image_arch }}"
+  # runc
+  runc_url: "https://github.com/opencontainers/runc/releases/download/{{ version }}/runc.{{ image_arch }}"
+  # CNI Plugins
+  cni-plugins_url: "https://github.com/containernetworking/plugins/releases/download/{{ version }}/cni-plugins-linux-{{ image_arch }}-{{ version }}.tgz"
+  # nerdctl
+  nerdctl_url: "https://github.com/containerd/nerdctl/releases/download/v{{ version }}/nerdctl-{{ version }}-linux-{{ image_arch }}.tar.gz"
+  # kube三件套
+  kubeadm_url: "https://dl.k8s.io/release/{{ version }}/bin/linux/{{ image_arch }}/kubeadm"
+  kubectl_url: "https://dl.k8s.io/release/{{ version }}/bin/linux/{{ image_arch }}/kubectl"
+  kubelet_url: "https://dl.k8s.io/release/{{ version }}/bin/linux/{{ image_arch }}/kubelet"
+
+  calicoctl_url: "https://github.com/projectcalico/calico/releases/download/{{ version }}/calicoctl-linux-{{ image_arch }}"
+  calico_url: "https://github.com/projectcalico/calico/archive/{{ version }}.tar.gz"
+
+images:
+  etcd_repo: "quay.io/coreos/etcd"
+  coredns_repo: registry.aliyuncs.com/google_containers/coredns
+  cluster-proportional-autoscaler_repo: "registry.k8s.io/cpa/cluster-proportional-autoscaler"
+  pause_repo: registry.aliyuncs.com/google_containers/pause
+  # k8s-dns-node-cache_repo: "registry.k8s.io/dns/k8s-dns-node-cache"
+  kube_apiserver_repo: registry.aliyuncs.com/google_containers/kube-apiserver
+  kube_controller_manager_repo: registry.aliyuncs.com/google_containers/kube-controller-manager
+  kube_proxy_repo: registry.aliyuncs.com/google_containers/kube-proxy
+  kube_scheduler_repo: registry.aliyuncs.com/google_containers/kube-scheduler
+  nginx_repo: "docker.io/library/nginx"
+
+  flannel_repo: "docker.io/flannel/flannel"
+  flannel-cni-plugin_repo: "docker.io/flannel/flannel-cni-plugin"
+
+  node_repo: "quay.io/calico/node"
+  cni_repo: "quay.io/calico/cni"
+  kube-controllers_repo: "quay.io/calico/kube-controllers"
+  pod2daemon-flexvol_repo: "quay.io/calico/pod2daemon-flexvol"
+  
+  metrics_server_repo: "registry.k8s.io/metrics-server/metrics-server"
+file_path:
+  containerd: others/containerd
+  etcd: etcd
+  crictl: others/crictl
+  runc: others/runc
+  cni-plugins: others/cni-plugins-linux
+  nerdctl: others/nerdctl
+  kubeadm: k8s/{{ version }}/{{ image_arch }}
+  kubectl: k8s/{{ version }}/{{ image_arch }}
+  kubelet: k8s/{{ version }}/{{ image_arch }}
+
+  calicoctl: sysapp/network/calico/{{ version }}
+  calico: sysapp/network/calico/{{ version }}
+image_tag:
+  etcd: "{{ store_repo}}/k8s/etcd"
+  coredns: "{{ store_repo}}/k8s/coredns"
+  cluster-proportional-autoscaler: "{{ store_repo}}/k8s/cluster-proportional-autoscaler"
+  pause: "{{ store_repo}}/k8s/pause"
+  k8s-dns-node-cache: "{{ store_repo}}/k8s/k8s-dns-node-cache"
+  kube_apiserver: "{{ store_repo}}/k8s/kube-apiserver"
+  kube_controller_manager: "{{ store_repo}}/k8s/kube-controller-manager"
+  kube_proxy: "{{ store_repo}}/k8s/kube-proxy"
+  kube_scheduler: "{{ store_repo}}/k8s/kube-scheduler"
+  nginx: "{{ store_repo}}/app/webserver/nginx"
+
+  flannel: "{{ store_repo}}/sysapp/network/flannel/flannel"
+  flannel-cni-plugin: "{{ store_repo}}/sysapp/network/flannel/flannel-cni-plugin"
+
+  node: "{{ store_repo}}/sysapp/network/calico/node"
+  cni: "{{ store_repo}}/sysapp/network/calico/cni"
+  kube-controllers: "{{ store_repo}}/sysapp/network/calico/kube-controllers"
+  pod2daemon-flexvol: "{{ store_repo}}/sysapp/network/calico/pod2daemon-flexvol"
+
+  metrics_server: "{{ store_repo}}/sysapp/metrics-server/metrics-server"

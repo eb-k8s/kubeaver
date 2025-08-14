@@ -1,13 +1,13 @@
 <template>
     <div class="container">
-        <a-breadcrumb :style="{fontSize: '14px', marginTop: '16px', marginBottom: '16px'}">
-        <a-breadcrumb-item>
-            <icon-apps />
-        </a-breadcrumb-item>
-        <a-breadcrumb-item>离线包管理</a-breadcrumb-item>
+        <a-breadcrumb :style="{fontSize: '14px', marginTop: '24px', marginBottom: '24px'}">
+            <a-breadcrumb-item>
+                <icon-apps />
+            </a-breadcrumb-item>
+            <a-breadcrumb-item>离线包管理</a-breadcrumb-item>
         </a-breadcrumb>
         <div class="layout">
-            <a-card>
+            <a-card :style="{ marginBottom: '24px' }">
                 <div style="text-align: right; display: flex; align-items: center; justify-content: flex-end;">
                     <a-button 
                         type="text" 
@@ -19,32 +19,138 @@
                         <icon-refresh />
                     </a-button>
                 </div>
-                <a-table :columns="columns" :data="resourceList" :loading="loading">
-                    <template #package_name="{ record }">
-                        <a-link @click="onClickView(record)">{{ record.package_name }}</a-link>
-                    </template>
-                    <template #operating_system="{ record }">
-                        <div>
-                            <ul class="os-list">
-                            <li v-for="(os, index) in record.operating_system.split(',')" :key="index">
-                                {{ os.trim() }}
-                            </li>
-                            </ul>
-                        </div>
-                    </template>
-                </a-table>
+                <a-row :gutter="16">
+                    <a-col :span="12" :style="{ padding: '0 8px' }">
+                        <a-card title="k8s版本" :style="{ marginBottom: '16px' }">
+                            <a-collapse accordion>
+                                <a-collapse-item v-for="version in k8sCache?.children || []" :key="version.name" :header="version.name">
+                                    <a-tabs default-active-key="files">
+                                        <a-tab-pane key="files" title="文件">
+                                            <a-table
+                                                :columns="fileColumns"
+                                                :data="version.children.filter(item => item.type === 'file')"
+                                                :pagination="false"
+                                                :loading="loading"
+                                                row-key="name"
+                                            />
+                                        </a-tab-pane>
+                                        <a-tab-pane key="image" title="镜像">
+                                            <a-table
+                                                :columns="imageColumns"
+                                                :data="version.children
+                                                    .find(item => item.type === 'directory' && item.name === 'images')?.children || []"
+                                                :pagination="false"
+                                                :loading="loading"
+                                                row-key="name"
+                                            />
+                                        </a-tab-pane>
+                                    </a-tabs>
+                                </a-collapse-item>
+                            </a-collapse>
+                        </a-card>
+                    </a-col>
+                    <a-col :span="12" :style="{ padding: '0 8px' }">
+                        <a-card title="网络插件" :style="{ marginBottom: '16px' }"> 
+                            <a-collapse accordion>
+                                <a-collapse-item v-for="plugin in formattedPlugins" :key="plugin.name + plugin.version" :header="`${plugin.name} - ${plugin.version}`">
+                                    <a-tabs default-active-key="images">
+                                        <a-tab-pane key="images" title="镜像">
+                                            <a-table
+                                                :columns="imageColumns"
+                                                :data="plugin.images"
+                                                :pagination="false"
+                                                :loading="loading"
+                                                row-key="name"
+                                            />
+                                        </a-tab-pane>
+                                        <a-tab-pane key="files" title="文件">
+                                            <a-table
+                                                :columns="fileColumns"
+                                                :data="plugin.files"
+                                                :pagination="false"
+                                                :loading="loading"
+                                                row-key="name"
+                                            />
+                                        </a-tab-pane>
+                                    </a-tabs>
+                                </a-collapse-item>
+                            </a-collapse>
+                        </a-card>
+                    </a-col>
+                </a-row>
+                <a-row :gutter="16" style="margin-top: 24px;">
+                    <a-col :span="12" :style="{ padding: '0 8px' }">
+                        <a-card title="操作系统" :style="{ marginBottom: '16px' }">
+                        <a-collapse accordion>
+                            <a-collapse-item
+                            v-for="(directory, index) in repoFiles"
+                            :key="index"
+                            :header="directory.name"
+                            >
+                            <a-table :columns="fileColumns" :data="directory.children" :loading="loading" row-key="name">
+                                <template #package_name="{ record }">
+                                <a-link @click="onClickView(record)">{{ record.name }}</a-link>
+                                </template>
+                                <template #operating_system="{ record }">
+                                <div>
+                                    <ul class="os-list">
+                                    <li v-for="(os, idx) in record.operating_system.split(',')" :key="idx">
+                                        {{ os.trim() }}
+                                    </li>
+                                    </ul>
+                                </div>
+                                </template>
+                            </a-table>
+                            </a-collapse-item>
+                        </a-collapse>
+                        </a-card>
+                    </a-col>
+                    <a-col :span="12" :style="{ padding: '0 8px' }">
+                        <a-card title="系统软件" :style="{ marginBottom: '16px' }">
+                            <a-collapse accordion>
+                                <a-collapse-item v-for="app in systemApp" :key="app.name" :header="app.name">
+                                    <a-tabs default-active-key="images">
+                                        <a-tab-pane key="images" title="镜像">
+                                            <a-table
+                                                :columns="imageColumns"
+                                                :data="getChildrenData(app.images)"
+                                                :pagination="false"
+                                                :loading="loading"
+                                                row-key="name"
+                                            />
+                                        </a-tab-pane>
+                                        <a-tab-pane key="files" title="文件">
+                                            <a-table
+                                                :columns="fileColumns"
+                                                :data="getChildrenData(app.files)"
+                                                :pagination="false"
+                                                :loading="loading"
+                                                row-key="name"
+                                            />
+                                        </a-tab-pane>
+                                    </a-tabs>
+                                </a-collapse-item>
+                            </a-collapse>
+                        </a-card>
+                    </a-col>
+                </a-row>
             </a-card>
         </div>
     </div>
 </template>
+
 <script lang="ts" setup>
-    import { ref, onMounted } from 'vue';
+    import { ref, onMounted, computed } from 'vue';
     import router from '@/router';
     import useLoading from '@/hooks/loading';
-    import { getResourcesList } from '@/api/resources';
+    import { getResources } from '@/api/resources';
+    import { Message } from '@arco-design/web-vue';
 
     const { loading, setLoading } = useLoading();
-    const resourceList = ref();
+    const k8sCache = ref(null)
+    const networkPlugins = ref(null)
+    const repoFiles = ref(null)
+    const systemApp = ref(null)
 
     const onClickView = (record: { package_name: string; id: number }) => {
         router.push({
@@ -53,31 +159,49 @@
         });
     };
 
-    function formatTimestamp(isoString) {
-        const date = new Date(isoString);
-        const year = date.getUTCFullYear();
-        const month = String(date.getUTCMonth() + 1).padStart(2, '0'); // Months are 0-indexed
-        const day = String(date.getUTCDate()).padStart(2, '0');
-        const hours = String(date.getUTCHours()).padStart(2, '0');
-        const minutes = String(date.getUTCMinutes()).padStart(2, '0');
-        const seconds = String(date.getUTCSeconds()).padStart(2, '0');
-        
-        return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-    }
-
     const handleRefresh = async () =>{
         fetchResourcesList();
     }
 
+    const getFirstK8sVersionFromStorage = (key = 'k8sVersionList'): string => {
+        const versionArrayStr = localStorage.getItem(key);
+        if (versionArrayStr) {
+            try {
+                const versionArray = JSON.parse(versionArrayStr);
+                if (Array.isArray(versionArray) && versionArray.length > 0) {
+                    return versionArray[0]; // 返回第一个版本
+                }
+            } catch (parseError) {
+                console.error('版本信息解析失败:', parseError);
+            }
+        }
+        return '';
+    };
+
     const fetchResourcesList = async () => {
         try {
+
+            // 检查次版本是否存在
+            const versionMapStr = localStorage.getItem('k8sVersionMap');
+            if (!versionMapStr) {
+                Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
+                return;
+            }
+            
             setLoading(true);
-            const result = await getResourcesList();
-            resourceList.value = result.data.map(item => {
-                item.import_time = formatTimestamp(item.import_time);
-                return item;
-            });
-            // resourceList.value = result.data;
+            const k8sVersion = getFirstK8sVersionFromStorage();
+            const result: any = await getResources(k8sVersion);
+            result.data.forEach(item => {
+                if (item.name === 'k8s_cache') {
+                    k8sCache.value = item
+                } else if (item.name === 'network_plugins') {
+                    networkPlugins.value = item
+                } else if (item.name === 'repo_files') {
+                    repoFiles.value = extractOperatingSystems(item);
+                } else if (item.name === 'system_app') {
+                    systemApp.value = formatSystemAppData(item);
+                }
+            })
         } catch (err) {
             console.log(err);
         } finally {
@@ -85,42 +209,86 @@
         }
     };
 
+    const formattedPlugins = computed(() => {
+        if (!networkPlugins.value || !networkPlugins.value.children) return [];
+
+        return networkPlugins.value.children.flatMap(plugin => {
+            // 遍历所有版本
+            return (plugin.children || []).map(versionNode => {
+                const imagesNode = versionNode.children?.find(child => child.name === 'images');
+
+                return {
+                    name: plugin.name,           
+                    version: versionNode?.name,       
+                    images: imagesNode?.children || [],
+                    files: versionNode.children
+                        ?.filter(child => child.name !== 'images' && child.type === 'file') || []
+                };
+            });
+        });
+    });
+
+    const formatSystemAppData = (node) => {
+        const formatted = [];
+
+        if (node.type === 'directory' && node.children) {
+            node.children.forEach(groupNode => {
+                const group = {
+                    name: groupNode.name, 
+                    files: [],
+                    images: []
+                };
+
+                // 递归处理每个子项
+                const processChildren = (children) => {
+                    children.forEach(child => {
+                        if (child.name === 'images') {
+                            group.images.push(child);
+                        } else if (child.name === 'files') {
+                            group.files.push(child);
+                        } else if (child.type === 'directory' && child.children) {
+                            processChildren(child.children); 
+                        }
+                    });
+                };
+
+                processChildren(groupNode.children);
+                formatted.push(group);
+            });
+        }
+
+        return formatted;
+    };
+
+    const extractOperatingSystems = (repoFiles: any) => {
+        if (repoFiles && repoFiles.children) {
+            return repoFiles.children.map(directory => {
+                return {
+                    name: directory.name, 
+                    children: directory.children 
+                };
+            });
+        }
+        return [];
+    };
+
+    const getChildrenData = (data) => {
+        return data.length > 0 && data[0].children ? data[0].children : [];
+    };
+
     onMounted(async () => {
 
         fetchResourcesList();
     })
 
-    const columns = [
-        {
-            title: '离线包',
-            dataIndex: 'package_name',
-            slotName: 'package_name',
-        },
-        {
-            title: '版本',
-            dataIndex: 'kube_version',
-        },
-        {
-            title: '容器引擎',
-            dataIndex: 'container_engine',
-            slotName: 'container_engine',
-        },
-        {
-            title: '操作系统',
-            dataIndex: 'operating_system',
-            slotName: 'operating_system',
-            customCell: () => ({
-                style: { textAlign: 'center', verticalAlign: 'middle' },
-            }),
-        },
-        {
-            title: '离线包大小（解压前）',
-            dataIndex: 'packageSize',
-        },
-        {
-            title: '导入时间',
-            dataIndex: 'import_time',
-        },
+    const fileColumns = [
+        { title: '文件名', dataIndex: 'name', key: 'name' },
+        { title: '大小', dataIndex: 'size', key: 'size' },
+    ];
+
+    const imageColumns = [
+        { title: '镜像名', dataIndex: 'name', key: 'name' },
+        { title: '大小', dataIndex: 'size', key: 'size' },
     ];
 
     // 跳转离线包导入
@@ -179,186 +347,3 @@
   border-radius: 50%; /* 圆点形状 */
 }
 </style>
-<!-- <template>
-    <div class="container">
-        <a-breadcrumb :style="{ fontSize: '14px', marginTop: '16px', marginBottom: '16px' }">
-            <a-breadcrumb-item>
-                <icon-apps />
-            </a-breadcrumb-item>
-            <a-breadcrumb-item>离线包管理</a-breadcrumb-item>
-        </a-breadcrumb>
-        <div class="layout">
-            <a-card>
-                <div style="text-align: right; display: flex; align-items: center; justify-content: flex-end;">
-                    <a-button
-                        class="nav-btn"
-                        type="outline"
-                        :shape="'circle'"
-                        @click="handleRefresh()"
-                        :style="{ marginRight: '10px', marginBottom: '10px' }"
-                    >
-                        <icon-refresh />
-                    </a-button>
-                </div>
-                <a-table :columns="columns" :data="resourceList" :loading="loading">
-                    <template #package_name="{ record }">
-                        <a-link @click="onClickView(record)">{{ record.package_name }}</a-link>
-                    </template>
-                    <template #operating_system="{ record }">
-                        <div>
-                            <ul class="os-list">
-                                <li v-for="(os, index) in record.operating_system.split(',')" :key="index">
-                                    <img
-                                        v-if="getOsIcon(os.trim())"
-                                        :src="getOsIcon(os.trim())"
-                                        alt="OS Icon"
-                                        style="width: 16px; height: 16px; margin-right: 8px;"
-                                    />
-                                    <span>{{ os.trim() }}</span>
-                                </li>
-                            </ul>
-                        </div>
-                    </template>
-                </a-table>
-            </a-card>
-        </div>
-    </div>
-</template>
-
-<script lang="ts" setup>
-    import { ref, onMounted } from 'vue';
-    import router from '@/router';
-    import useLoading from '@/hooks/loading';
-    import { getResourcesList } from '@/api/resources';
-
-    const { loading, setLoading } = useLoading();
-    const k8sLogos = ref({});
-    const osLogos = ref({});
-    const resourceList = ref();
-
-    // 路由跳转
-    const onClickView = (record: { package_name: string; id: number }) => {
-        router.push({
-            path: `/resources/detail/${record.package_name}`,
-        });
-    };
-
-    // 时间戳格式化
-    function formatTimestamp(isoString) {
-        const date = new Date(isoString);
-        const year = date.getUTCFullYear();
-        const month = String(date.getUTCMonth() + 1).padStart(2, '0'); // Months are 0-indexed
-        const day = String(date.getUTCDate()).padStart(2, '0');
-        const hours = String(date.getUTCHours()).padStart(2, '0');
-        const minutes = String(date.getUTCMinutes()).padStart(2, '0');
-        const seconds = String(date.getUTCSeconds()).padStart(2, '0');
-        return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-    }
-
-    // 数据刷新
-    const handleRefresh = async () => {
-        fetchResourcesList();
-    };
-
-    // 获取资源列表
-    const fetchResourcesList = async () => {
-        try {
-            setLoading(true);
-            const result = await getResourcesList();
-            resourceList.value = result.data.map((item) => {
-                item.import_time = formatTimestamp(item.import_time);
-                return item;
-            });
-        } catch (err) {
-            console.log(err);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    onMounted(async () => {
-        // 操作系统图标
-        osLogos.value = {
-            openEuler: (await import('@/assets/images/logo/openEuler.png')).default,
-            'Rocky-Linux': (await import('@/assets/images/logo/rocky.png')).default,
-        };
-
-    });
-
-    // 获取图标方法
-    const getOsIcon = (osName: string) => {
-        if (osName.startsWith('openEuler')) return osLogos.value['openEuler'];
-        if (osName.startsWith('Rocky-Linux')) return osLogos.value['Rocky-Linux'];
-        return null; // 默认返回空
-    };
-
-    // 初始化表格数据
-    fetchResourcesList();
-
-    // 表格列定义
-    const columns = [
-        {
-            title: '离线包',
-            dataIndex: 'package_name',
-            slotName: 'package_name',
-        },
-        {
-            title: '版本',
-            dataIndex: 'kube_version',
-            slotName: 'kube_version',
-        },
-        {
-            title: '容器引擎',
-            dataIndex: 'container_engine',
-            slotName: 'container_engine',
-        },
-        {
-            title: '操作系统',
-            dataIndex: 'operating_system',
-            slotName: 'operating_system',
-            customCell: () => ({
-                style: { textAlign: 'center', verticalAlign: 'middle' },
-            }),
-        },
-        {
-            title: '导入时间',
-            dataIndex: 'import_time',
-        },
-    ];
-</script>
-
-<style scoped lang="less">
-    .container {
-        padding: 0 20px 20px 20px;
-    }
-    .layout-demo :deep(.arco-layout-content) {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        color: var(--color-white);
-        font-size: 16px;
-        font-stretch: condensed;
-        text-align: center;
-    }
-
-    .nav-btn {
-        border-color: rgb(var(--gray-2));
-        color: rgb(var(--gray-8));
-        font-size: 16px;
-    }
-
-    .os-list {
-        list-style: none;
-        padding-left: 0;
-        margin: 0;
-    }
-
-    .os-list li {
-        word-break: break-word;
-        white-space: normal;
-        margin: 4px 0;
-        padding-left: 0; 
-        display: flex; 
-        align-items: center;
-    }
-</style> -->

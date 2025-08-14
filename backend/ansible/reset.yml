@@ -1,0 +1,743 @@
+---
+- name: force delete node
+  hosts: "{{ node | default('k8s_cluster') }}"
+  # become: true
+  gather_facts: false
+  vars:
+    cri_stop_containers_grace_period: 0
+    flush_iptables: true
+    # reset_restart_network: true
+    delete_node_retries: 2
+    delete_node_delay_seconds: 1
+    etcd_deployment_type: kubeadm
+    is_fedora_coreos: false
+    allow_ungraceful_removal: false
+    drain_grace_period: 300
+    drain_timeout: 360s
+    drain_retries: 3
+    drain_retry_delay_seconds: 10
+    reset_cluster: true
+    reset_restart_network_service_name: >-
+      {% if ansible_os_family == "RedHat" -%}
+      {%-
+        if ansible_distribution_major_version | int >= 8
+        or is_fedora_coreos or ansible_distribution in ["Fedora", "Kylin Linux Advanced Server", "TencentOS"] -%}
+      NetworkManager
+      {%- else -%}
+      network
+      {%- endif -%}
+      {%- elif ansible_distribution == "Ubuntu"
+        or (ansible_distribution == "Debian" and ansible_distribution_major_version | int == 12 ) -%}
+      systemd-networkd
+      {%- elif ansible_os_family == "Debian" -%}
+      networking
+      {%- endif %}
+    HOST_IP: "{{ lookup('env', 'HOST_IP') }}"
+    HOST_NAME: "{{ lookup('env', 'HOST_NAME') }}"
+  pre_tasks:
+    - name: remove localdomain mapping  in /etc/hosts
+      lineinfile:
+        path: /etc/hosts
+        regexp: ^.*127\.0\.0\.1.*localhost\.localdomain.*$'
+        state: absent
+    
+    # - name: remove old hostname mapping  in /etc/hosts
+    #   lineinfile:
+    #     path: /etc/hosts
+    #     regexp: '^127\.0\.0\.1.*\b(master|node)\w*\b'
+    #     state: absent
+
+    - name: Ensure hostname mapping exists in /etc/hosts
+      lineinfile:
+        path: /etc/hosts
+        regexp: '^127\.0\.0\.1\s+{{ inventory_hostname }}$'
+        line: '127.0.0.1 {{ inventory_hostname }}'
+        state: present
+
+    - name: Add host entry to /etc/hosts for UseDNS
+      lineinfile:
+        path: /etc/hosts
+        line: "{{ HOST_IP }} {{ HOST_NAME }}"
+        state: present
+      register: add_host_entry
+
+    - name: Remove the ansible_host file if the previous task changed something
+      file:
+        path: ~/.ssh/ansible-{{ ansible_host }}
+        state: absent
+      delegate_to: localhost
+      when: add_host_entry.changed
+  environment: "{{ proxy_disable_env }}"
+  roles:
+    - { role: kubespray-defaults}
+   # - { role: kubernetes/preinstall, when: "dns_mode != 'none' and resolvconf_mode == 'host_resolvconf'", tags: resolvconf, dns_early: true }
+  tasks:
+    - name: Create remote_tmp for it is used by another module
+      file:
+        path: "{{ ansible_remote_tmp | default('~/.ansible/tmp') }}"
+        state: directory
+        mode: "0700"
+
+    - name: Gather facts
+      setup:
+        gather_subset: '!all'
+        filter: ansible_*
+    
+    - name: Gather minimal facts
+      setup:
+        gather_subset: '!all'
+
+
+    - name: Gather necessary facts (network)
+      setup:
+        gather_subset: '!all,!min,network'
+        filter: "ansible_*_ipv[46]*"
+
+
+    - name: Gather necessary facts (hardware)
+      setup:
+        gather_subset: '!all,!min,hardware'
+        filter: "ansible_*total_mb"
+
+    - name: Gather information about installed services
+      service_facts:
+
+    - name: Remove-node | List nodes
+      command: >-
+        {{ kubectl }} get nodes -o go-template={% raw %}'{{ range .items }}{{ .metadata.name }}{{ "\n" }}{{ end }}'{% endraw %}
+      register: nodes
+      when:
+        - not reset_cluster | bool
+        - groups['kube_control_plane'] | length > 0
+      delegate_to: "{{ groups['kube_control_plane'] | first }}"
+      changed_when: false
+      ignore_errors: true
+      run_once: true
+
+    - name: Remove-node | Drain node except daemonsets resource
+      command: >-
+        {{ kubectl }} drain
+          --force
+          --ignore-daemonsets
+          --grace-period {{ drain_grace_period }}
+          --timeout {{ drain_timeout }}
+          --delete-emptydir-data {{ kube_override_hostname | default(inventory_hostname) }}
+      when:
+        - not reset_cluster | bool
+        - groups['kube_control_plane'] | length > 0
+        # ignore servers that are not nodes
+        - kube_override_hostname | default(inventory_hostname) in nodes.stdout_lines
+      register: result
+      failed_when: result.rc != 0 and not allow_ungraceful_removal
+      delegate_to: "{{ groups['kube_control_plane'] | first }}"
+      until: result.rc == 0 or allow_ungraceful_removal
+      retries: "{{ drain_retries }}"
+      delay: "{{ drain_retry_delay_seconds }}"
+
+    - name: Remove-node | Wait until Volumes will be detached from the node
+      command: >-
+        {{ kubectl }} get volumeattachments -o go-template={% raw %}'{{ range .items }}{{ .spec.nodeName }}{{ "\n" }}{{ end }}'{% endraw %}
+      register: nodes_with_volumes
+      delegate_to: "{{ groups['kube_control_plane'] | first }}"
+      changed_when: false
+      until: not (kube_override_hostname | default(inventory_hostname) in nodes_with_volumes.stdout_lines)
+      retries: 3
+      delay: "{{ drain_grace_period }}"
+      when:
+        - not reset_cluster | bool
+        - groups['kube_control_plane'] | length > 0
+        - not allow_ungraceful_removal
+        - kube_override_hostname | default(inventory_hostname) in nodes.stdout_lines
+
+    - name: Check which kube-control nodes are already members of the cluster
+      command: "{{ bin_dir }}/kubectl get nodes --selector=node-role.kubernetes.io/control-plane -o json"
+      delegate_to: "{{ groups['kube_control_plane'] | first }}"
+      register: kube_control_planes_raw
+      when: 
+        - not reset_cluster | bool
+      ignore_errors: true
+      changed_when: false
+
+    - name: Set fact joined_control_planes
+      set_fact:
+        joined_control_planes: "{{ ((kube_control_planes_raw.stdout | from_json)['items']) | default([]) | map(attribute='metadata') | map(attribute='name') | list }}"
+      delegate_to: "{{ item }}"
+      loop: "{{ groups['kube_control_plane'] }}"
+      when:
+        - not reset_cluster | bool 
+        - kube_control_planes_raw is succeeded
+      run_once: true
+
+    - name: Set fact first_kube_control_plane
+      set_fact:
+        first_kube_control_plane: "{{(joined_control_planes | default([]) | reject('search', inventory_hostname)) | first | default(inventory_hostname)}}"
+      when: 
+        - not reset_cluster | bool
+
+    - name: Check the OS
+      command: grep '^NAME=' /etc/os-release
+      register: os_name_output
+      
+    - name: Set OS version variable 
+      set_fact:
+        is_openeuler: "{{ os_name_output.stdout | regex_search('openEuler', ignorecase=True) }}"
+        is_ubuntu: "{{ os_name_output.stdout | regex_search('Ubuntu', ignorecase=True) }}"
+        is_centos: "{{ os_name_output.stdout | regex_search('CentOS', ignorecase=True) }}"
+        is_rocky: "{{ os_name_output.stdout | regex_search('Rocky', ignorecase=True) }}"
+
+    - name: Lookup node IP in kubernetes
+      command: >
+        {{ kubectl }} get nodes {{ node }}
+        -o jsonpath='{range .status.addresses[?(@.type=="InternalIP")]}{@.address}{"\n"}{end}'
+      register: remove_node_ip
+      when:
+        - not reset_cluster | bool
+        - groups['kube_control_plane'] | length > 0
+        - inventory_hostname in groups['etcd']
+        - ip is not defined
+        - access_ip is not defined
+      delegate_to: "{{ groups['etcd'] | first }}"
+      failed_when: false
+      ignore_errors: true 
+
+    - name: Set node IP
+      set_fact:
+        node_ip: "{{ ip | default(access_ip | default(remove_node_ip.stdout)) | trim }}"
+      when:
+        - not reset_cluster | bool
+        - inventory_hostname in groups['etcd']
+      ignore_errors: true 
+
+    - name: Make sure node_ip is set
+      assert:
+        that: node_ip is defined and node_ip | length > 0
+        msg: "Etcd node ip is not set !"
+      when:
+        - not reset_cluster | bool
+        - inventory_hostname in groups['etcd']
+
+    - name: Lookup etcd member id
+      shell: "set -o pipefail && {{ bin_dir }}/etcdctl member list | grep -w {{ node_ip }} | cut -d, -f1"
+      args:
+        executable: /bin/bash
+      register: etcd_member_id
+      ignore_errors: true  # noqa ignore-errors
+      failed_when: false
+      changed_when: false
+      check_mode: false
+      tags:
+        - facts
+      environment:
+        ETCDCTL_API: "3"
+        ETCDCTL_CERT: "{{ kube_cert_dir + '/etcd/server.crt' if etcd_deployment_type == 'kubeadm' else etcd_cert_dir + '/admin-' + groups['etcd'] | first + '.pem' }}"
+        ETCDCTL_KEY: "{{ kube_cert_dir + '/etcd/server.key' if etcd_deployment_type == 'kubeadm' else etcd_cert_dir + '/admin-' + groups['etcd'] | first + '-key.pem' }}"
+        ETCDCTL_CACERT: "{{ kube_cert_dir + '/etcd/ca.crt' if etcd_deployment_type == 'kubeadm' else etcd_cert_dir + '/ca.pem' }}"
+        ETCDCTL_ENDPOINTS: "https://127.0.0.1:2379"
+      delegate_to: "{{ groups['etcd'] | first }}"
+      when:
+        - not reset_cluster | bool 
+        - inventory_hostname in groups['etcd']
+
+    - name: Remove etcd member from cluster
+      command: "{{ bin_dir }}/etcdctl member remove {{ etcd_member_id.stdout }}"
+      environment:
+        ETCDCTL_API: "3"
+        ETCDCTL_CERT: "{{ kube_cert_dir + '/etcd/server.crt' if etcd_deployment_type == 'kubeadm' else etcd_cert_dir + '/admin-' + groups['etcd'] | first + '.pem' }}"
+        ETCDCTL_KEY: "{{ kube_cert_dir + '/etcd/server.key' if etcd_deployment_type == 'kubeadm' else etcd_cert_dir + '/admin-' + groups['etcd'] | first + '-key.pem' }}"
+        ETCDCTL_CACERT: "{{ kube_cert_dir + '/etcd/ca.crt' if etcd_deployment_type == 'kubeadm' else etcd_cert_dir + '/ca.pem' }}"
+        ETCDCTL_ENDPOINTS: "https://127.0.0.1:2379"
+      delegate_to: "{{ groups['etcd'] | first }}"
+      ignore_errors: true 
+      failed_when: false
+      when:
+        - not reset_cluster | bool
+        - inventory_hostname != groups['kube_control_plane'] | first
+        - inventory_hostname in groups['etcd']
+        - etcd_member_id.stdout | length > 0
+
+    - name: remove /etc/hosts  store.e-byte.cn 
+      ansible.builtin.lineinfile:
+        path: /etc/hosts  
+        regexp: '^.*store.e-byte.cn.*$'
+        state: absent
+
+    - name: Reset | stop services
+      service:
+        name: "{{ item }}"
+        state: stopped
+      with_items:
+        - kubelet.service
+        - cri-dockerd.service
+        - cri-dockerd.socket
+        - etcd.service
+        - etcd-events.service
+      failed_when: false
+      tags:
+        - services
+
+    - name: Reset | remove services
+      file:
+        path: "/etc/systemd/system/{{ item }}"
+        state: absent
+      with_items:
+        - kubelet.service
+        - cri-dockerd.service
+        - cri-dockerd.socket
+        - calico-node.service
+        - containerd.service.d/http-proxy.conf
+        - crio.service.d/http-proxy.conf
+        - k8s-certs-renew.service
+        - k8s-certs-renew.timer
+        - etcd.service
+        - etcd-events.service
+      register: services_removed
+      tags:
+        - services
+        - containerd
+        - crio
+
+    - name: Reset | systemctl daemon-reload  # noqa no-handler
+      systemd_service:
+        daemon_reload: true
+      when: services_removed.changed
+
+    - name: Reset | check if crictl is present
+      stat:
+        path: "{{ bin_dir }}/crictl"
+        get_attributes: false
+        get_checksum: false
+        get_mime: false
+      register: crictl
+
+    - name: Reset | stop all cri containers
+      shell: "set -o pipefail && {{ bin_dir }}/crictl ps -q | xargs -r {{ bin_dir }}/crictl -t 60s stop -t {{ cri_stop_containers_grace_period }}"
+      args:
+        executable: /bin/bash
+      register: remove_all_cri_containers
+      retries: 3
+      until: remove_all_cri_containers.rc == 0
+      delay: 2
+      tags:
+        - crio
+        - containerd
+      when:
+        - crictl.stat.exists
+        - container_manager in ["crio", "containerd"]
+        - ansible_facts.services['containerd.service'] is defined or ansible_facts.services['cri-o.service'] is defined
+      ignore_errors: true  # noqa ignore-errors
+
+    - name: Reset | force remove all cri containers
+      command: "{{ bin_dir }}/crictl rm -a -f"
+      register: remove_all_cri_containers
+      retries: 3
+      until: remove_all_cri_containers.rc == 0
+      delay: 2
+      tags:
+        - crio
+        - containerd
+      when:
+        - crictl.stat.exists
+        - container_manager in ["crio", "containerd"]
+        - deploy_container_engine
+        - ansible_facts.services['containerd.service'] is defined or ansible_facts.services['cri-o.service'] is defined
+      ignore_errors: true  # noqa ignore-errors
+
+    # - name: Reset | stop and disable crio service
+    #   service:
+    #     name: crio
+    #     state: stopped
+    #     enabled: false
+    #   failed_when: false
+    #   tags: [ crio ]
+    #   when: container_manager == "crio"
+
+    # - name: Reset | forcefully wipe CRI-O's container and image storage
+    #   command: "crio wipe -f"
+    #   failed_when: false
+    #   tags: [ crio ]
+    #   when: container_manager == "crio"
+
+    - name: Reset | stop all cri pods
+      shell: "set -o pipefail && {{ bin_dir }}/crictl pods -q | xargs -r {{ bin_dir }}/crictl -t 60s stopp"
+      args:
+        executable: /bin/bash
+      register: remove_all_cri_containers
+      retries: 3
+      until: remove_all_cri_containers.rc == 0
+      delay: 2
+      tags: [ containerd ]
+      when:
+        - crictl.stat.exists
+        - container_manager == "containerd"
+        - ansible_facts.services['containerd.service'] is defined or ansible_facts.services['cri-o.service'] is defined
+      ignore_errors: true  # noqa ignore-errors
+
+    - name: Reset | force remove all cri pods
+      block:
+        - name: Reset | force remove all cri pods
+          command: "{{ bin_dir }}/crictl rmp -a -f"
+          register: remove_all_cri_containers
+          retries: 3
+          until: remove_all_cri_containers.rc == 0
+          delay: 2
+          tags: [ containerd ]
+          when:
+            - crictl.stat.exists
+            - container_manager == "containerd"
+            - ansible_facts.services['containerd.service'] is defined or ansible_facts.services['cri-o.service'] is defined
+
+      rescue:
+        - name: Reset | force remove all cri pods (rescue)
+          shell: "ip netns list | cut -d' ' -f 1 | xargs -n1 ip netns delete && {{ bin_dir }}/crictl rmp -a -f"
+          ignore_errors: true  # noqa ignore-errors
+          changed_when: true
+
+    - name: Reset | remove containerd
+      when: container_manager == 'containerd'
+      block:
+        - name: Reset | stop containerd service
+          service:
+            name: containerd
+            state: stopped
+          failed_when: false
+          tags:
+            - services
+
+        - name: Reset | remove containerd service
+          file:
+            path: /etc/systemd/system/containerd.service
+            state: absent
+          register: services_removed
+          tags:
+            - services
+
+    - name: Reset | gather mounted kubelet dirs
+      shell: set -o pipefail && mount | grep /var/lib/kubelet/ | awk '{print $3}' | tac
+      args:
+        executable: /bin/bash
+      check_mode: false
+      register: mounted_dirs
+      failed_when: false
+      changed_when: false
+      tags:
+        - mounts
+
+    - name: Reset | unmount kubelet dirs
+      command: umount -f {{ item }}
+      with_items: "{{ mounted_dirs.stdout_lines }}"
+      register: umount_dir
+      when: mounted_dirs
+      retries: 3
+      until: umount_dir.rc == 0
+      delay: 2
+      tags:
+        - mounts
+
+    - name: Flush iptables
+      iptables:
+        table: "{{ item }}"
+        flush: true
+      with_items:
+        - filter
+        - nat
+        - mangle
+        - raw
+      when: flush_iptables | bool
+      tags:
+        - iptables
+
+    - name: Flush ip6tables
+      iptables:
+        table: "{{ item }}"
+        flush: true
+        ip_version: ipv6
+      with_items:
+        - filter
+        - nat
+        - mangle
+        - raw
+      when: flush_iptables | bool and enable_dual_stack_networks
+      tags:
+        - ip6tables
+
+    - name: Clear IPVS virtual server table
+      command: "ipvsadm -C"
+      ignore_errors: true  # noqa ignore-errors
+      # when:
+      #   - kube_proxy_mode == 'ipvs' and inventory_hostname in groups['k8s_cluster']
+
+    - name: Reset | check kube-ipvs0 network device
+      stat:
+        path: /sys/class/net/kube-ipvs0
+        get_attributes: false
+        get_checksum: false
+        get_mime: false
+      register: kube_ipvs0
+
+    - name: Reset | Remove kube-ipvs0
+      command: "ip link del kube-ipvs0"
+      when:
+        - kube_proxy_mode == 'ipvs'
+        - kube_ipvs0.stat.exists
+
+    - name: Reset | check nodelocaldns network device
+      stat:
+        path: /sys/class/net/nodelocaldns
+        get_attributes: false
+        get_checksum: false
+        get_mime: false
+      register: nodelocaldns_device
+
+    - name: Reset | Remove nodelocaldns
+      command: "ip link del nodelocaldns"
+      when:
+        - enable_nodelocaldns | default(false) | bool
+        - nodelocaldns_device.stat.exists
+
+    - name: Reset | Check whether /var/lib/kubelet directory exists
+      stat:
+        path: /var/lib/kubelet
+        get_attributes: false
+        get_checksum: false
+        get_mime: false
+      register: var_lib_kubelet_directory
+
+    - name: Reset | Find files/dirs with immutable flag in /var/lib/kubelet
+      command: lsattr -laR /var/lib/kubelet/
+      become: true
+      register: var_lib_kubelet_files_dirs_w_attrs
+      changed_when: false
+      no_log: true
+      when: var_lib_kubelet_directory.stat.exists
+
+    - name: Reset | Remove immutable flag from files/dirs in /var/lib/kubelet
+      file:
+        path: "{{ filedir_path }}"
+        state: touch
+        attributes: "-i"
+        mode: "0644"
+      loop: "{{ var_lib_kubelet_files_dirs_w_attrs.stdout_lines | select('search', 'Immutable') | list }}"
+      loop_control:
+        loop_var: file_dir_line
+        label: "{{ filedir_path }}"
+      vars:
+        filedir_path: "{{ file_dir_line.split(' ')[0] }}"
+      when: var_lib_kubelet_directory.stat.exists
+
+    - name: Reset | delete some files and directories
+      file:
+        path: "{{ item }}"
+        state: absent
+      with_items:
+        - "{{ kube_config_dir }}"
+        - /var/lib/kubelet
+        - "{{ containerd_storage_dir }}"
+        - "{{ ansible_env.HOME | default('/root') }}/.kube"
+        - "{{ ansible_env.HOME | default('/root') }}/.helm"
+        - "{{ ansible_env.HOME | default('/root') }}/.config/helm"
+        - "{{ ansible_env.HOME | default('/root') }}/.cache/helm"
+        - "{{ ansible_env.HOME | default('/root') }}/.local/share/helm"
+        - "{{ etcd_data_dir }}"
+        - "{{ etcd_events_data_dir }}"
+        - "{{ etcd_config_dir }}"
+        - /var/log/calico
+        - /var/log/openvswitch
+        - /var/log/ovn
+        - /var/log/kube-ovn
+        - /etc/cni
+        - /etc/nerdctl
+        - "{{ nginx_config_dir }}"
+        - /etc/dnsmasq.d
+        - /etc/dnsmasq.conf
+        - /etc/dnsmasq.d-available
+        - /etc/systemd/resolved.conf.d/kubespray.conf
+        - /etc/etcd.env
+        - /etc/calico
+        - /etc/NetworkManager/conf.d/calico.conf
+        - /etc/NetworkManager/conf.d/dns.conf
+        - /etc/NetworkManager/conf.d/k8s.conf
+        - /etc/weave.env
+        - /opt/cni
+        - /etc/dhcp/dhclient.d/zdnsupdate.sh
+        - /etc/dhcp/dhclient-exit-hooks.d/zdnsupdate
+        - /run/flannel
+        - /etc/flannel
+        - /run/kubernetes
+        - /usr/local/share/ca-certificates/etcd-ca.crt
+        - /usr/local/share/ca-certificates/kube-ca.crt
+        - /etc/ssl/certs/etcd-ca.pem
+        - /etc/ssl/certs/kube-ca.pem
+        - /etc/pki/ca-trust/source/anchors/etcd-ca.crt
+        - /etc/pki/ca-trust/source/anchors/kube-ca.crt
+        - /var/log/pods/
+        - "{{ bin_dir }}/kubelet"
+        - "{{ bin_dir }}/cri-dockerd"
+        - "{{ bin_dir }}/etcd-scripts"
+        - "{{ bin_dir }}/etcd"
+        - "{{ bin_dir }}/etcd-events"
+        - "{{ bin_dir }}/etcdctl"
+        - "{{ bin_dir }}/etcdctl.sh"
+        - "{{ bin_dir }}/kubernetes-scripts"
+        - "{{ bin_dir }}/kubectl"
+        - "{{ bin_dir }}/kubeadm"
+        - "{{ bin_dir }}/helm"
+        - "{{ bin_dir }}/calicoctl"
+        - "{{ bin_dir }}/calicoctl.sh"
+        - "{{ bin_dir }}/calico-upgrade"
+        - "{{ bin_dir }}/weave"
+        - "{{ bin_dir }}/crictl"
+        - "{{ bin_dir }}/nerdctl"
+        - "{{ bin_dir }}/netctl"
+        - "{{ bin_dir }}/k8s-certs-renew.sh"
+        - /var/lib/cni
+        - /etc/openvswitch
+        - /run/openvswitch
+        - /var/lib/kube-router
+        - /var/lib/calico
+        - /etc/cilium
+        - /run/calico
+        - /etc/bash_completion.d/kubectl.sh
+        - /etc/bash_completion.d/crictl
+        - /etc/bash_completion.d/nerdctl
+        - /etc/bash_completion.d/krew
+        - /etc/bash_completion.d/krew.sh
+        - "{{ krew_root_dir }}"
+        - /etc/modules-load.d/kube_proxy-ipvs.conf
+        - /etc/modules-load.d/kubespray-br_netfilter.conf
+        - /etc/modules-load.d/kubespray-kata-containers.conf
+        - /usr/libexec/kubernetes
+        - /etc/origin/openvswitch
+        - /etc/origin/ovn
+        - "{{ sysctl_file_path }}"
+        - /etc/crictl.yaml
+      ignore_errors: true  # noqa ignore-errors
+      tags:
+        - files
+
+    - name: Reset | remove containerd binary files
+      file:
+        path: "{{ containerd_bin_dir }}/{{ item }}"
+        state: absent
+      with_items:
+        - containerd
+        - containerd-shim
+        - containerd-shim-runc-v1
+        - containerd-shim-runc-v2
+        - containerd-stress
+        - crictl
+        - critest
+        - ctd-decoder
+        - ctr
+        - runc
+      ignore_errors: true  # noqa ignore-errors
+      when: container_manager == 'containerd'
+      tags:
+        - files
+
+    - name: Reset | remove dns settings from dhclient.conf
+      blockinfile:
+        path: "{{ item }}"
+        state: absent
+        marker: "# Ansible entries {mark}"
+      failed_when: false
+      with_items:
+        - /etc/dhclient.conf
+        - /etc/dhcp/dhclient.conf
+      tags:
+        - files
+        - dns
+
+    - name: Reset | remove host entries from /etc/hosts
+      blockinfile:
+        path: "/etc/hosts"
+        state: absent
+        marker: "# Ansible inventory hosts {mark}"
+      tags:
+        - files
+        - dns
+
+    # - name: Kill process occupying port 6443
+    #   command: kill -9 $(lsof -t -i :6443)
+    #   ignore_errors: true
+    # 移除网络插件建立的网桥，否则会导致coredns无法启动
+    - name: Reset | check cni network device
+      stat:
+        path: /sys/class/net/cni0
+        get_attributes: false
+        get_checksum: false
+        get_mime: false
+      register: cni
+
+    - name: Reset | remove the network device created by the flannel
+      command: ip link del cni0
+      when: cni.stat.exists
+
+    - name: Reset | check flannel network device
+      stat:
+        path: /sys/class/net/flannel.1
+        get_attributes: false
+        get_checksum: false
+        get_mime: false
+      register: flannel
+
+    - name: Reset | remove the network device created by the flannel
+      command: ip link del flannel.1
+      when: flannel.stat.exists
+
+    - name: Reset | check vxlan.calico network device
+      stat:
+        path: /sys/class/net/vxlan.calico
+        get_attributes: no
+        get_checksum: no
+        get_mime: no
+      register: vxlan
+
+    - name: Reset | remove the network vxlan.calico device created by calico
+      command: ip link del vxlan.calico
+      when: vxlan.stat.exists
+
+    - name: Reset | check dummy0 network device
+      stat:
+        path: /sys/class/net/dummy0
+        get_attributes: no
+        get_checksum: no
+        get_mime: no
+      register: dummy0
+
+    - name: Reset | remove the network device created by calico
+      command: ip link del dummy0
+      when: dummy0.stat.exists
+
+    - name: Reset | get and remove remaining routes set by bird
+      shell: set -o pipefail && ip route show proto bird | xargs -i bash -c "ip route del {} proto bird "
+      args:
+        executable: /bin/bash
+      changed_when: false
+
+    - name: Reset | Restart network(openeuler)
+      service:
+        name: NetworkManager
+        state: restarted
+      when: is_openeuler or is_centos or is_rocky
+
+    - name: Reset | Restart network(ubuntu)
+      service:
+        name: systemd-networkd
+        state: restarted
+      when: is_ubuntu
+
+    - name: Remove-node | Delete node, kubectl delete
+      command: "{{ kubectl }} delete node {{ inventory_hostname }}"
+      delegate_to: "{{ first_kube_control_plane }}"
+      when:
+        - not reset_cluster | bool 
+        - groups['kube_control_plane'] | length > 0
+        # ignore servers that are not nodes
+        - inventory_hostname in groups['k8s_cluster'] 
+      retries: "{{ delete_node_retries }}"
+      # Sometimes the api-server can have a short window of indisponibility when we delete a master node
+      delay: "{{ delete_node_delay_seconds }}"
+      register: result
+      until: result is not failed
+      ignore_errors: true 
+      failed_when: false

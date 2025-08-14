@@ -1,10 +1,12 @@
 const util = require('util');
 const Redis = require('ioredis');
 const { getNodeStatus, getRedis } = require('../utils/getNodeStatus');
-const redis = new Redis({
-  port: 6379,
-  host: "127.0.0.1",
-});
+const redisConfig = {
+  host: process.env.REDIS_HOST, 
+  port: process.env.REDIS_PORT,
+};
+
+const redis = new Redis(redisConfig);
 
 async function getAllNodeList() {
   try {
@@ -16,6 +18,12 @@ async function getAllNodeList() {
         ip: nodeIP,
       });
     }
+    // const nodeList = await redis.lrange(`k8s_cluster:*:hosts`, 0, -1); // 获取列表中的所有节点数据
+    // const nodes = [];
+    // for (const nodeData of nodeList) {
+    //   const nodeInfo = JSON.parse(nodeData); // 解析存储的 JSON 字符串
+    //   nodes.push(nodeInfo); // 将节点信息添加到节点列表中
+    // }
     // 返回成功结果
     return {
       code: 20000,
@@ -38,6 +46,7 @@ async function getAllNodeList() {
 async function getNodeList(id) {
   try {
     const nodeKeys = await redis.keys(`k8s_cluster:${id}:hosts:*`);
+    //const nodeList = await redis.lrange(`k8s_cluster:${id}:hosts`, 0, -1); // 获取列表中的所有节点数据
     const nodes = [];
     for (const nodeKey of nodeKeys) {
       const nodeIP = nodeKey.split(':')[3];
@@ -96,6 +105,59 @@ async function getNodeList(id) {
       status: "error"
     };
   }
+  // try {
+  //   const nodeList = await redis.lrange(`k8s_cluster:${id}:hosts`, 0, -1); // 获取列表中的所有节点数据
+  //   const nodes = [];
+  //   for (const nodeData of nodeList) {
+  //     const nodeInfo = JSON.parse(nodeData); // 解析存储的 JSON 字符串
+  //     if (!nodeInfo.role) {
+  //       console.log(`${nodeInfo.ip}删除了！！！！！`);
+  //       await deleteK8sClusterNode({ id, nodeIP: nodeInfo.ip }); // 调用删除节点接口
+  //       continue; // 跳过当前循环，继续处理下一个节点
+  //     }
+
+  //     nodes.push(nodeInfo); // 直接将节点信息添加到节点列表中
+
+  //     // 异步获取节点状态并更新 Redis
+  //     (async () => {
+  //       try {
+  //         // 先检查主机名称是否存在
+  //         if (!nodeInfo.hostName) {
+  //           return;
+  //         }
+  //         const updateTime = Date.now();
+  //         const result = await getNodeStatus(id, nodeInfo.hostName, '', '');
+  //         if (result.status) {
+  //           // 如果 status 有值，更新 Redis 中的状态
+  //           nodeInfo.k8sVersion = result.version;
+  //           nodeInfo.status = result.status;
+  //           nodeInfo.updateTime = updateTime;
+  //           const updatedNodeData = JSON.stringify(nodeInfo);
+  //           await redis.lset(`k8s_cluster:${id}:hosts`, nodeList.indexOf(nodeData), updatedNodeData);
+  //         } else {
+  //           console.error(`未能获取到节点${nodeInfo.ip}状态`);
+  //         }
+  //       } catch (error) {
+  //         console.error(`获取节点状态时出错: ${error.message}`);
+  //       }
+  //     })();
+  //   }
+  //   // 返回成功结果
+  //   return {
+  //     code: 20000,
+  //     data: nodes,
+  //     msg: "节点列表获取成功",
+  //     status: "ok"
+  //   };
+  // } catch (error) {
+  //   console.error('Error retrieving node list from Redis:', error.message);
+  //   return {
+  //     code: 50000,
+  //     data: "",
+  //     msg: error.message,
+  //     status: "error"
+  //   };
+  // }
 }
 
 //添加集群节点
@@ -136,6 +198,7 @@ async function addK8sClusterNode(clusterInfo) {
         'user', hostInfo.user,
         'hostName', newNode.hostName,
         'role', newNode.role,
+        'os', hostInfo.os,
         'k8sVersion', 'Unknown',
         'status', 'Unknown',
         'createTime', createTime,

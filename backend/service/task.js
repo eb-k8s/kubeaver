@@ -1,29 +1,50 @@
 const util = require('util');
 const { exec, spawn } = require('child_process');
 const fs = require('fs');
+const os = require('os');
+const path = require('path');
+const yaml = require('js-yaml');
 const Redis = require('ioredis');
+const { getDatabaseByK8sVersion } = require('../utils/getDatabase');
+const { createAnsibleQueue} = require('../utils/ansibleQueue');
 
 //const wss = new WebSocket.Server({ port: 8800 });
 const { addTaskToQueue, stopAnsibleQueue, getWaitingJobs, getActiveJobs, removeAllJobs, removeWaitingJobs } = require('../utils/ansibleQueue');
 const { getHostsYamlFile } = require('../utils/getHostsYamlFile');
-const { getRedis } = require('../utils/getNodeStatus');
+const { getRedis, getConfigFile, getNodeStatus } = require('../utils/getNodeStatus');
 const { offlinePackagesPath } = require('../utils/getOfflinePackage')
 //const k8s = require('@kubernetes/client-node');
 
-//redis一直处于连接
-const redis = new Redis({
-  port: 6379,
-  host: "127.0.0.1",
-});
+const redisConfig = {
+  host: process.env.REDIS_HOST, 
+  port: process.env.REDIS_PORT,
+};
+
+const redis = new Redis(redisConfig);
+
+//ansible做任务之前删除同名hostname，路径/tmp/hostname
+function deleteTmpHostnameSync(hostname) {
+  const filePath = `/tmp/${hostname}`;
+  try {
+    fs.unlinkSync(filePath);
+    console.log(`文件 ${filePath} 已成功删除。`);
+  } catch (err) {
+    if (err.code === 'ENOENT') {
+      console.log(`文件 ${filePath} 不存在，无需删除。`);
+    } else {
+      console.error(`删除文件 ${filePath} 时出错:`, err.message);
+    }
+  }
+}
 
 // 添加master1任务到队列的函数,master1执行完之后开始并行执行所有node节点
-//async function addK8sMasterJob(id) {
 async function addK8sMasterJob(clusterInfo) {
   const id = clusterInfo.id
   //先通过集群名称查询redis表
   let resultData
   try {
     resultData = await getRedis(id)
+    console.log(resultData)
   } catch (error) {
     console.error('从 Redis 获取数据时发生错误:', error.message || error);
     return {
@@ -32,7 +53,7 @@ async function addK8sMasterJob(clusterInfo) {
       status: "error"
     };
   }
-  //生成相应的host.yaml文件
+  //生成相应的inventory host.yaml文件
   try {
     hostsPath = await getHostsYamlFile(resultData, id)
   } catch (error) {
@@ -44,10 +65,53 @@ async function addK8sMasterJob(clusterInfo) {
     };
   }
 
+  let hostsToProcess;
+  hostsToProcess = clusterInfo.hosts || resultData.hosts;
+  //检查config文件是否存在数据库中，如果存在检查集群状态是否正常，如果不正常要删除
+  let configHashKey = `k8s_cluster:${id}:config`
+  let masterHostName;
+  let ipAddress;
+  configContent = await redis.get(configHashKey);
+  if (configContent) {
+    //const configFilePath = path.join(os.tmpdir(), `config-${id}`);
+    let tmpDir = path.join(__dirname, '../data/config', `config-${id}`);
+      if (!fs.existsSync(tmpDir)) {
+        fs.mkdirSync(tmpDir, { recursive: true });
+      }
+    const configFilePath = path.join(tmpDir, 'config');
+    const fileContents = fs.readFileSync(configFilePath, 'utf8');
+    // 解析 YAML
+    parsedData = yaml.load(fileContents);
+    parsedData.clusters.forEach(cluster => {
+      if (cluster.cluster && cluster.cluster.server) {
+        const ipRegex = /https?:\/\/([\d.]+):\d+/;
+        const match = cluster.cluster.server.match(ipRegex);
+
+        if (match) {
+          ipAddress = match[1];
+          return ipAddress;
+        } else {
+          console.log('No IP address found in the URL.');
+        }
+      }
+    })
+    let nodeKey = `k8s_cluster:${id}:hosts:${ipAddress}`
+    nodeInfo = await redis.hgetall(nodeKey);
+    if (nodeInfo.ip === ipAddress) {
+      masterHostName = nodeInfo.hostName
+    }
+    console.log(nodeInfo)
+  }
+  const masterResult = await getNodeStatus(id, masterHostName, hostsPath, ipAddress);
+  if (masterResult.status !== "Ready") {
+    await redis.del(configHashKey);
+  }
+
+
   try {
     //添加master和etc 任务
     //调整是为了满足用户可以单独添加其它master任务
-    for (const node of clusterInfo.hosts) {
+    for (const node of hostsToProcess) {
       //for (const node of resultData.hosts) {
       if (node.role === "master") {
         let taskName = 'initCluster'
@@ -56,8 +120,8 @@ async function addK8sMasterJob(clusterInfo) {
         let task = `${resultPackageData.kubesprayPath}/kubespray/cluster.yml`
         let workDir = `${resultPackageData.kubesprayPath}/kubespray`
         let configFile = `@${resultPackageData.kubesprayPath}/config.yml`
-        let downloadCacheDir = `${resultPackageData.offlinePackagePath}/all_files`
-        let localhostRepoPath = `${resultPackageData.offlinePackagePath}/repo_files`
+        let offlineCacheDir = `${resultPackageData.offlinePackagePath}`
+        deleteTmpHostnameSync(node.hostName);
         const playbook = {
           id: id,
           taskId: taskId,
@@ -68,15 +132,15 @@ async function addK8sMasterJob(clusterInfo) {
           role: node.role,
           ip: node.ip,
           hostsPath: hostsPath,
-          downloadCacheDir: downloadCacheDir,
-          localhostRepoPath: localhostRepoPath,
+          offlineCacheDir: offlineCacheDir,
           kubeVersion: resultData.k8sVersion,
           imageArch: resultPackageData.imageArch,
           networkPlugin: resultData.networkPlugin,
+          networkVersion: resultData.networkVersion,
           workDir: workDir,
           configFile: configFile,
         }
-        await addTaskToQueue(id, 'initCluster', playbook, node.ip);
+        await addTaskToQueue(id, 'initCluster', playbook);
       }
       if (node.role === "node") {
         let taskName = `addNode`
@@ -85,8 +149,8 @@ async function addK8sMasterJob(clusterInfo) {
         let task = `${resultPackageData.kubesprayPath}/kubespray/scale.yml`
         let workDir = `${resultPackageData.kubesprayPath}/kubespray`
         let configFile = `@${resultPackageData.kubesprayPath}/config.yml`
-        let downloadCacheDir = `${resultPackageData.offlinePackagePath}/all_files`
-        let localhostRepoPath = `${resultPackageData.offlinePackagePath}/repo_files`
+        let offlineCacheDir = `${resultPackageData.offlinePackagePath}`
+        deleteTmpHostnameSync(node.hostName);
         const playbook = {
           //ansible-playbook scale.yml -b -i inventory/mycluster/hosts.yaml -e kube_version=v1.30.3 --limit node2
           task: task,
@@ -98,11 +162,11 @@ async function addK8sMasterJob(clusterInfo) {
           hostName: node.hostName,
           ip: node.ip,
           hostsPath: hostsPath,
-          downloadCacheDir: downloadCacheDir,
-          localhostRepoPath: localhostRepoPath,
+          offlineCacheDir: offlineCacheDir,
           kubeVersion: resultData.k8sVersion,
           imageArch: resultPackageData.imageArch,
           networkPlugin: resultData.networkPlugin,
+          networkVersion: resultData.networkVersion,
           workDir: workDir,
           configFile: configFile,
         }
@@ -164,8 +228,7 @@ async function addK8sNodeJob(clusterInfo) {
         let task = `${resultPackageData.kubesprayPath}/kubespray/scale.yml`
         let workDir = `${resultPackageData.kubesprayPath}/kubespray`
         let configFile = `@${resultPackageData.kubesprayPath}/config.yml`
-        let downloadCacheDir = `${resultPackageData.offlinePackagePath}/all_files`
-        let localhostRepoPath = `${resultPackageData.offlinePackagePath}/repo_files`
+        let offlineCacheDir = `${resultPackageData.offlinePackagePath}`
         const playbook = {
           task: task,
           id: id,
@@ -176,11 +239,11 @@ async function addK8sNodeJob(clusterInfo) {
           role: node.role,
           ip: node.ip,
           hostsPath: hostsPath,
-          downloadCacheDir: downloadCacheDir,
-          localhostRepoPath: localhostRepoPath,
+          offlineCacheDir: offlineCacheDir,
           kubeVersion: resultData.k8sVersion,
           imageArch: resultPackageData.imageArch,
           networkPlugin: resultData.networkPlugin,
+          networkVersion: resultData.networkVersion,
           workDir: workDir,
           configFile: configFile,
         }
@@ -246,13 +309,14 @@ async function removeK8sNodeJob(id, ip) {
         let taskName = `resetNode`
         let taskId = `${id}_${taskName}`
         const resultPackageData = await offlinePackagesPath()
-        let task = `${resultPackageData.kubesprayPath}/reset.yml`
+        let task = `${resultPackageData.kubesprayPath}/kubespray/reset.yml`
         let workDir = `${resultPackageData.kubesprayPath}/kubespray`
         const playbook = {
           task: task,
           id: id,
           taskId: taskId,
           clusterName: resultData.clusterName,
+          kubeVersion: resultData.k8sVersion,
           taskName: taskName,
           hostName: node.hostName,
           role: node.role,
@@ -335,7 +399,7 @@ async function resetK8sClusterJob(id) {
     let taskName = 'resetCluster'
     let taskId = `${id}_${taskName}`
     const resultPackageData = await offlinePackagesPath()
-    let task = `${resultPackageData.kubesprayPath}/reset.yml`
+    let task = `${resultPackageData.kubesprayPath}/kubespray/reset.yml`
     let workDir = `${resultPackageData.kubesprayPath}/kubespray`
     const playbook = {
       id: id,
@@ -344,6 +408,7 @@ async function resetK8sClusterJob(id) {
       clusterName: resultData.clusterName,
       taskName: taskName,
       hostName: node.hostName,
+      kubeVersion: resultData.k8sVersion,
       role: node.role,
       ip: node.ip,
       hostsPath: hostsPath,
@@ -429,16 +494,18 @@ async function getK8sClusterTaskList(id) {
 }
 
 //升级集群任务
-async function upgradeK8sClusterJob(newClusterInfo) {
+async function upgradeK8sClusterJob(newClusterInfo, targetIP = null) {
   let resultData
+  let skippedNodes = []; // 新增：用于收集被跳过的节点信息
+
   try {
     resultData = await getRedis(newClusterInfo.id)
   } catch (error) {
     console.error('从 Redis 获取数据时发生错误:', error.message || error);
     return {
       code: 50000,
-      msg: '获取集群信息失败',
-      status: "error"
+      msg: error.message,
+      status: '获取集群信息失败'
     };
   }
   //生成相应的host.yaml文件
@@ -449,55 +516,184 @@ async function upgradeK8sClusterJob(newClusterInfo) {
     return {
       code: 50000,
       msg: error.message,
-      status: "error"
+      status: "生成hosts.yaml文件错误"
     };
   }
+  //resultData.k8sVersion,newClusterInfo.version
+  //如果targetIP存在值的话，不走createAnsibleQueue函数,也不需要获取数据库号
+  if(!targetIP){
+    if (resultData.k8sVersion) {
+      const dbNumber = await getDatabaseByK8sVersion(resultData.k8sVersion)
+      if (dbNumber) {
+        await redis.select(dbNumber);
+        console.log(`已切换到数据库 ${dbNumber}`);
+        // 2. 构造匹配模式（如 bull:123*:*）
+        const bullHashPattern = `bull:${newClusterInfo.id}*:*`;
+        
+        // 3. 扫描并删除所有匹配的 key
+        let cursor = '0';
+        do {
+          // 使用 SCAN 迭代查找所有匹配的 key
+          const reply = await redis.scan(
+            cursor,
+            'MATCH', bullHashPattern,
+            'COUNT', 100 // 每次扫描 100 个 key
+          );
+          cursor = reply[0]; // 新的游标位置
+          const keysToDelete = reply[1]; // 匹配到的 keys
+          
+          // 批量删除（如果找到 key）
+          if (keysToDelete.length > 0) {
+            await redis.del(...keysToDelete);
+            console.log(`已删除旧队列 keys: ${keysToDelete.join(', ')}`);
+          }
+        } while (cursor !== '0'); // 直到遍历完所有 key
+      }
 
+    }
+    if(newClusterInfo.version){
+      await redis.select(0);
+      const clusterKey = `k8s_cluster:${newClusterInfo.id}:baseInfo`;
+      await redis.hset(clusterKey,
+        'upgradeK8sVersion', newClusterInfo.version,
+        'upgradeNetworkPlugin',newClusterInfo.networkPlugin,
+        'updateTime', Date.now()
+      );
+      let clusterInfo;
+      try {
+        clusterInfo = await redis.hgetall(clusterKey);
+      } catch (error) {
+        console.log(error);
+      }
+      await createAnsibleQueue(newClusterInfo.id, parseInt(clusterInfo.taskNum, 10), newClusterInfo.version);
+    }
+  }
   try {
     for (const node of resultData.hosts) {
-      if (node.role === "master") {
-        let taskName = 'upgradeCluster'
-        let taskId = `${newClusterInfo.id}_${taskName}`
-        const resultPackageData = await offlinePackagesPath()
-        let task = `${resultPackageData.kubesprayPath}/kubespray/upgrade-cluster.yml`
-        let workDir = `${resultPackageData.kubesprayPath}/kubespray`
-        let configFile = `@${resultPackageData.kubesprayPath}/config.yml`
-        let downloadCacheDir = `${resultPackageData.offlinePackagePath}/all_files`
-        let localhostRepoPath = `${resultPackageData.offlinePackagePath}/repo_files`
-        const playbook = {
-          id: newClusterInfo.id,
-          task: task,
-          taskId: taskId,
-          version: newClusterInfo.version,
-          clusterName: resultData.clusterName,
-          taskName: taskName,
-          hostName: node.hostName,
-          role: node.role,
-          ip: node.ip,
-          hostsPath: hostsPath,
-          downloadCacheDir: downloadCacheDir,
-          localhostRepoPath: localhostRepoPath,
-          kubeVersion: newClusterInfo.version,
-          imageArch: resultPackageData.imageArch,
-          networkPlugin: resultData.networkPlugin,
-          workDir: workDir,
-          configFile: configFile,
-        }
-        await addTaskToQueue(newClusterInfo.id, 'upgradeCluster', playbook);
+      //if (node.role === "master") {
+      // 如果传入了 targetIP，则只处理与 targetIP 匹配的节点
+      if (targetIP && node.ip !== targetIP) {
+        continue;
       }
+      // 优化后的版本解析函数（支持 v前缀 和 预发布标识）
+      const parseVersion = (v) => {
+        // 移除v前缀并截取预发布标识前的部分
+        const cleanV = v.replace(/^v/, '').split('-')[0];
+        const parts = cleanV.split('.').map(Number);
+        return {
+          major: parts[0] || 0,
+          minor: parts[1] || 0,
+          patch: parts[2] || 0
+        };
+      };
+
+      const current = parseVersion(node.k8sVersion);
+      const target = parseVersion(newClusterInfo.version);
+
+      // 1. 跳过版本相同的节点
+      if (current.major === target.major &&
+        current.minor === target.minor &&
+        current.patch === target.patch) {
+        console.log(`[跳过] ${node.hostName}: 版本无变化 (${node.k8sVersion})`);
+        const skipReason = `[跳过] ${node.hostName}: 版本无变化 (${node.k8sVersion})`;
+        skippedNodes.push({
+          hostName: node.hostName,
+          ip: node.ip,
+          reason: skipReason,
+          currentVersion: node.k8sVersion,
+          targetVersion: newClusterInfo.version
+        });
+        continue;
+      }
+
+      // 2. 检查主版本是否相同
+      if (current.major !== target.major) {
+        console.log(`[禁止] ${node.hostName}: 跨主版本升级禁止 (${current.major}.x → ${target.major}.x)`);
+        const skipReason = `[禁止] ${node.hostName}: 跨主版本升级禁止 (${current.major}.x → ${target.major}.x)`;
+        skippedNodes.push({
+          hostName: node.hostName,
+          ip: node.ip,
+          reason: skipReason,
+          currentVersion: node.k8sVersion,
+          targetVersion: newClusterInfo.version
+        });
+        continue;
+      }
+
+      // 3. 检查是否为降级
+      if (current.minor > target.minor ||
+        (current.minor === target.minor && current.patch > target.patch)) {
+        console.log(`[禁止] ${node.hostName}: 降级操作禁止 (${node.k8sVersion} → ${newClusterInfo.version})`);
+        const skipReason = `[禁止] ${node.hostName}: 降级操作禁止 (${node.k8sVersion} → ${newClusterInfo.version})`;
+        skippedNodes.push({
+          hostName: node.hostName,
+          ip: node.ip,
+          reason: skipReason,
+          currentVersion: node.k8sVersion,
+          targetVersion: newClusterInfo.version
+        });
+        continue;
+      }
+
+      // 4. 检查次版本差
+      if (target.minor - current.minor > 1) {
+        console.log(`[禁止] ${node.hostName}: 必须按顺序升级，请先升级到 ${current.major}.${current.minor + 1}.x`);
+        const skipReason = `[禁止] ${node.hostName}: 必须按顺序升级，请先升级到 ${current.major}.${current.minor + 1}.x`;
+        skippedNodes.push({
+          hostName: node.hostName,
+          ip: node.ip,
+          reason: skipReason,
+          currentVersion: node.k8sVersion,
+          targetVersion: newClusterInfo.version
+        });
+        continue;
+      }
+
+      let taskName = 'upgradeCluster'
+      let taskId = `${newClusterInfo.id}_${taskName}`
+      const resultPackageData = await offlinePackagesPath()
+      let task = `${resultPackageData.kubesprayPath}/kubespray/upgrade-cluster.yml`
+      let workDir = `${resultPackageData.kubesprayPath}/kubespray`
+      let configFile = `@${resultPackageData.kubesprayPath}/config.yml`
+      let offlineCacheDir = `${resultPackageData.offlinePackagePath}`
+      //新的网络插件处理
+      const [networkPlugin, networkVersion] = newClusterInfo.networkPlugin.split(' - ');
+      //let localhostRepoPath = `${resultPackageData.offlinePackagePath}/repo_files`
+      const playbook = {
+        id: newClusterInfo.id,
+        task: task,
+        taskId: taskId,
+        version: newClusterInfo.version,
+        clusterName: resultData.clusterName,
+        taskName: taskName,
+        hostName: node.hostName,
+        role: node.role,
+        ip: node.ip,
+        hostsPath: hostsPath,
+        offlineCacheDir: offlineCacheDir,
+        kubeVersion: newClusterInfo.version,
+        imageArch: resultPackageData.imageArch,
+        networkPlugin: networkPlugin,
+        networkVersion: networkVersion,
+        workDir: workDir,
+        configFile: configFile,
+      }
+      await addTaskToQueue(newClusterInfo.id, 'upgradeCluster', playbook);
+      //}
 
     }
   } catch (error) {
     return {
       code: 50000,
-      msg: '添加升级任务失败',
-      status: "error"
+      msg: error.message,
+      status: '添加升级任务失败'
     };
   }
   return {
     code: 20000,
     msg: '任务已成功添加到队列',
-    status: "ok"
+    status: "ok",
+    details: skippedNodes,
   };
 }
 
@@ -565,40 +761,6 @@ async function getTaskInfo(id, ip, taskType, timestamp) {
   let nodeKey = `k8s_cluster:${id}:tasks:${ip}:${taskType}:${timestamp}`
   try {
     let taskInfo = await redis.hgetall(nodeKey);
-    /*
-    let taskInfoData = taskInfo.stdout;
-    //rest 开始
-    if (taskInfoData.includes("PLAY [force delete node]")) {
-      taskInfoData = taskInfoData.replace("PLAY [force delete node]", "Start Stage: reset————\nPLAY [force delete node]");
-    }
-
-    // pre开始
-    if (taskInfoData.includes("PLAY [prepare for using kubespray playbook]")) {
-      taskInfoData = taskInfoData.replace("PLAY [prepare for using kubespray playbook]", "Start Stage: pre_playbook————\nPLAY [prepare for using kubespray playbook]");
-    }
-    //预检查开始
-    if (taskInfoData.includes("PLAY [Prepare for etcd install]")) {
-      taskInfoData = taskInfoData.replace("PLAY [Prepare for etcd install]", "Start Stage: pre_check————\nPLAY [Prepare for etcd install]");
-    }
-    //download阶段开始
-    const downloadTask = "TASK [download : Prep_download | On localhost, check if passwordless root is possible]";
-    if (taskInfoData.includes(downloadTask)) {
-      const regex = new RegExp(`(TASK \\[download : Prep_download \\| Set a few facts\\] \\*{30,})`);
-      taskInfoData = taskInfoData.replace(regex, "Start Stage: download————\n$1");
-    }
-    //安装k8s集群阶段开始
-    if (taskInfoData.includes("PLAY [Install etcd]")) {
-      taskInfoData = taskInfoData.replace("PLAY [Install etcd]", "Start Stage: install k8s cluster————\nPLAY [Install etcd]");
-    }
-    //开始安装网络插件
-    if (taskInfoData.includes("PLAY [Invoke kubeadm and install a CNI]")) {
-      taskInfoData = taskInfoData.replace("PLAY [Invoke kubeadm and install a CNI]", "Start Stage: install network_plugin————\nPLAY [Invoke kubeadm and install a CNI]");
-    }
-    //检查
-    if (taskInfoData.includes("PLAY [Patch Kubernetes for Windows]")) {
-      taskInfoData = taskInfoData.replace("PLAY [Patch Kubernetes for Windows]", "Start Stage: after_check————\nPLAY [Patch Kubernetes for Windows]");
-    }
-    */
     return {
       code: 20000,
       data: taskInfo.stdout,

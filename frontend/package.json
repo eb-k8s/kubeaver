@@ -6,7 +6,7 @@
   "author": "ArcoDesign Team",
   "license": "MIT",
   "scripts": {
-    "dev": "vite --config ./config/vite.config.dev.ts --host 10.1.70.162",
+    "dev": "vite --config ./config/vite.config.dev.ts --host 0.0.0.0",
     "build": "vue-tsc --noEmit && vite build --config ./config/vite.config.prod.ts",
     "report": "cross-env REPORT=true npm run build",
     "preview": "npm run build && vite preview --host",
@@ -102,4 +102,3 @@
     "gifsicle": "5.2.0"
   }
 }
-

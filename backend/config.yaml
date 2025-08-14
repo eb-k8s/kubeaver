@@ -1,5 +1,14 @@
-kubeaver_version: "1.0.0"
-kubespary_version: "v2.26.0"
-k8s_versions:
-  min_version: "v1.28"
-  max_version: "v1.30"
+# 该配置文件用于标注bull分库
+database_mapping:
+  - min_version: "v1.25"
+    max_version: "v1.27"
+    database: "1"
+    kubespray_version: "v2.23.3"
+  - min_version: "v1.28"
+    max_version: "v1.30"
+    database: "2"
+    kubespray_version: "v2.26.0"
+  - min_version: "v1.31"
+    max_version: "v1.32"
+    database: "3"
+    kubespray_version: "v2.28.0"

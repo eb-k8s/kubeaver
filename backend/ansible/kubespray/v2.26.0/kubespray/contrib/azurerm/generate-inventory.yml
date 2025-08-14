@@ -1,6 +1,0 @@
----
-- name: Generate Azure inventory
-  hosts: localhost
-  gather_facts: false
-  roles:
-    - generate-inventory

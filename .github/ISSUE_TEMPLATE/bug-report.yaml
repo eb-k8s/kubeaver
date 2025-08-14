@@ -1,0 +1,98 @@
+---
+name: Bug Report
+description: Report a bug encountered while using Kubeaver
+labels: kind/bug
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+      description: |
+        Please provide as much info as possible. Not doing so may result in your bug not being addressed in a timely manner.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: How can we reproduce it ?
+    validations:
+      required: true
+
+  - type: markdown
+    attributes:
+      value: '### Environment'
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: OS
+      options:
+        - 'RHEL 9'
+        - 'RHEL 8'
+        - 'Fedora 40'
+        - 'Ubuntu 24'
+        - 'Ubuntu 22'
+        - 'Ubuntu 20'
+        - 'Debian 12'
+        - 'Debian 11'
+        - 'Flatcar Container Linux'
+        - 'openSUSE Leap'
+        - 'openSUSE Tumbleweed'
+        - 'Oracle Linux 9'
+        - 'Oracle Linux 8'
+        - 'AlmaLinux 9'
+        - 'AlmaLinux 8'
+        - 'Rocky Linux 9'
+        - 'Rocky Linux 8'
+        - 'Amazon Linux 2'
+        - 'Kylin Linux Advanced Server V10'
+        - 'UOS Linux 20'
+        - 'openEuler 24'
+        - 'openEuler 22'
+        - 'openEuler 20'
+        - 'Other|Unsupported'
+    validations:
+      required: true
+
+  - type: input
+    id: frontend_version
+    attributes:
+      label: Version of Kubeaver frontend
+    validations:
+      required: true
+
+  - type: input
+    id: backend_version
+    attributes:
+      label: Version of Kubeaver backend
+    validations:
+      required: true
+
+  - type: dropdown
+    id: network_plugin
+    attributes:
+      label: Network plugin used
+      options:
+        - calico
+        - flannel
+    validations:
+      required: true
+
+  - type: textarea
+    id: frontend_output
+    attributes:
+      label: Output of Kubeaver run
+    validations:
+      required: true
+
+  - type: textarea
+    id: anything_else
+    attributes:
+      label: Anything else we need to know

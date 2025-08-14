@@ -3,6 +3,7 @@ import sys
 import zipfile
 import os
 import argparse
+import tempfile
 
 def read_yaml_file(file_path):
     """Read the content of a YAML file."""
@@ -103,35 +104,51 @@ def remove_lines_after_pattern(lines, pattern, num_lines_to_remove=2):
     
     return new_lines
 
+def process_files(files, insert_content):
+    for file in files:
+        if not os.path.isfile(file):
+            print(f"File {file} does not exist.")
+            continue
+
+        with open(file, 'r') as f:
+            content = f.readlines()
+
+        if any(insert_content in line for line in content):
+            print(f"The content is already present in {file}.")
+            continue
+
+        temp_file = tempfile.NamedTemporaryFile(delete=False, mode='w', newline='')
+        
+        try:
+            first_line = content.pop(0)
+            temp_file.write(first_line)
+            temp_file.write(f"- name: {insert_content.split(':')[0]}\n")
+            temp_file.write(f"  ansible.builtin.import_playbook: {insert_content.split(':')[1]}\n")
+            temp_file.writelines(content)
+        finally:
+            temp_file.close()
+
+        os.replace(temp_file.name, file)
+        print(f"Added new content to {file}.")
 def main():
+    # 解决python_load.sh问题
+    FILES1 = ["kubespray/cluster.yml", "kubespray/scale.yml"]
+    FILES2 = ["kubespray/cluster.yml", "kubespray/scale.yml"]
+    process_files(FILES1, "pre_playbook: ../pre_playbook.yml")
+    process_files(FILES2, "force_reset_playbook: ./reset.yml")
+
     parser = argparse.ArgumentParser(description="Process some parameters.")
-    parser.add_argument('--zip_filename', type=str, default='kubespray-2.26.0.zip',
-                        help='The default zip file to use if not provided.')
+    parser.add_argument('--kubespray_version', type=str, default='v2.23.3',
+                        help='The kubespray version.')
 
     args = parser.parse_args()
-    # Default zip file name
-    default_zip_file = args.zip_filename
-    
-    # Get the zip file name from command line argument if provided
-    zip_file_name = sys.argv[1] if len(sys.argv) > 1 else default_zip_file
-    
-    # Check if the zip file exists
-    if not os.path.isfile(zip_file_name):
-        print(f"Error: The file {zip_file_name} does not exist.")
-        return
-    
-    # Define the extraction directory
-    extract_directory = f"./"
-    
-    # Unzip the file
-    unzip_file(zip_file_name, extract_directory)
 
     # 获取kubespray版本
-    kubespray_version = os.path.splitext(os.path.basename(zip_file_name))[0].split('-')[1]
+    kubespray_version = args.kubespray_version[1:]
     print(f"kubespray version: {kubespray_version}")
 
     # 开始修改kubespray代码部分
-    kubespray_path = os.path.splitext(os.path.basename(zip_file_name))[0]
+    kubespray_path = "./kubespray"
     # 在kubespray_path下创建callback_plugins目录
     os.makedirs(f"{kubespray_path}/callback_plugins", exist_ok=True)
     # 复制callback_plugins目录下的文件到kubespray_path下
@@ -149,10 +166,19 @@ def main():
     # 在  - name: Download_file | Download item新增when: false
     modified_lines = insert_line_after_pattern(modified_lines, "- name: Download_file | Download item", "    when: false")
     # 将传输方式从rsync修改为copy
-    modified_lines = replace_line_with_pattern(modified_lines, "    ansible.posix.synchronize:", "    ansible.builtin.copy:")
+    # modified_lines = replace_line_with_pattern(modified_lines, "    ansible.posix.synchronize:", "    ansible.builtin.copy:")
     # 注释掉copy模块没有的参数
-    modified_lines = replace_line_with_pattern(modified_lines, "use_ssh_args: true", "#use_ssh_args: true")
-    modified_lines = replace_line_with_pattern(modified_lines, "mode: push", "#mode: push")
+    # modified_lines = replace_line_with_pattern(modified_lines, "use_ssh_args: true", "#use_ssh_args: true")
+    # modified_lines = replace_line_with_pattern(modified_lines, "mode: push", "#mode: push")
+    new_string = """      rsync_opts:
+        - "--no-perms"
+        - "--no-owner"    
+        - "--no-group"
+        - "--copy-links" """
+    modified_lines = insert_line_after_pattern(modified_lines, "mode: push", new_string)    
+    # 将文件夹权限修改为777
+    modified_lines = replace_line_with_pattern(modified_lines, "      mode: \"0755\"", "      mode: \"0777\"")
+    modified_lines = replace_line_with_pattern(modified_lines, "      mode: 0755", "      mode: 0777")
     # 将更改写入文件
     write_yaml_file(f"{kubespray_path}/roles/download/tasks/download_file.yml", modified_lines)
 
@@ -160,26 +186,38 @@ def main():
     # 读入该yml文件
     lines = read_yaml_file(f"{kubespray_path}/roles/download/tasks/download_container.yml")
     # 将传输方式从rsync修改为copy
-    modified_lines = replace_line_with_pattern(modified_lines, "    ansible.posix.synchronize:", "    ansible.builtin.copy:")
-    # 注释掉copy模块没有的参数
-    modified_lines = replace_line_with_pattern(modified_lines, "use_ssh_args: true", "#use_ssh_args: true")
-    modified_lines = replace_line_with_pattern(modified_lines, "mode: push", "#mode: push")
+    # modified_lines = replace_line_with_pattern(modified_lines, "    ansible.posix.synchronize:", "    ansible.builtin.copy:")
+    # # 注释掉copy模块没有的参数
+    # modified_lines = replace_line_with_pattern(modified_lines, "use_ssh_args: true", "#use_ssh_args: true")
+    # modified_lines = replace_line_with_pattern(modified_lines, "mode: push", "#mode: push")
+    # 注释掉failed when 
+    modified_lines = replace_line_with_pattern(lines, "      failed_when: not upload_image", "      #failed_when: not upload_image")
+
+    new_string = """        rsync_opts:
+          - "--copy-links" """
+    modified_lines = insert_line_after_pattern(modified_lines, "mode: push", new_string)    
     # 将更改写入文件
     write_yaml_file(f"{kubespray_path}/roles/download/tasks/download_container.yml", modified_lines)
 
-    # 修改roles\kubernetes\preinstall\tasks\0020-set_facts.yml来禁用nameserver检查
-    # 读入该yml文件
-    lines = read_yaml_file(f"{kubespray_path}/roles/kubernetes/preinstall/tasks/0020-set_facts.yml")
-    # 在    - not (upstream_dns_servers is defined and upstream_dns_servers | length > 0)新增- false
-    modified_lines = insert_line_after_pattern(lines, "    - not (upstream_dns_servers is defined and upstream_dns_servers | length > 0)", "    - false")
-    # 将更改写入文件
-    write_yaml_file(f"{kubespray_path}/roles/kubernetes/preinstall/tasks/0020-set_facts.yml", modified_lines)
+    # # 修改roles\kubernetes\preinstall\tasks\0020-set_facts.yml来禁用nameserver检查
+    # # 读入该yml文件
+    # lines = read_yaml_file(f"{kubespray_path}/roles/kubernetes/preinstall/tasks/0020-set_facts.yml")
+    # # 在    - not (upstream_dns_servers is defined and upstream_dns_servers | length > 0)新增- false
+    # modified_lines = insert_line_after_pattern(lines, "    - not (upstream_dns_servers is defined and upstream_dns_servers | length > 0)", "    - false")
+    # # 将更改写入文件
+    # write_yaml_file(f"{kubespray_path}/roles/kubernetes/preinstall/tasks/0020-set_facts.yml", modified_lines)
 
-    # 修改/roles/kubernetes-apps/network_plugin/meta/main.yml中multus相关配置   
-    # 读入该yml文件
+    # # 修改/roles/kubernetes-apps/network_plugin/meta/main.yml中multus相关配置   
+    # # 读入该yml文件
+    # lines = read_yaml_file(f"{kubespray_path}/roles/kubernetes-apps/network_plugin/meta/main.yml")
+    # # 将    when: kube_network_plugin_multus替换为 false
+    # modified_lines = replace_line_with_pattern(lines, "    when: kube_network_plugin_multus", "    when: false")
+    # # 将更改写入文件
+    # write_yaml_file(f"{kubespray_path}/roles/kubernetes-apps/network_plugin/meta/main.yml", modified_lines)
+    #修改roles/download/defaults/main/main.yml
     lines = read_yaml_file(f"{kubespray_path}/roles/kubernetes-apps/network_plugin/meta/main.yml")
-    # 将    when: kube_network_plugin_multus替换为 false
-    modified_lines = replace_line_with_pattern(lines, "    when: kube_network_plugin_multus", "    when: false")
+    # 删除sha256: "{{ metrics_server_digest_checksum | default(None) }}"的后面两行内容
+    modified_lines = remove_lines_after_pattern(lines, "      - kube-router", 5)
     # 将更改写入文件
     write_yaml_file(f"{kubespray_path}/roles/kubernetes-apps/network_plugin/meta/main.yml", modified_lines)
 
@@ -191,6 +229,15 @@ def main():
     # 将更改写入文件
     write_yaml_file(f"{kubespray_path}/roles/network_plugin/meta/main.yml", modified_lines)
 
+    # 修改roles/kubernetes-apps/network_plugin/multus/tasks/main.yml
+    # 读入该文件
+    lines = read_yaml_file(f"{kubespray_path}/roles/kubernetes-apps/network_plugin/multus/tasks/main.yml")
+    # 将    when: kube_network_plugin_multus中新增- false
+    modified_lines = replace_line_with_pattern(lines, "    - not item is skipped", "    - false")
+    modified_lines = insert_line_after_pattern(lines, "  run_once: true", "  ignore_errors: true")
+    # 将更改写入文件
+    write_yaml_file(f"{kubespray_path}/roles/kubernetes-apps/network_plugin/multus/tasks/main.yml", modified_lines)
+
     # 根据kubespray的版本来修复metrics_server的镜像拉取问题
     if kubespray_version == "2.23.3":
         # 修改roles/download/defaults/main/main.yml
@@ -199,6 +246,11 @@ def main():
         modified_lines = remove_lines_after_pattern(lines, "sha256: \"{{ metrics_server_digest_checksum | default(None) }}\"")
         # 在sha256: "{{ metrics_server_digest_checksum | default(None) }}"后新增    groups:和    - k8s_cluster
         modified_lines = insert_line_after_pattern(modified_lines, "sha256: \"{{ metrics_server_digest_checksum | default(None) }}\"", "    groups:\n    - k8s_cluster")
+        
+        # 删除sha256: "{{ dnsautoscaler_digest_checksum | default(None) }}"
+        modified_lines = remove_lines_after_pattern(modified_lines, "sha256: \"{{ dnsautoscaler_digest_checksum | default(None) }}\"")
+        # 在sha256: "{{ dnsautoscaler_digest_checksum | default(None) }}"后新增    groups:和    - k8s_cluster
+        modified_lines = insert_line_after_pattern(modified_lines, "sha256: \"{{ dnsautoscaler_digest_checksum | default(None) }}\"", "    groups:\n    - k8s_cluster")
         # 将更改写入文件
         write_yaml_file(f"{kubespray_path}/roles/download/defaults/main/main.yml", modified_lines)
     elif kubespray_version == "2.26.0":
@@ -208,8 +260,28 @@ def main():
         modified_lines = remove_lines_after_pattern(lines, "sha256: \"{{ metrics_server_digest_checksum | default(None) }}\"")
         # 在sha256: "{{ metrics_server_digest_checksum | default(None) }}"后新增    groups:和    - k8s_cluster
         modified_lines = insert_line_after_pattern(modified_lines, "sha256: \"{{ metrics_server_digest_checksum | default(None) }}\"", "    groups:\n    - k8s_cluster")
+
+        # 删除sha256: "{{ dnsautoscaler_digest_checksum | default(None) }}"
+        modified_lines = remove_lines_after_pattern(modified_lines, "sha256: \"{{ dnsautoscaler_digest_checksum | default(None) }}\"")
+        # 在sha256: "{{ dnsautoscaler_digest_checksum | default(None) }}"后新增    groups:和    - k8s_cluster
+        modified_lines = insert_line_after_pattern(modified_lines, "sha256: \"{{ dnsautoscaler_digest_checksum | default(None) }}\"", "    groups:\n    - k8s_cluster")
         # 将更改写入文件
         write_yaml_file(f"{kubespray_path}/roles/kubespray-defaults/defaults/main/download.yml", modified_lines)
+    
+    elif kubespray_version == "2.28.0":
+        # 修改roles/kubespray-defaults/defaults/main/download.yml
+        lines = read_yaml_file(f"{kubespray_path}/roles/kubespray_defaults/defaults/main/download.yml")
+        # 删除sha256: "{{ metrics_server_digest_checksum | default(None) }}"的后面两行内容
+        modified_lines = remove_lines_after_pattern(lines, "sha256: \"{{ metrics_server_digest_checksum | default(None) }}\"")
+        # 在sha256: "{{ metrics_server_digest_checksum | default(None) }}"后新增    groups:和    - k8s_cluster
+        modified_lines = insert_line_after_pattern(modified_lines, "sha256: \"{{ metrics_server_digest_checksum | default(None) }}\"", "    groups:\n    - k8s_cluster")
+
+        # 删除sha256: "{{ dnsautoscaler_digest_checksum | default(None) }}"
+        modified_lines = remove_lines_after_pattern(modified_lines, "sha256: \"{{ dnsautoscaler_digest_checksum | default(None) }}\"")
+        # 在sha256: "{{ dnsautoscaler_digest_checksum | default(None) }}"后新增    groups:和    - k8s_cluster
+        modified_lines = insert_line_after_pattern(modified_lines, "sha256: \"{{ dnsautoscaler_digest_checksum | default(None) }}\"", "    groups:\n    - k8s_cluster")
+        # 将更改写入文件
+        write_yaml_file(f"{kubespray_path}/roles/kubespray_defaults/defaults/main/download.yml", modified_lines)
 
     # 在kubespray中新增代码实现高并发部署集群
     # 修改playbooks/scale.yml文件，新增node等待master与certificate_key获取
@@ -280,7 +352,7 @@ def main():
     # - name: Restart all kube-proxy pods to ensure that they load the new configmap后面
     modified_lines = insert_line_after_pattern(modified_lines, "- name: Restart all kube-proxy pods to ensure that they load the new configmap", "    - inventory_hostname == groups['kube_control_plane'][0]", 5)
     # - name: Get current resourceVersion of kube-proxy configmap后面10行新增
-    modified_lines = insert_line_after_pattern(lines, "- name: Get current resourceVersion of kube-proxy configmap", "    - inventory_hostname == groups['kube_control_plane'][0]", 6)
+    modified_lines = insert_line_after_pattern(modified_lines, "- name: Get current resourceVersion of kube-proxy configmap", "    - inventory_hostname == groups['kube_control_plane'][0]", 6)
     # - name: Get new resourceVersion of kube-proxy configmap后面
     modified_lines = insert_line_after_pattern(modified_lines, "- name: Get new resourceVersion of kube-proxy configmap", "    - inventory_hostname == groups['kube_control_plane'][0]", 6)
     # 将更改写入文件
@@ -294,15 +366,137 @@ def main():
       modified_lines = insert_line_after_pattern(modified_lines, "libselinux-python", "        CentOS: {}", 2)
       # 将更改写入文件
       write_yaml_file(f"{kubespray_path}/roles/kubernetes/preinstall/vars/main.yml", modified_lines)
+    
+    elif kubespray_version == "2.28.0":
+        lines = read_yaml_file(f"{kubespray_path}/roles/system_packages/vars/main.yml")
+        # 去掉CentOS
+        modified_lines = replace_line_with_pattern(lines, '''    - "{{ ansible_distribution in ['RedHat', 'CentOS'] }}"''', '''    - "{{ ansible_distribution in ['RedHat'] }}"''')
+        modified_lines = replace_line_with_pattern(lines, '''    - "{{ ansible_distribution == 'Amazon' }}"''', '''    - "{{ ansible_distribution in ['Amazon', 'CentOS'] }}"''')
+        # 将更改写入文件
+        write_yaml_file(f"{kubespray_path}/roles/system_packages/vars/main.yml", modified_lines)
 
     # 拷贝group_vars目录，解决变量传递问题
     if kubespray_version == "2.23.3":
         shutil.copytree(f"{kubespray_path}/inventory/sample/group_vars/all", f"{kubespray_path}/roles/kubespray-defaults/defaults/main/all")
         shutil.copytree(f"{kubespray_path}/inventory/sample/group_vars/k8s_cluster", f"{kubespray_path}/roles/kubespray-defaults/defaults/main/k8s_cluster")
         shutil.move(f"{kubespray_path}/roles/kubespray-defaults/defaults/main.yaml", f"{kubespray_path}/roles/kubespray-defaults/defaults/main/main.yaml")
+        # 解决calico版本问题
+        lines = read_yaml_file(f"{kubespray_path}/roles/network_plugin/calico/tasks/check.yml")
+        # - name: Stop if supported Calico versions后插入
+        modified_lines = insert_line_after_pattern(lines, "- name: Stop if supported Calico versions","  when: false")
+        # 更改写入文件
+        write_yaml_file(f"{kubespray_path}/roles/network_plugin/calico/tasks/check.yml", modified_lines)  
+        # 修改hosts.yaml文件
+        lines = read_yaml_file(f"{kubespray_path}/roles/container-engine/containerd/templates/hosts.toml.j2")
+        # 替换server = "https://{{ item.prefix }}"为server = "{{ item.server | default("https://" + item.prefix) }}"
+        modified_lines = replace_line_with_pattern(lines, "server = \"https://{{ item.prefix }}\"", "server = \"{{ item.server | default(\"https://\" + item.prefix) }}\"")
+        write_yaml_file(f"{kubespray_path}/roles/container-engine/containerd/templates/hosts.toml.j2", modified_lines)
     elif kubespray_version == "2.26.0":
         shutil.copytree(f"{kubespray_path}/inventory/sample/group_vars/all", f"{kubespray_path}/roles/kubespray-defaults/defaults/main/all")
         shutil.copytree(f"{kubespray_path}/inventory/sample/group_vars/k8s_cluster", f"{kubespray_path}/roles/kubespray-defaults/defaults/main/k8s_cluster")
+    elif kubespray_version == "2.28.0":
+        shutil.copytree(f"{kubespray_path}/inventory/sample/group_vars/all", f"{kubespray_path}/roles/kubespray_defaults/defaults/main/all")
+        shutil.copytree(f"{kubespray_path}/inventory/sample/group_vars/k8s_cluster", f"{kubespray_path}/roles/kubespray_defaults/defaults/main/k8s_cluster")
+
+    # 修改playbooks/cluster.yml，新增重启nginx
+    lines = read_yaml_file(f"{kubespray_path}/playbooks/cluster.yml")
+    # - { role: kubernetes/preinstall, when: "dns_mode != 'none' and resolvconf_mode == 'host_resolvconf'", tags: resolvconf, dns_late: true }后新增
+    new_string = """- name: Restart nginx-proxy containers
+  hosts: kube_control_plane 
+  roles:
+    - { role: kubespray-defaults }
+  tasks:
+    - name: Nginx-proxy | Make nginx directory
+      file:
+        path: "{{ nginx_config_dir }}"
+        state: directory
+        mode: "0700"
+        owner: root
+      loop: "{{ groups['kube_node'] }}"
+      delegate_to: "{{ item }}"
+
+    - name: Nginx-proxy | Write nginx-proxy configuration
+      template:
+        src: "../roles/kubernetes/node/templates/loadbalancer/nginx.conf.j2"
+        dest: "{{ nginx_config_dir }}/nginx.conf"
+        owner: root
+        mode: "0755"
+        backup: true
+      loop: "{{ groups['kube_node'] }}"
+      delegate_to: "{{ item }}"
+
+    - name: Restart nginx-proxy containers
+      shell: "{{bin_dir}}/crictl ps | grep nginx-proxy | awk '{print $1}' | xargs {{bin_dir}}/crictl stop"
+      loop: "{{ groups['kube_node'] }}"
+      delegate_to: "{{ item }}"
+      ignore_errors: yes
+    
+    # - name: Check the OS pretty name
+    #   command: grep '^PRETTY_NAME=' /etc/os-release
+    #   register: temp_os_pretty_name
+    
+    # - name: Extract the pretty name from the command output
+    #   set_fact:
+    #     extracted_os_pretty_name: "{{ temp_os_pretty_name.stdout.split('=')[1].strip('\"') }}"
+
+    # - name: Gen the standard repo file name
+    #   set_fact:
+    #     os_pretty_name: "{{ extracted_os_pretty_name | regex_replace(' ', '_') | regex_replace('[()]', '') }}"
+
+    # - name: Clean the variable
+    #   set_fact:
+    #     os_pretty_name: "{{ os_pretty_name | replace('_Linux', '') }}"
+
+    # - name: Set OS version variable 
+    #   set_fact:
+    #     is_centos: "{{ os_pretty_name | regex_search('CentOS', ignorecase=True) }}"
+
+    - name: Restart first flannel containers
+      shell: "{{bin_dir}}/crictl ps | grep kube-flannel | awk '{print $1}' | xargs {{bin_dir}}/crictl stop"
+      when: 
+        - inventory_hostname in groups['kube_control_plane']
+        - kube_network_plugin == 'flannel'
+        # - is_centos
+      ignore_errors: yes
+    """
+    modified_lines = insert_line_after_pattern(lines, """- { role: kubernetes/preinstall, when: "dns_mode != 'none' and resolvconf_mode == 'host_resolvconf'", tags: resolvconf, dns_late: true }""", new_string)
+    # 将更改写入文件
+    write_yaml_file(f"{kubespray_path}/playbooks/cluster.yml", modified_lines)
+
+    # 修改roles/kubernetes/control-plane/tasks/kubeadm-secondary.yml，解决证书问题
+    lines = read_yaml_file(f"{kubespray_path}/roles/kubernetes/control-plane/tasks/kubeadm-secondary.yml")
+    # 注释条件判断
+    modified_lines = replace_line_with_pattern(lines, "- inventory_hostname == first_kube_control_plane", "# - inventory_hostname == first_kube_control_plane")
+    # 插入delegate_to
+    modified_lines = insert_line_after_pattern(modified_lines, "register: kubeadm_upload_cert", """  delegate_to: "{{ first_kube_control_plane }}" """)
+    # 将更改写入文件
+    write_yaml_file(f"{kubespray_path}/roles/kubernetes/control-plane/tasks/kubeadm-secondary.yml", modified_lines)
+
+    # 移动reset.yml文件并覆盖
+    os.remove("./kubespray/playbooks/reset.yml")
+    shutil.copy2("reset.yml", "./kubespray/playbooks")
+
+    # ansible.cfg配置
+    lines = read_yaml_file(f"{kubespray_path}/ansible.cfg")
+    # 在#control_path = ~/.ssh/ansible-%%r@%%h:%%p后添加
+    modified_lines = insert_line_after_pattern(lines, "#control_path = ~/.ssh/ansible-%%r@%%h:%%p", "control_path = ~/.ssh/ansible-%%h")
+    # 将更改写入文件
+    write_yaml_file(f"{kubespray_path}/ansible.cfg", modified_lines)
+
+    # 修改roles/kubernetes/node-label/tasks/main.yml
+    lines = read_yaml_file(f"{kubespray_path}/roles/kubernetes/node-label/tasks/main.yml")
+    # 将  retries: 10替换为  retries: 30
+    modified_lines = replace_line_with_pattern(lines, "  retries: 10", "  retries: 30")
+    write_yaml_file(f"{kubespray_path}/roles/kubernetes/node-label/tasks/main.yml", modified_lines)
+    # # 修改roles/kubernetes/preinstall/tasks/0070-system-packages.yml
+    # lines = read_yaml_file(f"{kubespray_path}/roles/kubernetes/preinstall/tasks/0070-system-packages.yml")
+    # # 替换  when: ansible_os_family == "Debian"
+    # modified_lines = replace_line_with_pattern(lines, "  when: ansible_os_family == \"Debian\"", "  when: ansible_os_family == \"Debian\" and install_package_reset is not defined")
+    # # 替换  when: not (ansible_os_family in ["Flatcar", "Flatcar Container Linux by Kinvolk"] or is_fedora_coreos)
+    # modified_lines = replace_line_with_pattern(modified_lines, "  when: not (ansible_os_family in [\"Flatcar\", \"Flatcar Container Linux by Kinvolk\"] or is_fedora_coreos)", "  when: not (ansible_os_family in [\"Flatcar\", \"Flatcar Container Linux by Kinvolk\"] or is_fedora_coreos) and install_package_reset is not defined")
+    # # 将更改写入文件
+    # write_yaml_file(f"{kubespray_path}/roles/kubernetes/preinstall/tasks/0070-system-packages.yml", modified_lines)
+    
 
 if __name__ == "__main__":
     main()
