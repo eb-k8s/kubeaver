@@ -148,7 +148,7 @@ async function fetchAndSaveHostDetails(hostIP, user, hostPort) {
 async function runAnsiblePlaybook(hostIP, playbookPath, user, hostPort) {
   const privateKeyPath = path.join(__dirname, '../ssh', 'id_rsa');
   return new Promise((resolve, reject) => {
-    exec(`ansible-playbook --private-key ${privateKeyPath} -e ansible_user=${user} -i ${hostIP}::${hostPort}, ${playbookPath}`, (error, stdout, stderr) => {
+    exec(`ansible-playbook --private-key ${privateKeyPath} -e ansible_user=${user} -i ${hostIP}:${hostPort}, ${playbookPath}`, (error, stdout, stderr) => {
       if (error) {
         console.error(`Playbook execution failed: ${error}`);
         reject(new Error(`Playbook 执行失败: ${error}`));
@@ -238,7 +238,7 @@ async function getHosts() {
   }
 }
 
-// 查询指定 hostID 的内容
+// 查询指定 hostID的内容
 async function getHostById(hostIP) {
   try {
     const hostKey = `${HOSTS_PREFIX}${hostIP}`;
