@@ -1,5 +1,7 @@
 # Kubeaver
 
+注意：该文档有可能不是最新版，请以英文版为准！
+
 Kubeaver是快速部署高可用Kubernetes (K8s) 集群的工具，支持**在线和离线**两种方式，项目基于[kubespray](https://github.com/kubernetes-sigs/kubespray)，使用Ansible实现部署任务的自动化，并且提供了用户友好的**图形化界面**。
 
 Kubeaver具有以下优点：

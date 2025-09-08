@@ -30,7 +30,7 @@ parser.add_argument('--k8s_version', type=str, default='v1.28.12', help='Kuberne
 parser.add_argument('--image_arch', type=str, default='amd64', help='文件系统架构')
 # parser.add_argument('--support_os', type=str, default='openEuler 22.03 (LTS-SP4)', help='支持的操作系统版本')
 # 添加 image_registry 参数，设置默认值
-parser.add_argument('--image_registry', type=str, default='store.e-byte.cn', help='离线服务器镜像域名')
+parser.add_argument('--image_registry', type=str, default='store.e-byte.cn', help='离线服务器镜像域名（不可更改）')
 # 添加 target_path 参数，设置默认值
 parser.add_argument('--target_path', type=str, default='.', help='离线包生成路径')
 # 解析参数
