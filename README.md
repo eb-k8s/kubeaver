@@ -1,8 +1,3 @@
-# Kubeaver
-
-
-
-
 <div align="center">
   <h1><img src="./docs/imgs/logo_without_k.svg" height="100px"  />Kubeaver</h1>
 
