@@ -55,6 +55,7 @@ async function addK8sMasterJob(clusterInfo) {
   }
   //生成相应的inventory host.yaml文件
   try {
+
     hostsPath = await getHostsYamlFile(resultData, id)
   } catch (error) {
     console.error('生成hosts.yaml文件错误:', error.message || error);
@@ -100,7 +101,6 @@ async function addK8sMasterJob(clusterInfo) {
     if (nodeInfo.ip === ipAddress) {
       masterHostName = nodeInfo.hostName
     }
-    console.log(nodeInfo)
   }
   const masterResult = await getNodeStatus(id, masterHostName, hostsPath, ipAddress);
   if (masterResult.status !== "Ready") {

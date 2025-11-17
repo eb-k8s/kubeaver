@@ -117,7 +117,7 @@ async function fetchAndSaveHostDetails(hostIP, user, hostPort) {
 
   }
   try {
-    await fetchFileFromRemote(hostIP, remoteFilePath, localFilePath, user);
+    await fetchFileFromRemote(hostIP, remoteFilePath, localFilePath, user, hostPort);
     if (!fs.existsSync(localFilePath)) {
       throw new Error(`文件没有发现: ${localFilePath}`);
     }
@@ -161,10 +161,10 @@ async function runAnsiblePlaybook(hostIP, playbookPath, user, hostPort) {
 }
 
 // 从远程获取文件
-function fetchFileFromRemote(hostIP, remoteFilePath, localFilePath, user) {
+function fetchFileFromRemote(hostIP, remoteFilePath, localFilePath, user, hostPort) {
   const privateKeyPath = path.join(__dirname, '../ssh', 'id_rsa');
   return new Promise((resolve, reject) => {
-    exec(`scp -i ${privateKeyPath} ${user}@${hostIP}:${remoteFilePath} ${localFilePath}`, (error, stdout, stderr) => {
+    exec(`scp -i ${privateKeyPath} -P ${hostPort} ${user}@${hostIP}:${remoteFilePath} ${localFilePath}`, (error, stdout, stderr) => {
       if (error) reject(new Error(`从远程主机获取文件失败: ${stderr}`));
       else resolve(stdout);
     });
