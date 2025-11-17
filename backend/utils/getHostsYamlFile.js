@@ -24,13 +24,14 @@ async function getHostsYamlFile(data, clusterId) {
 
   // 先处理 master1
   data.hosts.forEach((roleInfo) => {
-    const { ip, hostName, role, user, password } = roleInfo;
+    const { ip, hostName, role, user,port, password } = roleInfo;
     if (hostName === master1Name) {
       hosts[hostName] = {
         ansible_host: ip,
         ip: ip,
         access_ip: ip,
         ansible_user: user,
+        ansible_port: port,
         ansible_become_password: password,
       };
 
@@ -53,6 +54,7 @@ async function getHostsYamlFile(data, clusterId) {
         ip: ip,
         access_ip: ip,
         ansible_user: user,
+        ansible_port: port,
         ansible_become_password: password,
       };
 

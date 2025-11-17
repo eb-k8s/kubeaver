@@ -1,6 +1,14 @@
 # Kubeaver
 
-<img src="./docs/imgs/logo_without_k.svg" height="100px"  />
+
+
+
+<div align="center">
+  <h1><img src="./docs/imgs/logo_without_k.svg" height="100px"  />Kubeaver</h1>
+
+  <a href="https://github.com/eb-k8s/kubeaver/releases"><img src="https://img.shields.io/github/v/release/eb-k8s/kubeaver" alt="Latest Release"></a>
+</div>
+
 
 
 Kubeaver is a tool for quickly deploying high-availability Kubernetes (K8s) clusters, supporting **online(in progress) and offline** methods. The project is based on [kubespray](https://github.com/kubernetes-sigs/kubespray), leveraging Ansible to automate deployment tasks, and provides a user-friendly **graphical user interface**.
@@ -51,12 +59,14 @@ Below shows how to download the Kubernetes base package for version v1.27.10 and
 ```
 # download base package
 docker pull ghcr.io/eb-k8s/kubeaver/kubeaver_offline:v1.27.10
-docker run -d ghcr.io/eb-k8s/kubeaver/kubeaver_offline:v1.27.10 --name kubeaver_offline 
+docker run -d --name kubeaver_offline ghcr.io/eb-k8s/kubeaver/kubeaver_offline:v1.27.10  
 docker cp kubeaver_offline:/root/base_k8s_v1.27.10.tgz .
+docker rm -f kubeaver_offline    ##delete containerd
 # download os package
 docker pull ghcr.io/eb-k8s/kubeaver/oslib_centos:v1.0
-docker run -d ghcr.io/eb-k8s/kubeaver/oslib_centos:v1.0 --name kubeaver_oslib
+docker run -d --name kubeaver_oslib ghcr.io/eb-k8s/kubeaver/oslib_centos:v1.0 
 docker cp kubeaver_oslib:/root/extend_CentOS_7_Core.tgz .
+docker rm -f kubeaver_oslib    ##delete containerd
 ```
 You can then obtain the offline package `base_k8s_v1.27.10.tgz、extend_CentOS_7_Core.tgz` and import it into Kubeaver.
 

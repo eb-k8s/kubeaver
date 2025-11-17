@@ -11,7 +11,7 @@ k8s基础包中包含k8s组件、flannelv0.22.0和metrics-server，[<span style=
 以flannel_v0.26.5为例
 ~~~shell
 docker pull ghcr.io/eb-k8s/kubeaver/kubeaver_oslib:v1.0
-docker run -d ghcr.io/eb-k8s/kubeaver/kubeaver_oslib:v1.0 --name kubeaver_oslib
+docker run -d --name kubeaver_oslib ghcr.io/eb-k8s/kubeaver/kubeaver_oslib:v1.0 
 # 获取到网络插件依赖包
 docker cp kubeaver_oslib:/root/extend_CentOS_7_Core.tgz .
 ~~~
