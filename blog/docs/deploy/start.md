@@ -41,7 +41,10 @@ git clone https://github.com/eb-k8s/kubeaver.git
 # 切换到Docker Compose文件所在目录
 cd ./deploy
 # 启动Kubeaver
-docker compose up -d
+./start.sh
+
+# 停止Kubeaver
+./stop.sh 
 ~~~
 
 <!-- ### 下载Kubeaver软件包

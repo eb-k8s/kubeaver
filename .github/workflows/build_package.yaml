@@ -1,0 +1,43 @@
+name: "Build Package Workflow"
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  build-package:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Get Version
+      id: get_version
+      run: echo "version=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+
+    - name: Pull and Save Docker images
+      run: |
+        IMAGES=$(awk '/image:/ {print $2}' ${{ github.workspace }}/deploy/docker-compose.yml)
+        for IMG in $IMAGES; do
+          docker pull "$IMG"
+        done
+        docker save -o kubeaver-${{ steps.get_version.outputs.version }}.tar $IMAGES
+
+    - name: Prepare package
+      run: |
+        mkdir -p package/deploy
+        cp ${{ github.workspace }}/deploy/docker-compose.yml package/deploy/
+        cp ${{ github.workspace }}/deploy/nginx-proxy.conf package/deploy/
+        cp ${{ github.workspace }}/deploy/start.sh      package/deploy/
+        cp ${{ github.workspace }}/deploy/stop.sh       package/deploy/
+        mv kubeaver-${{ steps.get_version.outputs.version }}.tar package/
+
+    - name: Create tarball
+      run: tar -czvf kubeaver-offline-installer-${{ steps.get_version.outputs.version }}.tgz -C package .
+
+    - name: Upload package artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: kubeaver-offline-installer
+        path: kubeaver-offline-installer-${{ steps.get_version.outputs.version }}.tgz

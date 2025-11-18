@@ -1,12 +1,17 @@
 <div align="center">
-  <h1><img src="./docs/imgs/logo_without_k.svg" height="100px"  />Kubeaver</h1>
+  <h1><img src="./docs/imgs/logo_without_k.svg" height="100px" style="vertical-align: middle;" />Kubeaver</h1>
 
   <a href="https://github.com/eb-k8s/kubeaver/releases"><img src="https://img.shields.io/github/v/release/eb-k8s/kubeaver" alt="Latest Release"></a>
 </div>
 
-
-
 Kubeaver is a tool for quickly deploying high-availability Kubernetes (K8s) clusters, supporting **online(in progress) and offline** methods. The project is based on [kubespray](https://github.com/kubernetes-sigs/kubespray), leveraging Ansible to automate deployment tasks, and provides a user-friendly **graphical user interface**.
+
+
+## Screenshots
+
+<div align="center">
+  <img src="./docs/imgs/screenshots.png" alt="Screenshots" />
+</div>
 
 Advantages of Kubeaver:
 
@@ -32,16 +37,20 @@ Install Docker on the host where you want to install Kubeaver using the official
 ### Deploy Kubeaver
 
 Download Kubeaver code:
-```
+
+```ShellSession
 git clone https://github.com/eb-k8s/kubeaver.git
 ```
 
 Start Kubeaver using Docker Compose:
-```
+```ShellSession
 # Switch to the directory containing the Docker Compose file
 cd ./deploy
 # Start Kubeaver
-docker compose up -d
+./start.sh
+
+# Stop Kubeaver
+./stop.sh
 ```
 
 After this, Kubeaver will be successfully installed on your host. You can now access it via port 80.
@@ -51,17 +60,21 @@ After this, Kubeaver will be successfully installed on your host. You can now ac
 Before deploying a Kubernetes cluster, you need to import the base package and extension packages according to your requirements. The base package contains essential components required for K8s cluster deployment, including the basic Flannel network plugin. If you intend to use Calico, you will need to import the Calico extension package. It’s important to note that you must import the corresponding operating system extension package based on the OS of your target cluster nodes.
 
 Below shows how to download the Kubernetes base package for version v1.27.10 and the extension package for CentOS 7 operating system:
-```
+
+```ShellSession
 # download base package
+cd ./deploy/data/kubeaver/offline   
+
 docker pull ghcr.io/eb-k8s/kubeaver/kubeaver_offline:v1.27.10
 docker run -d --name kubeaver_offline ghcr.io/eb-k8s/kubeaver/kubeaver_offline:v1.27.10  
 docker cp kubeaver_offline:/root/base_k8s_v1.27.10.tgz .
-docker rm -f kubeaver_offline    ##delete containerd
+docker rm -f kubeaver_offline    ##delete container
+
 # download os package
 docker pull ghcr.io/eb-k8s/kubeaver/oslib_centos:v1.0
 docker run -d --name kubeaver_oslib ghcr.io/eb-k8s/kubeaver/oslib_centos:v1.0 
 docker cp kubeaver_oslib:/root/extend_CentOS_7_Core.tgz .
-docker rm -f kubeaver_oslib    ##delete containerd
+docker rm -f kubeaver_oslib    ##delete container
 ```
 You can then obtain the offline package `base_k8s_v1.27.10.tgz、extend_CentOS_7_Core.tgz` and import it into Kubeaver.
 
