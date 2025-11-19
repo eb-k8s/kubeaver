@@ -11,7 +11,7 @@ jobs:
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Get Version
       id: get_version
@@ -38,7 +38,7 @@ jobs:
       run: tar -czvf kubeaver-offline-installer-${{ steps.get_version.outputs.version }}.tgz -C package .
 
     - name: Upload package artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: kubeaver-offline-installer
         path: kubeaver-offline-installer-${{ steps.get_version.outputs.version }}.tgz
