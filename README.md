@@ -7,50 +7,44 @@
 Kubeaver is a tool for quickly deploying high-availability Kubernetes (K8s) clusters, supporting **online(in progress) and offline** methods. The project is based on [kubespray](https://github.com/kubernetes-sigs/kubespray), leveraging Ansible to automate deployment tasks, and provides a user-friendly **graphical user interface**.
 
 
+## System Architecture
+
+<div align="center">
+  <img src="./docs/imgs/arch.png" alt="System Architecture" />
+</div>
+
 ## Screenshots
 
 <div align="center">
   <img src="./docs/imgs/screenshots.png" alt="Screenshots" />
 </div>
 
-Advantages of Kubeaver:
 
-* **Offline deployment capability**: It can deploy K8s clusters without internet access, completely isolating network dependencies. Users can download offline packages and import them into Kubeaver for one-click deployment.
+## Install & Run
 
-* **Basic cluster management operations**: Use Kubeaver to deploy, upgrade, scale, or reset clusters.
+**System requirements:**
 
-* **customizable cluster configuration**: Choose custom components for your cluster, such as network plugins and applications, and configure advanced parameters.
+**On a Linux host:** docker 20.10.10-ce+ and docker-compose 1.18.0+ .
 
-* **Real-time task progress tracking**: View task stages and time statistics.
+Download binaries of **[Kubeaver release ](https://github.com/eb-k8s/kubeaver/releases)** and follow **[Installation & Configuration Guide](https://goharbor.io/docs/latest/install-config/)** to install Kubeaver.
 
-⚠️ Note: If you can access the internet but face issues downloading K8s-related images and files due to network problems, we strongly recommend using the offline mode for rapid K8s cluster deployment.
+Refer to the **[documentation](https://eb-k8s.github.io/kubeaver/)** for more details on how to use Kubeaver.
 
+Download and Unpack the Installer:
 
-文档语言：[简体中文](./docs/README_CN.md)
+1. Go to the Kubeaver releases page.
 
-## Quick Start
+2. Download the online or offline installer for the version you want to install.
 
-### Install Docker and Docker Compose
-
-Install Docker on the host where you want to install Kubeaver using the official Docker guide: [Install Docker Engine](https://docs.docker.com/engine/install). After installation, run the `docker compose version` command to ensure Docker Compose is correctly installed. If not, manually install Docker Compose.
-
-### Deploy Kubeaver
-
-Download Kubeaver code:
+3. Use tar to extract the installer package:
 
 ```ShellSession
-git clone https://github.com/eb-k8s/kubeaver.git
+tar xzvf kubeaver-offline-installer-x.x.x.tgz
 ```
+4. Install and start Kubeaver by using the start.sh script:
 
-Start Kubeaver using Docker Compose:
 ```ShellSession
-# Switch to the directory containing the Docker Compose file
-cd ./deploy
-# Start Kubeaver
 ./start.sh
-
-# Stop Kubeaver
-./stop.sh
 ```
 
 After this, Kubeaver will be successfully installed on your host. You can now access it via port 80.
@@ -89,12 +83,13 @@ Click here to view more detailed offline package download methods: [Offline pack
 
 ### Feature Introduction
 
-* Add Host  
-* Create Cluster  
-* Deploy Cluster  
-* Cluster Management  
-* Node Management  
-* Offline Package Management  
+* **Offline deployment capability**: It can deploy K8s clusters without internet access, completely isolating network dependencies. Users can download offline packages and import them into Kubeaver for one-click deployment.
+
+* **Basic cluster management operations**: Use Kubeaver to deploy, upgrade, scale, or reset clusters.
+
+* **customizable cluster configuration**: Choose custom components for your cluster, such as network plugins and applications, and configure advanced parameters.
+
+* **Real-time task progress tracking**: View task stages and time statistics.
 
 ## Supported Linux Distributions
 

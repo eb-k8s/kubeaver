@@ -36,11 +36,11 @@ jobs:
 
     - name: Prepare package
       run: |
-        mkdir -p package/deploy
-        cp ${{ github.workspace }}/deploy/docker-compose.yml package/deploy/
-        cp ${{ github.workspace }}/deploy/nginx-proxy.conf package/deploy/
-        cp ${{ github.workspace }}/deploy/start.sh      package/deploy/
-        cp ${{ github.workspace }}/deploy/stop.sh       package/deploy/
+        mkdir -p package
+        cp ${{ github.workspace }}/deploy/docker-compose.yml package/
+        cp ${{ github.workspace }}/deploy/docker-compose.yml package/
+        cp ${{ github.workspace }}/deploy/start.sh      package/
+        cp ${{ github.workspace }}/deploy/stop.sh       package/
         mv kubeaver-${{ steps.get_version.outputs.version }}.tar package/
 
     - name: Create tarball
