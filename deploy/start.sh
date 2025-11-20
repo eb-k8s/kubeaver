@@ -30,17 +30,16 @@ fi
 # 修改所在主机docker配置以及重启docker
 
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
-PKG_ROOT=$(cd "$SCRIPT_DIR/.." && pwd)
-TAR_FILE=""
-if ls "$SCRIPT_DIR"/kubeaver-*.tar >/dev/null 2>&1; then
-  TAR_FILE=$(ls -1 "$SCRIPT_DIR"/kubeaver-*.tar | head -n1)
-elif ls "$PKG_ROOT"/kubeaver-*.tar >/dev/null 2>&1; then
-  TAR_FILE=$(ls -1 "$PKG_ROOT"/kubeaver-*.tar | head -n1)
-fi
+# 在脚本所在目录中查找镜像归档文件
+TAR_FILE=$(ls -1 "$SCRIPT_DIR"/kubeaver-*.tar 2>/dev/null | head -n1)
+
 if [ -z "$TAR_FILE" ]; then
-  echo "未找到镜像归档文件"
+  echo "错误：在 $SCRIPT_DIR 目录中未找到镜像归档文件 (kubeaver-*.tar)。"
   exit 1
 fi
+
+echo "从 $TAR_FILE 加载镜像..."
 docker load -i "$TAR_FILE"
 
+echo "启动服务..."
 HOST_IP=$HOST_IP HOST_NAME=$HOST_NAME docker compose -f "$SCRIPT_DIR/docker-compose.yml" up -d
