@@ -4,7 +4,7 @@
       <a-breadcrumb-item>
         <icon-apps />
       </a-breadcrumb-item>
-      <a-breadcrumb-item>主机管理</a-breadcrumb-item>
+      <a-breadcrumb-item>{{ t('host.breadcrumb.host') }}</a-breadcrumb-item>
     </a-breadcrumb>
     <div class="layout">
       <a-card>
@@ -13,40 +13,40 @@
               <icon-refresh />
           </a-button>
           <a-button type="primary" @click="handleAddHost()" :style="{ marginBottom: '10px' }">
-            添加主机
+            {{ t('host.button.addHost') }}
           </a-button>
         </div>
         <a-table :columns="columns" :data="hostList" :loading="loading">
           <template #operations="{record}">
             <a-button type="text" size="small" @click="handleDelete(record)">
-              删除
+              {{ t('host.button.delete') }}
             </a-button>
           </template>
         </a-table>
       </a-card>
     </div>
-    <a-modal v-model:visible="addVisible" @ok="handleAddOk" @cancel="handleAddCancel" title="主机添加">
+    <a-modal v-model:visible="addVisible" @ok="handleAddOk" @cancel="handleAddCancel" :title="t('host.modal.title.addHost')">
       <a-tabs default-active-key="1">
-        <a-tab-pane key="1" title="单个添加">
+        <a-tab-pane key="1" :title="t('host.modal.tab.title.singleAdd')">
           <a-form :model="form" class="custom-form">
-            <a-form-item label="IP" field="hostIP">
-              <a-input v-model="form.hostIP" placeholder="请输入主机IP" />
+            <a-form-item :label="t('host.form.label.ip')" field="hostIP">
+              <a-input v-model="form.hostIP" :placeholder="t('host.form.placeholder.ip')" />
             </a-form-item>
-            <a-form-item label="端口号">
+            <a-form-item :label="t('host.form.label.port')">
               <a-input-number
                 v-model="form.hostPort"
-                placeholder="请输入端口号"
-                :rules="[{ required: true, type: 'number', message: '请输入1-65535之间的整数', min: 1, max: 65535 }]"
+                :placeholder="t('host.form.placeholder.port')"
+                :rules="[{ required: true, type: 'number', message: t('host.form.rule.port'), min: 1, max: 65535 }]"
               />
             </a-form-item>
-            <a-form-item label="用户" field="user">
-              <a-input v-model="form.user" placeholder="请输入主机的用户" />
+            <a-form-item :label="t('host.form.label.user')" field="user">
+              <a-input v-model="form.user" :placeholder="t('host.form.placeholder.user')" />
             </a-form-item>
-            <a-form-item label="密码" field="password">
+            <a-form-item :label="t('host.form.label.password')" field="password">
               <a-input
                 v-model="form.password"
                 :type="showPassword ? 'text' : 'password'"
-                placeholder="请输入主机的密码"
+                :placeholder="t('host.form.placeholder.password')"
                 autocomplete="on"
               >
                 <template #suffix>
@@ -59,24 +59,26 @@
             </a-form-item>
           </a-form>
         </a-tab-pane>
-        <a-tab-pane key="2" title="批量添加">
+        <a-tab-pane key="2" :title="t('host.modal.tab.title.batchAdd')">
           待做
         </a-tab-pane>
       </a-tabs>
     </a-modal>
     <a-modal v-model:visible="deleteVisible" @ok="handleDeleteOk" @cancel="handleDeleteCancel">
-      确定删除<span style="color: red; font-weight: bold;">{{ hostIP }}</span>这台主机吗？
+      {{ t('host.modal.delete.confirm') }}<span style="color: red; font-weight: bold;">{{ hostIP }}</span>{{ t('host.modal.delete.confirm.host') }}
     </a-modal>
   </div>
 </template>
 
 <script lang="ts" setup>
+import { useI18n } from 'vue-i18n';
 import { reactive, ref } from 'vue';
 import { addHost, getHostList, deleteHost } from '@/api/hosts';
 import { getAllNodeList } from '@/api/node';
 import useLoading from '@/hooks/loading';
 import { Message } from '@arco-design/web-vue';
 
+const { t } = useI18n();
 const { loading, setLoading } = useLoading();
 
 const addVisible = ref(false);
@@ -134,7 +136,7 @@ const handleAddOk = async () => {
   // 检查次版本是否存在
   const versionMapStr = localStorage.getItem('k8sVersionMap');
   if (!versionMapStr) {
-      Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
+      Message.error(t('host.message.error.noBackend'));
       return;
   }
 
@@ -142,7 +144,7 @@ const handleAddOk = async () => {
   const { hostIP } = form;
   
   if (isHostExist(hostIP)) {
-    Message.warning(`主机 ${hostIP} 已经存在！`);
+    Message.warning(t('host.message.warning.hostExist', { hostIP: hostIP }));
     return;
   }
 
@@ -150,13 +152,13 @@ const handleAddOk = async () => {
     setLoading(true);
     const result: any = await addHost(form, k8sVersion);
     if (result.status === 'ok') {
-      Message.success('主机添加成功!');
+      Message.success(t('host.message.success.addHost'));
       await fetchHostList();
     } else {
-      Message.error(result.msg || '添加主机失败');
+      Message.error(result.msg || t('host.message.error.addHost'));
     }
   } catch (error) {
-    Message.error('添加主机时发生异常');
+    Message.error(t('host.message.error.addHostException'));
   } finally{
     setLoading(false);
   }
@@ -178,14 +180,14 @@ const handleDeleteOk = async () => {
   const isHostInUse = nodeList.value.some(node => node.ip === hostIP.value);
   
   if (isHostInUse) {
-    Message.warning(`主机 ${hostIP.value} 正在被使用，无法删除！`);
+    Message.warning(t('host.message.warning.hostInUse', { hostIP: hostIP.value }));
     return;
   }
 
   // 检查次版本是否存在
   const versionMapStr = localStorage.getItem('k8sVersionMap');
   if (!versionMapStr) {
-      Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
+      Message.error(t('host.message.error.noBackend'));
       return;
   }
 
@@ -193,7 +195,7 @@ const handleDeleteOk = async () => {
     const k8sVersion = getFirstK8sVersionFromStorage();
     const result: any = await deleteHost(hostIP.value, k8sVersion);
     if (result.status === 'ok') {
-      Message.success("删除成功！");
+      Message.success(t('host.message.success.deleteHost'));
       await fetchHostList();  // 刷新主机列表
     }else{
       Message.error(result.msg);
@@ -224,7 +226,7 @@ const fetchNodeList = async () => {
     // 检查次版本是否存在
     const versionMapStr = localStorage.getItem('k8sVersionMap');
     if (!versionMapStr) {
-        Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
+        Message.error(t('host.message.error.noBackend'));
         return;
     }
     setLoading(true);
@@ -243,7 +245,7 @@ const fetchHostList = async () => {
     // 检查次版本是否存在
     const versionMapStr = localStorage.getItem('k8sVersionMap');
     if (!versionMapStr) {
-        Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
+        Message.error(t('host.message.error.noBackend'));
         return;
     }  
     setLoading(true);
@@ -264,14 +266,14 @@ fetchHostList();
 fetchNodeList();
 
 const columns = [
-  { title: '主机IP', dataIndex: 'hostIP' },
-  { title: '主机端口', dataIndex: 'hostPort' },
-  { title: '操作系统', dataIndex: 'os' },
-  { title: 'CPU（核）', dataIndex: 'cpu' },
-  { title: '内存（GB）', dataIndex: 'memory' },
-  { title: '用户', dataIndex: 'user' },
-  { title: '加入时间', dataIndex: 'addtime' },
-  { title: '操作', dataIndex: 'operations', slotName: 'operations' },
+  { title: t('host.table.header.hostIP'), dataIndex: 'hostIP' },
+  { title: t('host.table.header.hostPort'), dataIndex: 'hostPort' },
+  { title: t('host.table.header.os'), dataIndex: 'os' },
+  { title: t('host.table.header.cpu'), dataIndex: 'cpu' },
+  { title: t('host.table.header.memory'), dataIndex: 'memory' },
+  { title: t('host.table.header.user'), dataIndex: 'user' },
+  { title: t('host.table.header.addTime'), dataIndex: 'addtime' },
+  { title: t('host.table.header.action'), dataIndex: 'operations', slotName: 'operations' },
 ];
 </script>
 

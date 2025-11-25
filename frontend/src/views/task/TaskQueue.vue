@@ -9,7 +9,7 @@
                         :header="task.taskType"> 
                         <div style="text-align: right; display: flex; align-items: center; justify-content: flex-end;">
                             <a-button type="primary" @click="onClickBulkTermination(task.taskType)" :style="{ marginBottom: '10px', marginTop: '2px' }">
-                                批量终止
+                                {{ t('task.queue.button.bulk') }}
                             </a-button> 
                         </div>
                         <a-table :data="task.tasks" :columns="columns" :loading="loading">
@@ -37,13 +37,13 @@
                             </template>
                             <template #operations="{ record }">
                                 <a-button v-if="record.status === '活跃中'" type="text" size="small" @click="onClickDetail(record)">
-                                    详情
+                                    {{ t('task.queue.button.detail')}}
                                 </a-button>
                                 <a-button v-if="record.status === '活跃中'" type="text" size="small" @click="onClickStop(record)">
-                                    终止
+                                    {{ t('task.queue.button.stop')}}
                                 </a-button>
                                 <a-button v-if="record.status === '等待中'" type="text" size="small" @click="onClickDelete(record)">
-                                    删除
+                                    {{t('task.queue.button.delete')}}
                                 </a-button>
                             </template>
                         </a-table>
@@ -52,7 +52,7 @@
             </a-card>
             <a-modal
                 v-model:visible="webSocketVisible"
-                title="任务实例"
+                :title="t('task.queue.modal.title')"
                 @ok="handleWebSocketOk"
                 @cancel="handleWebSocketCancel"
                 :footer="null"
@@ -80,7 +80,8 @@
     import { useRoute } from 'vue-router';
     import { Message } from '@arco-design/web-vue';
     import { formatTime } from '@/utils/time';
-
+    import { useI18n } from 'vue-i18n';
+    const { t } = useI18n();
     const route = useRoute();
     const id = ref(route.query.id);
     const { loading, setLoading } = useLoading();
@@ -262,11 +263,11 @@
         try {
             setLoading(true);
             const taskNameMap: Record<string, string> = {
-                '初始化集群': 'initCluster',
-                '添加节点': 'addNode',
-                '升级集群': 'upgradeCluster',
-                '重置集群': 'resetCluster',
-                '重置节点': 'resetNode',
+                [t('task.queue.type.initCluster')]: 'initCluster',
+                [t('task.queue.type.addNode')]: 'addNode',
+                [t('task.queue.type.upgradeCluster')]: 'upgradeCluster',
+                [t('task.queue.type.resetCluster')]: 'resetCluster',
+                [t('task.queue.type.resetNode')]: 'resetNode',
             };
             const taskName = taskNameMap[record.taskName];
             const data = {
@@ -469,11 +470,11 @@
         if (result && typeof result === 'object') {
         const typeOrder = ['initCluster', 'addNode', 'upgradeCluster', 'resetCluster', 'resetNode'];
         const typeMap = {
-            initCluster: '初始化集群',
-            addNode: '添加节点',
-            upgradeCluster: '升级集群',
-            resetCluster: '重置集群',
-            resetNode: '重置节点',
+            initCluster: t('task.queue.type.initCluster'),
+            addNode: t('task.queue.type.addNode'),
+            upgradeCluster: t('task.queue.type.upgradeCluster'),
+            resetCluster: t('task.queue.type.resetCluster'),
+            resetNode: t('task.queue.type.resetNode'),
         };
 
         taskList.value = Object.entries(result).map(([key, tasks]) => ({
@@ -534,12 +535,12 @@
 
     const columns = [
         { title: 'IP', dataIndex: 'ip' },
-        { title: '名称', dataIndex: 'taskName' },
-        { title: '角色', dataIndex: 'role' },
-        { title: '创建时间', dataIndex: 'createTime' },
-        { title: '任务状态', dataIndex: 'status' , slotName: 'status',},
-        { title: '任务进度', dataIndex: 'progress' , slotName: 'progress',},
-        { title: '操作', dataIndex: 'operations', slotName: 'operations',},
+        { title: t('task.name'), dataIndex: 'taskName' },
+        { title: t('task.queue.columns.role'), dataIndex: 'role' },
+        { title: t('task.queue.columns.createTime'), dataIndex: 'createTime' },
+        { title: t('task.history.columns.status'), dataIndex: 'status' , slotName: 'status',},
+        { title: t('task.column.progress'), dataIndex: 'progress' , slotName: 'progress',},
+        { title: t('task.column.operations'), dataIndex: 'operations', slotName: 'operations',},
     ];
 
 </script>

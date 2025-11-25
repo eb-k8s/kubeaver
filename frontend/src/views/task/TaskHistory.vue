@@ -13,7 +13,7 @@
                             <span v-if="record.status === '活跃中'" class="status-icon working">
                                 <icon-sync class="rotating" />
                             </span>
-                            <span v-if="record.status === '已完成'" class="status-icon worked">
+                            <span v-if="record.status === t('task.history.status.worked')" class="status-icon worked">
                                 <icon-check-circle />
                             </span>
                             <span v-if="record.status === '失败'" class="status-icon failed">
@@ -24,17 +24,17 @@
                     </template>
                     <template #operations="{ record }">
                         <a-button type="text" size="small" @click="onClickDetail(record)">
-                            详情
+                            {{ t('task.history.button.detail')}}
                         </a-button>
                         <a-button type="text" size="small" @click="onClickDetailTime(record)">
-                            时间统计
+                            {{ t('task.history.chart.title')}}
                         </a-button>
                     </template>
                 </a-table>
             </a-card>
             <a-modal
                 v-model:visible="webTaskDetailVisible"
-                title="任务实例"
+                :title="t('task.queue.modal.title')"
                 @ok="handleTaskDetailOk"
                 @cancel="handleTaskDetailCancel"
                 :footer="null"
@@ -70,8 +70,10 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted, nextTick, onBeforeUnmount } from 'vue';
+import { ref, onMounted, nextTick, computed, onBeforeUnmount } from 'vue';
 import useLoading from '@/hooks/loading';
+import { useI18n } from 'vue-i18n';
+const { t } = useI18n();
 import { getTaskList, getTaskDetail } from '@/api/tasks';
 import { useRoute } from 'vue-router';
 import { formatTime } from '@/utils/time';
@@ -118,16 +120,16 @@ const getFirstK8sVersionFromStorage = (key = 'k8sVersionList'): string => {
 
 const drawChart = (data) => {
     const nameTranslation = {
-        "reset": "重置",
-        "pre_process": "预处理",
-        "download": "安装准备",
-        "install k8s cluster": "安装master",
-        "install network_plugin": "安装网络插件",
-        "add to cluster": "加入集群",
-        "after_check": "集群检查",
-        "upgrade master components": "升级master",
-        "upgrade network_plugin": "升级网络插件",
-        "upgrade node components": "升级node",
+        "reset": t('task.history.chart.name.reset'),
+        "pre_process": t('task.history.chart.name.pre_process'),
+        "download": t('task.history.chart.name.download'),
+        "install k8s cluster": t('task.history.chart.name.install_k8s_cluster'),
+        "install network_plugin": t('task.history.chart.name.install_network_plugin'),
+        "add to cluster": t('task.history.chart.name.add_to_cluster'),
+        "after_check": t('task.history.chart.name.after_check'),
+        "upgrade master components": t('task.history.chart.name.upgrade_master_components'),
+        "upgrade network_plugin": t('task.history.chart.name.upgrade_network_plugin'),
+        "upgrade node components": t('task.history.chart.name.upgrade_node_components'),
     };
 
     if (typeof data === 'string') {
@@ -159,10 +161,10 @@ const drawChart = (data) => {
         const isSingleDataPoint = data.length === 1;
 
         const option = {
-            title: { text: '时间统计', left: 'center' },
+            title: { text: t('task.history.chart.title'), left: 'center' },
             tooltip: {
                 trigger: 'item',
-                formatter: ({ name, value }) => `${name}: ${value.toFixed(2)} 秒`,
+                formatter: ({ name, value }) => `${name}: ${value.toFixed(2)} ${t('task.time.second')}`,
             },
             grid: {
                 left: '10%',
@@ -183,7 +185,7 @@ const drawChart = (data) => {
             yAxis: {
                 type: 'value',
                 axisLabel: {
-                    formatter: value => `${value.toFixed(2)} 秒`,
+                    formatter: value => `${value.toFixed(2)} ${t('task.time.second')}`,
                 },
             },
             series: [
@@ -209,7 +211,7 @@ const drawChart = (data) => {
                     label: {
                         show: true,
                         position: 'top',
-                        formatter: ({ value }) => `${value.toFixed(2)} 秒`,
+                        formatter: ({ value }) => `${value.toFixed(2)} ${t('task.time.second')}`,
                     },
                 },
             ],
@@ -276,11 +278,18 @@ const handleTaskDetail = async (task: any) => {
         }
 
         const taskNameMap: Record<string, string> = {
-            '添加节点': 'addNode',
-            '初始化集群': 'initCluster',
-            '重置集群': 'resetCluster',
-            '重置节点': 'resetNode',
-            '升级集群': 'upgradeCluster',
+            [t('task.queue.type.addNode')]: 'addNode',
+            [t('task.queue.type.initCluster')]: 'initCluster',
+            [t('task.queue.type.resetCluster')]: 'resetCluster',
+            [t('task.queue.type.resetNode')]: 'resetNode',
+            [t('task.queue.type.upgradeCluster')]: 'upgradeCluster',
+        };
+        const TASK_TYPE: Record<string, string> = {
+            INIT_CLUSTER: t('task.queue.type.initCluster'),
+            ADD_NODE: t('task.queue.type.addNode'),
+            RESET_CLUSTER: t('task.queue.type.resetCluster'),
+            RESET_NODE: t('task.queue.type.resetNode'),
+            UPGRADE_CLUSTER: t('task.queue.type.upgradeCluster'),
         };
 
         const taskName = taskNameMap[task.taskName] || task.taskName;
@@ -293,18 +302,18 @@ const handleTaskDetail = async (task: any) => {
         const plays = rawContent.split('\n\n').filter((msg) => msg.trim().startsWith('PLAY'));
 
         // 根据任务名称选择对应的任务处理逻辑
-        if (task.taskName === '初始化集群') {
+        if (task.taskName === TASK_TYPE.INIT_CLUSTER) {
             processClusterInitialization(plays, task, rawContent);
-        } else if (task.taskName === '添加节点') {
+        } else if (task.taskName === TASK_TYPE.ADD_NODE) {
             processAddNode(plays, task, rawContent);
         }
-        else if (task.taskName === '升级集群') {
+        else if (task.taskName === TASK_TYPE.UPGRADE_CLUSTER) {
             processClusterUpgrade(plays, task, rawContent);
         }
-        else if (task.taskName === '重置节点') {
+        else if (task.taskName === TASK_TYPE.RESET_NODE) {
             processNodeReset(plays, task, rawContent);
         }
-        else if (task.taskName === '重置集群') {
+        else if (task.taskName === TASK_TYPE.RESET_CLUSTER) {
             processClusterReset(plays, task, rawContent);
         }
         // 其他任务可以在这里继续扩展
@@ -316,21 +325,21 @@ const handleTaskDetail = async (task: any) => {
 // 处理初始化集群任务
 const processClusterInitialization = (plays, task, rawContent) => {
     const playStages = {
-        'force delete node': '重置阶段',
-        'prepare for using kubespray playbook': '预处理阶段',
-        'Prepare for etcd install': '安装准备阶段',
-        'Install etcd': '安装master节点阶段',
-        'Invoke kubeadm and install a CNI': '安装网络插件阶段',
-        'Patch Kubernetes for Windows': '安装后检查阶段',
+        'force delete node': t('task.history.stages.reset'),
+        'prepare for using kubespray playbook': t('task.history.stages.preprocess'),
+        'Prepare for etcd install': t('task.history.stages.prepareInstall'),
+        'Install etcd': t('task.history.stages.installMaster'),
+        'Invoke kubeadm and install a CNI': t('task.history.stages.installNetwork'),
+        'Patch Kubernetes for Windows': t('task.history.stages.postCheck'),
     };
 
     const stageToTimeMapping = {
-        '重置阶段': 'reset',
-        '预处理阶段': 'pre_process',
-        '安装准备阶段': 'download',
-        '安装master节点阶段': 'install k8s cluster',
-        '安装网络插件阶段': 'install network_plugin',
-        '安装后检查阶段': 'after_check',
+        [t('task.history.stages.reset')]: 'reset',
+        [t('task.history.stages.preprocess')]: 'pre_process',
+        [t('task.history.stages.prepareInstall')]: 'download',
+        [t('task.history.stages.installMaster')]: 'install k8s cluster',
+        [t('task.history.stages.installNetwork')]: 'install network_plugin',
+        [t('task.history.stages.postCheck')]: 'after_check',
     };
 
     processPlayStages(plays, task, rawContent, playStages, stageToTimeMapping);
@@ -339,21 +348,21 @@ const processClusterInitialization = (plays, task, rawContent) => {
 // 处理添加节点任务
 const processAddNode = (plays, task, rawContent) => {
     const playStages = {
-        'force delete node': '重置阶段',
-        'prepare for using kubespray playbook': '预处理阶段',
-        'Target only workers to get kubelet installed and checking in on any new nodes(engine)': '安装准备阶段',
-        'Target only workers to get kubelet installed and checking in on any new nodes(node)': '安装node阶段',
-        'Target only workers to get kubelet installed and checking in on any new nodes(network)': '安装网络插件阶段',
-        'Apply resolv.conf changes now that cluster DNS is up': '集群检查阶段',
+        'force delete node': t('task.history.stages.reset'),
+        'prepare for using kubespray playbook': t('task.history.stages.preprocess'),
+        'Target only workers to get kubelet installed and checking in on any new nodes(engine)': t('task.history.stages.prepareInstall'),
+        'Target only workers to get kubelet installed and checking in on any new nodes(node)': t('task.history.stages.installNode'),
+        'Target only workers to get kubelet installed and checking in on any new nodes(network)': t('task.history.stages.installNetwork'),
+        'Apply resolv.conf changes now that cluster DNS is up': t('task.history.stages.clusterCheck'),
     };
 
     const stageToTimeMapping = {
-        '重置阶段': 'reset',
-        '预处理阶段': 'pre_process',
-        '安装准备阶段': 'download',
-        '安装node阶段': 'add to cluster',
-        '安装网络插件阶段': 'install network_plugin',
-        '集群检查阶段': 'after_check',
+        [t('task.history.stages.reset')]: 'reset',
+        [t('task.history.stages.preprocess')]: 'pre_process',
+        [t('task.history.stages.prepareInstall')]: 'download',
+        [t('task.history.stages.installNode')]: 'add to cluster',
+        [t('task.history.stages.installNetwork')]: 'install network_plugin',
+        [t('task.history.stages.clusterCheck')]: 'after_check',
     };
 
     processPlayStages(plays, task, rawContent, playStages, stageToTimeMapping);
@@ -362,19 +371,19 @@ const processAddNode = (plays, task, rawContent) => {
 // 处理更新集群任务
 const processClusterUpgrade = (plays, task, rawContent) => {
     const playStages = {
-        'Check Ansible version': '升级准备阶段',
-        'Upgrade container engine on non-cluster nodes': '升级master节点阶段',
-        'Upgrade calico and external cloud provider on all masters, calico-rrs, and nodes': '升级网络插件',
-        'Finally handle worker upgrades, based on given batch size': '升级node节点阶段',
-        'Patch Kubernetes for Windows': '集群检查阶段',
+        'Check Ansible version': t('task.history.stages.upgradePrepare'),
+        'Upgrade container engine on non-cluster nodes': t('task.history.stages.upgradeMaster'),
+        'Upgrade calico and external cloud provider on all masters, calico-rrs, and nodes': t('task.history.stages.upgradeNetwork'),
+        'Finally handle worker upgrades, based on given batch size': t('task.history.stages.upgradeNode'),
+        'Patch Kubernetes for Windows': t('task.history.stages.clusterCheck'),
     };
 
     const stageToTimeMapping = {
-        '升级准备阶段': 'pre_process',
-        '升级master节点阶段': 'upgrade master components',
-        '升级网络插件': 'upgrade network_plugin',
-        '升级node节点阶段': 'upgrade node components',
-        '集群检查阶段': 'after_check'
+        [t('task.history.stages.upgradePrepare')]: 'pre_process',
+        [t('task.history.stages.upgradeMaster')]: 'upgrade master components',
+        [t('task.history.stages.upgradeNetwork')]: 'upgrade network_plugin',
+        [t('task.history.stages.upgradeNode')]: 'upgrade node components',
+        [t('task.history.stages.clusterCheck')]: 'after_check'
     };
 
     processPlayStages(plays, task, rawContent, playStages, stageToTimeMapping);
@@ -383,11 +392,11 @@ const processClusterUpgrade = (plays, task, rawContent) => {
 // 处理重置集群任务
 const processClusterReset = (plays, task, rawContent) => {
     const playStages = {
-        'force delete node': '重置阶段',
+        'force delete node': t('task.history.stages.reset'),
     };
 
     const stageToTimeMapping = {
-        '重置阶段': 'reset',
+        [t('task.history.stages.reset')]: 'reset',
     };
 
     processPlayStages(plays, task, rawContent, playStages, stageToTimeMapping);
@@ -396,11 +405,11 @@ const processClusterReset = (plays, task, rawContent) => {
 // 处理重置节点任务
 const processNodeReset = (plays, task, rawContent) => {
     const playStages = {
-        'force delete node': '重置阶段',
+        'force delete node': t('task.history.stages.reset'),
     };
 
     const stageToTimeMapping = {
-        '重置阶段': 'reset',
+        [t('task.history.stages.reset')]: 'reset',
     };
 
     processPlayStages(plays, task, rawContent, playStages, stageToTimeMapping);
@@ -424,7 +433,7 @@ const processPlayStages = (plays, task, rawContent, playStages, stageToTimeMappi
 
     let htmlContent = '';
     let currentStageContent = '';
-    let currentStageTitle = '未知阶段'; // 当前阶段标题
+    let currentStageTitle = t('task.history.stage.unknown');
     let currentStageStatus = 'pending'; // 当前阶段的默认状态
     let processedStages = new Set(); // 用于存储已处理的阶段，避免重复处理
 
@@ -496,7 +505,7 @@ const processPlayStages = (plays, task, rawContent, playStages, stageToTimeMappi
         // 在当前阶段检查错误信息
         if (aggregatedContent.includes('Task execution failed')) {
             currentStageStatus = 'failure';
-        } else if (task.status === '已完成') {
+        } else if (task.status === t('task.history.status.worked')) {
             currentStageStatus = 'success';
         } else if (!nextPlay || !Object.keys(playStages).some(stage => nextPlay.includes(stage))) {
             currentStageStatus = 'pending';
@@ -561,7 +570,7 @@ onBeforeUnmount(() => {
 
 
 function calculateExecutionTime(processedOn, finishedOn) {
-
+    console.log(processedOn)
     if (isNaN(processedOn) || isNaN(finishedOn)) {
         return "0秒"; 
     }
@@ -579,13 +588,13 @@ function calculateExecutionTime(processedOn, finishedOn) {
     let result = '';
 
     if (hours > 0) {
-        result += `${hours}小时 `;
+        result += `${hours}${t('task.time.hour')} `;
     }
     if (minutes > 0) {
-        result += `${minutes}分钟 `;
+        result += `${minutes}${t('task.time.minute')} `;
     }
     if (seconds > 0 || result === '') { 
-        result += `${seconds}秒`;
+        result += `${seconds}${t('task.time.second')}`;
     }
     return result.trim();
 }
@@ -612,15 +621,15 @@ const fetchTaskList = async () => {
                 entry[key].forEach(data => {
                     const statusMap = {
                         'working': '活跃中', 
-                        'worked': '已完成',
+                        'worked': t('task.history.status.worked'),
                         'failed': '失败'  
                     };
                     const typeMap = {
-                        addNode: '添加节点',
-                        initCluster: '初始化集群',
-                        resetCluster: '重置集群',
-                        resetNode: '重置节点',
-                        upgradeCluster: '升级集群'
+                        addNode: t('task.queue.type.addNode'),
+                        initCluster: t('task.queue.type.initCluster'),
+                        resetCluster: t('task.queue.type.resetCluster'),
+                        resetNode: t('task.queue.type.resetNode'),
+                        upgradeCluster: t('task.queue.type.upgradeCluster')
                     };
                     allTasks.push({
                         taskName: typeMap[key], 
@@ -668,14 +677,14 @@ const updateModalSize = () => {
     modalHeight.value = window.innerHeight * 0.8;
 };
 
-const columns = [
+const columns = computed(() => [
     { title: 'IP', dataIndex: 'IP' },
-    { title: '名称', dataIndex: 'taskName' },
-    { title: '创建时间', dataIndex: 'createTime' },
-    { title: '任务状态', dataIndex: 'status', slotName: 'status' },
-    { title: '执行时间', dataIndex: 'executionTime' },
-    { title: '操作', dataIndex: 'operations', slotName: 'operations'},
-];
+    { title: t('task.name'), dataIndex: 'taskName' },
+    { title: t('task.history.columns.createTime'), dataIndex: 'createTime' },
+    { title: t('task.history.columns.status'), dataIndex: 'status', slotName: 'status' },
+    { title: t('task.history.columns.executionTime'), dataIndex: 'executionTime' },
+    { title: t('task.history.columns.operations'), dataIndex: 'operations', slotName: 'operations'},
+]);
 
 </script>
 

@@ -6,7 +6,7 @@ const RESOURCES: AppRouteRecordRaw = {
   name: 'resources',
   component: DEFAULT_LAYOUT,
   meta: {
-    locale: '离线包',
+    locale: 'menu.resources',
     requiresAuth: true,
     icon: 'icon-storage',
     order: 5,
@@ -19,7 +19,7 @@ const RESOURCES: AppRouteRecordRaw = {
       name: 'resources.list',
       component: () => import('@/views/resources/list/index.vue'),
       meta: {
-        locale: '离线包',
+        locale: 'menu.resources',
         requiresAuth: true,
         roles: ['*'],
         hideInMenu: true,

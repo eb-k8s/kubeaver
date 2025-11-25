@@ -4,37 +4,37 @@
         <a-breadcrumb-item>
             <icon-apps />
         </a-breadcrumb-item>
-        <a-breadcrumb-item>创建集群</a-breadcrumb-item>
+        <a-breadcrumb-item>{{ t('cluster.create.breadcrumb.create') }}</a-breadcrumb-item>
         </a-breadcrumb>
         <div class="layout">
             <a-card>
                 <div style="text-align: right; display: flex; align-items: center; justify-content: flex-end;">
-                    <a-button type="primary" size="small" @click="handleCreateCluster">创建</a-button>
+                    <a-button type="primary" size="small" @click="handleCreateCluster">{{ t('cluster.create.button.create') }}</a-button>
                 </div>
                 <a-form :model="cluster" style="margin-top: 20px;">
                     <a-row :gutter="[24, 24]">
                         <a-col :xs="24" :md="12">
-                            <a-card title="基础信息">
+                            <a-card :title="t('cluster.create.card.title.basic')">
                                 <a-form-item
-                                    label="集群名称："
+                                    :label="t('cluster.create.form.label.clusterName')"
                                     field="clusterName"
-                                    :rules="[{ required: true, message: '请输入集群名称' }]"
+                                    :rules="[{ required: true, message: t('cluster.create.form.rules.clusterName') }]"
                                 >
                                     <a-input
                                         v-model="cluster.clusterName"
-                                        placeholder="请输入集群名称"
+                                        :placeholder="t('cluster.create.form.placeholder.clusterName')"
                                         style="width: 40%;"
                                     />
                                 </a-form-item>
                           
                                 <a-form-item
-                                    label="集群版本："
+                                    :label="t('cluster.create.form.label.version')"
                                     field="version"
-                                    :rules="[{ required: true, message: '请选择集群版本' }]"
+                                    :rules="[{ required: true, message: t('cluster.create.form.rules.version') }]"
                                 >
                                     <a-select
                                         v-model="cluster.version"
-                                        placeholder="请选择集群版本"
+                                        :placeholder="t('cluster.create.form.placeholder.version')"
                                         style="width: 65%;"
                                     >
                                         <a-option
@@ -48,14 +48,14 @@
                                 </a-form-item>
                          
                                 <a-form-item
-                                    label="网络插件："
+                                    :label="t('cluster.create.form.label.networkPlugin')"
                                     field="networkPlugin"
-                                    :rules="[{ required: true, message: '请选择网络插件' }]"
+                                    :rules="[{ required: true, message: t('cluster.create.form.rules.networkPlugin') }]"
                                 >
                                     <a-select
                                         v-model="cluster.networkPlugin"
                                         class="select-input"
-                                        placeholder="请选择网络插件"
+                                        :placeholder="t('cluster.create.form.placeholder.networkPlugin')"
                                         style="width: 50%;"
                                     >
                                         <a-option
@@ -67,14 +67,14 @@
                                 </a-form-item>
                           
                                 <a-form-item
-                                    label="并发："
-                                    tooltip="请输入任务并行的数量，必须输入整数，且最小为2，最大为10。"
+                                    :label="t('cluster.create.form.label.taskNum')"
+                                    :tooltip="t('cluster.create.form.tooltip.taskNum')"
                                     field="taskNum"
-                                    :rules="[{ required: true, type: 'number', message: '请输入2-10之间的整数', min: 2, max: 10 }]"
+                                    :rules="[{ required: true, type: 'number', message: t('cluster.create.form.rules.taskNum'), min: 2, max: 10 }]"
                                 >
                                     <a-input-number
                                         v-model="cluster.taskNum"
-                                        placeholder="任务并发数量"
+                                        :placeholder="t('cluster.create.form.placeholder.taskNum')"
                                         style="width: 40%; color: #000000;"
                                         :min="2"
                                         :max="10"
@@ -82,51 +82,51 @@
                                 </a-form-item>
                             </a-card>
                             <a-collapse :default-active-key="[]" style="margin-top: 20px;">
-                                <a-collapse-item header="参数配置" key="1">
+                                <a-collapse-item :header="t('cluster.create.collapse.title.params')" key="1">
                                     <a-card style="margin-top: -10px; margin-bottom: -10px; margin-left: -40px; margin-right:-40px;">
                                         <a-tabs default-active-key="1">
-                                            <a-tab-pane key="1" title="资源预留">
+                                            <a-tab-pane key="1" :title="t('cluster.create.tabs.title.resource')">
                                                 <a-form :model="config"  style="margin-top: 20px;">
                                                     <!-- Kubernetes 资源预留 -->
-                                                    <a-form-item label="启用k8s资源预留:">
+                                                    <a-form-item :label="t('cluster.create.form.label.k8sEnable')">
                                                         <a-switch v-model="config.kube_reserved" disabled/>
                                                     </a-form-item>
                                                     <template v-if="config.kube_reserved">
-                                                        <a-form-item label="内存: " >
-                                                            <a-input v-model="config.kube_memory_reserved" placeholder="如：256Mi" style="width: 60%;" readonly/>
+                                                        <a-form-item :label="t('cluster.create.form.label.k8sMemory')" >
+                                                            <a-input v-model="config.kube_memory_reserved" :placeholder="t('cluster.create.form.placeholder.k8sMemory')" style="width: 60%;" readonly/>
                                                         </a-form-item>
-                                                        <a-form-item label="CPU: ">
-                                                            <a-input v-model="config.kube_cpu_reserved" placeholder="如：100m" style="width: 60%;" readonly/>
+                                                        <a-form-item :label="t('cluster.create.form.label.k8sCpu')">
+                                                            <a-input v-model="config.kube_cpu_reserved" :placeholder="t('cluster.create.form.placeholder.k8sCpu')" style="width: 60%;" readonly/>
                                                         </a-form-item>
                                                     </template>
 
                                                     <!-- 系统资源预留 -->
-                                                    <a-form-item label="启用系统资源预留: ">
+                                                    <a-form-item :label="t('cluster.create.form.label.systemEnable')">
                                                         <a-switch v-model="config.system_reserved" disabled/>
                                                     </a-form-item>
                                                     <template v-if="config.system_reserved">
-                                                        <a-form-item label="内存: ">
-                                                            <a-input v-model="config.system_memory_reserved" placeholder="如：512Mi" style="width: 60%;" readonly/>
+                                                        <a-form-item :label="t('cluster.create.form.label.systemMemory')">
+                                                            <a-input v-model="config.system_memory_reserved" :placeholder="t('cluster.create.form.placeholder.systemMemory')" style="width: 60%;" readonly/>
                                                         </a-form-item>
-                                                        <a-form-item label="CPU: ">
-                                                            <a-input v-model="config.system_cpu_reserved" placeholder="如：500m" style="width: 60%;" readonly/>
+                                                        <a-form-item :label="t('cluster.create.form.label.systemCpu')">
+                                                            <a-input v-model="config.system_cpu_reserved" :placeholder="t('cluster.create.form.placeholder.systemCpu')" style="width: 60%;" readonly/>
                                                         </a-form-item>
                                                     </template>
                                                 </a-form>
                                             </a-tab-pane>
                                         
-                                            <a-tab-pane key="2" title="域名解析">
+                                            <a-tab-pane key="2" :title="t('cluster.create.tabs.title.dns')">
                                                 <a-form :model="config" style="margin-top: 20px;">
-                                                    <a-form-item label="DNS模式: ">
+                                                    <a-form-item :label="t('cluster.create.form.label.dnsMode')">
                                                         <a-select v-model="config.dns_mode" style="width: 60%" disabled>
                                                             <a-option :value=config.dns_mode>{{config.dns_mode}}</a-option>
                                                         </a-select>
                                                     </a-form-item>
-                                                    <a-form-item label="启用本地DNS: ">
+                                                    <a-form-item :label="t('cluster.create.form.label.nodelocaldns')">
                                                         <a-switch v-model="config.enable_nodelocaldns" disabled/>
                                                     </a-form-item>
                                                 
-                                                    <a-form-item label="启用本地DNS二级: ">
+                                                    <a-form-item :label="t('cluster.create.form.label.nodelocaldnsSecondary')">
                                                         <a-switch v-model="config.enable_nodelocaldns_secondary" disabled/>
                                                     </a-form-item>
                                                     
@@ -163,29 +163,29 @@
                                                         </a-form-item> -->
                                                 </a-form>
                                             </a-tab-pane>
-                                            <a-tab-pane key="3" title="其他配置">
+                                            <a-tab-pane key="3" :title="t('cluster.create.tabs.title.other')">
                                                 <a-form :model="config"  style="margin-top: 20px;">
-                                                    <a-form-item label="负载均衡器端口: ">
+                                                    <a-form-item :label="t('cluster.create.form.label.lbPort')">
                                                         <a-input-number v-model="config.loadbalancer_apiserver_port" style="width: 60%" readonly />
                                                     </a-form-item>
                                                 
-                                                    <a-form-item label="健康检查端口: ">
+                                                    <a-form-item :label="t('cluster.create.form.label.healthPort')">
                                                         <a-input-number v-model="config.loadbalancer_apiserver_healthcheck_port" style="width: 60%" readonly />
                                                     </a-form-item>
                                                 
-                                                    <a-form-item label="服务网络地址: ">
-                                                        <a-input v-model="config.kube_service_addresses" style="width: 60%" placeholder="10.233.0.0/18" readonly />
+                                                    <a-form-item :label="t('cluster.create.form.label.serviceAddresses')">
+                                                        <a-input v-model="config.kube_service_addresses" style="width: 60%" :placeholder="t('cluster.create.form.placeholder.serviceAddresses')" readonly />
                                                     </a-form-item>
                                                 
-                                                    <a-form-item label="Pod子网: ">
-                                                        <a-input v-model="config.kube_pods_subnet" style="width: 60%" placeholder="10.233.64.0/18" readonly />
+                                                    <a-form-item :label="t('cluster.create.form.label.podsSubnet')">
+                                                        <a-input v-model="config.kube_pods_subnet" style="width: 60%" :placeholder="t('cluster.create.form.placeholder.podsSubnet')" readonly />
                                                     </a-form-item>
                                                 
-                                                    <a-form-item label="网络节点前缀: ">
+                                                    <a-form-item :label="t('cluster.create.form.label.nodePrefix')">
                                                         <a-input-number v-model="config.kube_network_node_prefix" style="width: 60%" readonly />
                                                     </a-form-item>
                                                 
-                                                    <a-form-item label="Proxy模式: ">
+                                                    <a-form-item :label="t('cluster.create.form.label.proxyMode')">
                                                         <a-radio-group v-model="config.kube_proxy_mode" disabled>
                                                         <a-radio value="ipvs">IPVS</a-radio>
                                                         <a-radio value="iptables">IPTables</a-radio>
@@ -199,14 +199,14 @@
                             </a-collapse>
                         </a-col>
                         <a-col :xs="24" :md="12">
-                            <a-card title="主机">
-                                <a-form-item label="控制节点" field="controlPlaneHosts" >
+                            <a-card :title="t('cluster.create.card.title.host')">
+                                <a-form-item :label="t('cluster.create.form.label.controlNode')" field="controlPlaneHosts" >
                                     <div style="display: flex; flex-direction: column; width: 70%;">
                                         <div style="display: flex; align-items: center; margin-bottom: 10px;">
                                             <a-select
                                                 v-model="controlPlaneHost"
                                                 class="select-input"
-                                                placeholder="请选择控制节点主机"
+                                                :placeholder="t('cluster.create.form.placeholder.controlNode')"
                                                 style="flex: 1; margin-right: 10px;"
                                                 multiple
                                             >
@@ -214,7 +214,7 @@
                                                     {{ `${item.hostIP} (${item.os})` }}
                                                 </a-option>
                                             </a-select>
-                                            <a-button type="primary" size="small" @click="addControlPlaneHost">添加</a-button>
+                                            <a-button type="primary" size="small" @click="addControlPlaneHost">{{ t('cluster.create.button.add') }}</a-button>
                                         </div>
                                         <ul style="list-style: none; padding: 0; width: 100%;">
                                             <li
@@ -223,8 +223,8 @@
                                                 style="display: flex; align-items: center; margin-bottom: 8px; border: 1px dashed #d9d9d9; padding: 8px; border-radius: 4px;"
                                             >
                                                 <span>{{ host.ip }}</span>
-                                                <span style="margin-left:10%;">名字：</span>
-                                                <a-input v-model="host.hostName" placeholder="请输入主机名" style="flex-grow: 1; width: 40%;" />
+                                                <span style="margin-left:10%;">{{ t('cluster.create.table.label.name') }}</span>
+                                                <a-input v-model="host.hostName" :placeholder="t('cluster.create.form.placeholder.hostName')" style="flex-grow: 1; width: 40%;" />
                                                 <a-button type="text" size="small" @click="removeControlPlaneHost(index)" style="color: #ff4d4f; font-size: 16px; padding: 0;">
                                                     <icon-close />
                                                 </a-button>
@@ -233,13 +233,13 @@
                                     </div>
                                 </a-form-item>
                             
-                                <a-form-item label="工作节点" field="workerHosts">
+                                <a-form-item :label="t('cluster.create.form.label.workNode')" field="workerHosts">
                                     <div style="display: flex; flex-direction: column; width: 70%;">
                                         <div style="display: flex; align-items: center; margin-bottom: 10px;">
                                             <a-select
                                                 v-model="workerHost"
                                                 class="select-input"
-                                                placeholder="请选择工作节点主机"
+                                                :placeholder="t('cluster.create.form.placeholder.workNode')"
                                                 style="flex: 1; margin-right: 10px;"
                                                 multiple
                                             >
@@ -249,7 +249,7 @@
                                                 </a-option>
                    
                                             </a-select>
-                                            <a-button type="primary" size="small" @click="addWorkerHost">添加</a-button>
+                                            <a-button type="primary" size="small" @click="addWorkerHost">{{ t('cluster.create.button.add') }}</a-button>
                                         </div>
                                         <ul style="list-style: none; padding: 0; width: 100%;">
                                             <li
@@ -277,7 +277,8 @@
 </template>
 <script lang="ts" setup>
 
-    import { ref, watch, reactive, computed } from 'vue';
+    import { useI18n } from 'vue-i18n';
+import { ref, watch, reactive, computed } from 'vue';
     import useLoading from '@/hooks/loading';
     import { getResources } from '@/api/resources';
     import { getAvailableHostList } from '@/api/hosts';
@@ -285,7 +286,8 @@
     import { Message } from '@arco-design/web-vue';
     import router from '@/router';
 
-    const { loading, setLoading } = useLoading();
+    const { t } = useI18n();
+const { loading, setLoading } = useLoading();
     const cluster = reactive({
         
         clusterName: '',
@@ -348,7 +350,7 @@
                     return versionArray[0]; // 返回第一个版本
                 }
             } catch (parseError) {
-                console.error('版本信息解析失败:', parseError);
+                console.error(t('cluster.create.message.error.versionParse'), parseError);
             }
         }
         return '';
@@ -400,20 +402,20 @@
        // 添加控制节点
     const addControlPlaneHost = () => {
         if (!controlPlaneHost.value || controlPlaneHost.value.length === 0) {
-            Message.error("请选择控制节点主机！");
+            Message.error(t('cluster.create.message.error.selectControlNode'));
             return;
         }
 
         controlPlaneHost.value.forEach(selectedIP => {
             const selectedHost = hostList.value.find(host => host.hostIP === selectedIP);
             if (!selectedHost) {
-                Message.error(`选择的主机 ${selectedIP} 不存在！`);
+                Message.error(t('cluster.create.message.error.hostNotExist', { ip: selectedIP }));
                 return;
             }
 
             // 检查主机是否已被添加为工作节点
             if (cluster.workerHosts.some(host => host.ip === selectedIP)) {
-                Message.error(`主机 ${selectedIP} 已被添加为工作节点，无法添加为控制节点！`);
+                Message.error(t('cluster.create.message.error.hostAlreadyWorker', { ip: selectedIP }));
                 return;
             }
 
@@ -437,13 +439,13 @@
     // 添加工作节点
     const addWorkerHost = () => {
         if (!workerHost.value || workerHost.value.length === 0) {
-            Message.error("请选择工作节点主机！");
+            Message.error(t('cluster.create.message.error.selectWorkNode'));
             return;
         }
 
         // 检查主机是否已被添加为控制节点
         if (workerHost.value.some(ip => cluster.controlPlaneHosts.some(host => host.ip === ip))) {
-            Message.error("选中的主机中有已被添加为控制节点的主机，无法添加为工作节点！");
+            Message.error(t('cluster.create.message.error.hostAlreadyControl'));
             return;
         }
 
@@ -473,7 +475,7 @@
         // 检查次版本是否存在
         const versionMapStr = localStorage.getItem('k8sVersionMap');
         if (!versionMapStr) {
-            Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
+            Message.error(t('cluster.create.message.error.noBackend'));;
             return;
         }
         try {
@@ -492,23 +494,23 @@
     const handleCreateCluster = async () => {
         // 校验必填参数
         if (!cluster.clusterName) {
-            Message.error("集群名称不能为空！");
+            Message.error(t('cluster.create.message.error.clusterNameRequired'));
             return; 
         }
 
         if (!cluster.version) {
-            Message.error("集群版本不能为空！");
+            Message.error(t('cluster.create.message.error.versionRequired'));
             return; 
         }
 
         if (cluster.controlPlaneHosts.length === 0) {
-            Message.error("至少需要一个控制节点！");
+            Message.error(t('cluster.create.message.error.oneControlNodeRequired'));
             return;
         }
 
         // 校验控制节点个数是否为单数
         if (cluster.controlPlaneHosts.length % 2 === 0) {
-            Message.error(`当前选择了 ${cluster.controlPlaneHosts.length} 个控制节点，建议保持单数以保证高可用！`);
+            Message.error(t('cluster.create.message.error.oddControlNodes', { count: cluster.controlPlaneHosts.length }));
             return;
         }
 
@@ -517,19 +519,19 @@
         const duplicateHostNames = hostNames.filter((name, index) => hostNames.indexOf(name) !== index);
 
         if (hostNames.some(name => !name)) {
-            Message.error("主机名称不能为空！");
+            Message.error(t('cluster.create.message.error.hostNameRequired'));
             return;
         }
 
         if (duplicateHostNames.length > 0) {
-            Message.error("主机名称不能重复！");
+            Message.error(t('cluster.create.message.error.duplicateHostName'));
             return;
         }
 
         // 检查次版本是否存在
         const versionMapStr = localStorage.getItem('k8sVersionMap');
         if (!versionMapStr) {
-            Message.error("未检测到可用的 Kubernetes 版本对应的后端，请退出重新登录！");
+            Message.error(t('cluster.create.message.error.noBackendForVersion'));
             return;
         }
 
@@ -537,13 +539,13 @@
 
         const majorMinorVersion = cluster.version.match(/^v?\d+\.\d+/)?.[0];
         if (!majorMinorVersion) {
-            Message.error("无法解析集群版本，请检查版本格式！");
+            Message.error(t('cluster.create.message.error.versionParseError'));
             return;
         }
 
         const k8sVersion = versionMap[majorMinorVersion];
         if (!k8sVersion) {
-            Message.error("所选的 Kubernetes 版本对应的后端不存在或未启动，请选择其他版本或启动对应的后端！");
+            Message.error(t('cluster.create.message.error.noBackendForSelectedVersion'));
             return;
         }
 
@@ -559,7 +561,7 @@
             setLoading(true);
             const result: any = await createCluster(data,k8sVersion);
             if (result.status === 'ok') {
-                Message.success("集群创建成功！");
+                Message.success(t('cluster.create.message.success.create'));
                 router.push('/cluster').then(() => {
                     window.location.reload();
                 });

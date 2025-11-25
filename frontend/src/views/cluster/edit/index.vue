@@ -4,40 +4,40 @@
         <a-breadcrumb-item>
             <icon-apps />
         </a-breadcrumb-item>
-            <a-breadcrumb-item>集群管理</a-breadcrumb-item>
-            <a-breadcrumb-item>编辑</a-breadcrumb-item>
+            <a-breadcrumb-item>{{ t('edit.breadcrumb.cluster') }}</a-breadcrumb-item>
+            <a-breadcrumb-item>{{ t('edit.breadcrumb.edit') }}</a-breadcrumb-item>
         </a-breadcrumb>
         <div class="layout">
             <a-card>
                 <div style="text-align: right; display: flex; align-items: center; justify-content: flex-end;">
-                    <a-button type="primary" size="small" @click="handleEditCluster">保存</a-button>
+                    <a-button type="primary" size="small" @click="handleEditCluster">{{ t('edit.button.save') }}</a-button>
                 </div>
                 <a-form :model="cluster" style="margin-top: 20px;">
                     <a-row :gutter="[24, 24]">
                         <a-col :xs="24" :md="12">
-                            <a-card title="基础信息" style="position: relative;">
+                            <a-card :title="t('edit.card.title.basic')" style="position: relative;">
                                 <a-form-item
-                                    label="集群名称："
+                                    :label="t('edit.form.label.clusterName')"
                                     field="clusterName"
                                     style="display: flex; align-items: center;"
-                                    :rules="[{ required: true, message: '请输入集群名称' }]"
+                                    :rules="[{ required: true, message: t('edit.form.rules.clusterName') }]"
                                 >
                                     <a-input
                                     v-model="cluster.clusterName"
-                                    placeholder="请输入集群名称"
+                                    :placeholder="t('edit.form.placeholder.clusterName')"
                                     style="width: 40% !important;"
                                     />
                                 </a-form-item>
 
 
                                 <a-form-item
-                                    label="集群版本："
+                                    :label="t('edit.form.label.version')"
                                     field="version"
-                                    :rules="[{ required: true, message: '请选择集群版本' }]"
+                                    :rules="[{ required: true, message: t('edit.form.rules.version') }]"
                                 >
                                     <a-select
                                         v-model="cluster.version"
-                                        placeholder="请选择集群版本"
+                                        :placeholder="t('edit.form.placeholder.version')"
                                         style="width: 65%;"
                                     >
                                         <a-option
@@ -51,14 +51,14 @@
                                 </a-form-item>
                         
                                 <a-form-item
-                                    label="网络插件："
+                                    :label="t('edit.form.label.networkPlugin')"
                                     field="networkPlugin"
-                                    :rules="[{ required: true, message: '请选择网络插件' }]"
+                                    :rules="[{ required: true, message: t('edit.form.rules.networkPlugin') }]"
                                 >
                                     <a-select
                                         v-model="cluster.networkPlugin"
                                         class="select-input"
-                                        placeholder="请选择网络插件"
+                                        :placeholder="t('edit.form.placeholder.networkPlugin')"
                                         style="width: 50%;"
                                     >
                                         <a-option
@@ -70,13 +70,13 @@
                                 </a-form-item>
                         
                                 <a-form-item
-                                    label="并发："
-                                    tooltip="请输入任务并行的数量，必须输入整数，且最小为2，最大为10。"
+                                    :label="t('edit.form.label.taskNum')"
+                                    :tooltip="t('edit.form.tooltip.taskNum')"
                                     field="taskNum"
-                                    :rules="[{ required: true, type: 'number', message: '请输入1-10之间的整数', min: 2, max: 10 }]">
+                                    :rules="[{ required: true, type: 'number', message: t('edit.form.rules.taskNum'), min: 2, max: 10 }]">
                                     <a-input-number
                                         v-model="cluster.taskNum"
-                                        placeholder="任务并发数量"
+                                        :placeholder="t('edit.form.placeholder.taskNum')"
                                         style="width: 40% !important; color: #000000;"
                                         :min="2"
                                         :max="10"
@@ -84,51 +84,51 @@
                                 </a-form-item>
                             </a-card>
                             <a-collapse :default-active-key="[]" style="margin-top: 20px;">
-                                <a-collapse-item header="参数配置" key="1">
+                                <a-collapse-item :header="t('edit.collapse.title.params')" key="1">
                                     <a-card style="margin-top: -10px; margin-bottom: -10px; margin-left: -40px; margin-right:-40px;">
                                         <a-tabs default-active-key="1">
-                                            <a-tab-pane key="1" title="资源预留">
+                                            <a-tab-pane key="1" :title="t('edit.tab.title.resource')">
                                                 <a-form :model="config"  style="margin-top: 20px;">
-                                                    <a-form-item label="启用k8s资源预留:">
+                                                    <a-form-item :label="t('edit.form.label.enableK8sResource')">
                                                         <a-switch v-model="config.kube_reserved" disabled/>
                                                     </a-form-item>
                                                     <template v-if="config.kube_reserved">
-                                                        <a-form-item label="内存: ">
-                                                            <a-input v-model="config.kube_memory_reserved" placeholder="如：256Mi" style="width: 70%;" readonly/>
+                                                        <a-form-item :label="t('edit.form.label.memory')">
+                                                            <a-input v-model="config.kube_memory_reserved" :placeholder="t('edit.form.placeholder.memory')" style="width: 70%;" readonly/>
                                                         </a-form-item>
-                                                        <a-form-item label="CPU: ">
-                                                            <a-input v-model="config.kube_cpu_reserved" placeholder="如：100m" style="width: 70%;" readonly/>
+                                                        <a-form-item :label="t('edit.form.label.cpu')">
+                                                            <a-input v-model="config.kube_cpu_reserved" :placeholder="t('edit.form.placeholder.cpu')" style="width: 70%;" readonly/>
                                                         </a-form-item>
                                                     </template>
 
                                                     <!-- 系统资源预留 -->
-                                                    <a-form-item label="启用系统资源预留: ">
+                                                    <a-form-item :label="t('edit.form.label.enableSysResource')">
                                                         <a-switch v-model="config.system_reserved" disabled/>
                                                     </a-form-item>
                                                     <template v-if="config.system_reserved">
-                                                        <a-form-item label="内存: ">
-                                                            <a-input v-model="config.system_memory_reserved" placeholder="如：512Mi" style="width: 70%;" readonly/>
+                                                        <a-form-item :label="t('edit.form.label.memory')">
+                                                            <a-input v-model="config.system_memory_reserved" placeholder="t('edit.form.placeholder.memory')" style="width: 70%;" readonly/>
                                                         </a-form-item>
-                                                        <a-form-item label="CPU: ">
-                                                            <a-input v-model="config.system_cpu_reserved" placeholder="如：500m" style="width: 70%;" readonly/>
+                                                        <a-form-item :label="t('edit.form.label.cpu')">
+                                                            <a-input v-model="config.system_cpu_reserved" placeholder="t('edit.form.placeholder.cpu')" style="width: 70%;" readonly/>
                                                         </a-form-item>
                                                     </template>
                                                 </a-form>
                                             </a-tab-pane>
                                         
-                                            <a-tab-pane key="2" title="域名解析">
+                                            <a-tab-pane key="2" :title="t('edit.tab.title.dns')">
                                                 <a-form :model="config" style="margin-top: 20px;">
-                                                            <a-form-item label="DNS模式: ">
+                                                            <a-form-item :label="t('edit.form.label.dnsMode')">
                                                                 <a-select v-model="config.dns_mode" style="width: 60%" disabled>
                                                                     <a-option :value=config.dns_mode>{{config.dns_mode}}</a-option>
                                                                 </a-select>
                                                             </a-form-item>
                                                     
-                                                        <a-form-item label="启用本地DNS: ">
+                                                        <a-form-item :label="t('edit.form.label.enableNodeLocalDns')">
                                                             <a-switch v-model="config.enable_nodelocaldns" disabled/>
                                                         </a-form-item>
                                                 
-                                                        <a-form-item label="启用本地DNS二级: ">
+                                                        <a-form-item :label="t('edit.form.label.enableNodeLocalDnsSecondary')">
                                                             <a-switch v-model="config.enable_nodelocaldns_secondary" disabled/>
                                                         </a-form-item>
                                                     <!-- 
@@ -167,30 +167,30 @@
                                                     
                                                 </a-form>
                                             </a-tab-pane>
-                                            <a-tab-pane key="3" title="其他配置">
+                                            <a-tab-pane key="3" :title="t('edit.tab.title.other')">
                                                 <a-form :model="config"  style="margin-top: 20px;">
                                                 
-                                                            <a-form-item label="负载均衡器端口: ">
+                                                            <a-form-item :label="t('edit.form.label.lbPort')">
                                                                 <a-input-number v-model="config.loadbalancer_apiserver_port" style="width: 60%" readonly />
                                                             </a-form-item>
                                                     
-                                                            <a-form-item label="健康检查端口: ">
+                                                            <a-form-item :label="t('edit.form.label.healthCheckPort')">
                                                                 <a-input-number v-model="config.loadbalancer_apiserver_healthcheck_port" style="width: 60%" readonly />
                                                             </a-form-item>
                                                         
-                                                            <a-form-item label="服务网络地址: ">
-                                                                <a-input v-model="config.kube_service_addresses" style="width: 60%" placeholder="10.233.0.0/18" readonly />
+                                                            <a-form-item :label="t('edit.form.label.serviceCidr')">
+                                                                <a-input v-model="config.kube_service_addresses" style="width: 60%" :placeholder="t('edit.form.placeholder.serviceCidr')" readonly />
                                                             </a-form-item>
                                                         
-                                                            <a-form-item label="Pod子网: ">
-                                                                <a-input v-model="config.kube_pods_subnet" style="width: 60%" placeholder="10.233.64.0/18" readonly />
+                                                            <a-form-item :label="t('edit.form.label.podCidr')">
+                                                                <a-input v-model="config.kube_pods_subnet" style="width: 60%" :placeholder="t('edit.form.placeholder.podCidr')" readonly />
                                                             </a-form-item>
                                                         
-                                                            <a-form-item label="网络节点前缀: ">
+                                                            <a-form-item :label="t('edit.form.label.nodeCidrMask')">
                                                                 <a-input-number v-model="config.kube_network_node_prefix" style="width: 60%" readonly />
                                                             </a-form-item>
                                                         
-                                                            <a-form-item label="Proxy模式: ">
+                                                            <a-form-item :label="t('edit.form.label.proxyMode')">
                                                                 <a-radio-group v-model="config.kube_proxy_mode" disabled>
                                                                 <a-radio value="ipvs">IPVS</a-radio>
                                                                 <a-radio value="iptables">IPTables</a-radio>
@@ -205,14 +205,14 @@
                             </a-collapse>
                         </a-col>
                         <a-col :xs="24" :md="12">
-                            <a-card title="主机">
-                                <a-form-item label="控制节点" field="controlPlaneHosts">
+                            <a-card :title="t('edit.card.title.host')">
+                                <a-form-item :label="t('edit.form.label.controlPlane')" field="controlPlaneHosts">
                                     <div style="display: flex; flex-direction: column; width: 60%;">
                                         <div style="display: flex; align-items: center; margin-bottom: 10px;">
                                             <a-select
                                                 v-model="controlPlaneHost"
                                                 class="select-input"
-                                                placeholder="请选择控制节点主机"
+                                                :placeholder="t('edit.form.placeholder.controlPlane')"
                                                 style="flex: 1; margin-right: 10px;"
                                                 multiple
                                             >
@@ -230,7 +230,7 @@
                                                 size="small"
                                                 @click="addControlPlaneHost"
                                             >
-                                                添加
+                                                {{ t('edit.button.add') }}
                                             </a-button>
                                         </div>
                                         <ul style="list-style: none; padding: 0; width: 100%;">
@@ -240,10 +240,10 @@
                                                 style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border: 1px dashed #d9d9d9; padding: 8px; border-radius: 4px; flex: 1;"
                                             >
                                                 <span>{{ host.ip }}</span>
-                                                <span style="margin-left:10%;">名字：</span>
+                                                <span style="margin-left:10%;">{{ t('edit.form.label.name') }}</span>
                                                 <a-input 
                                                     v-model="host.hostName" 
-                                                    placeholder="请输入主机名" 
+                                                    :placeholder="t('edit.form.placeholder.hostName')" 
                                                     style="flex-grow: 1; width: 40%;"
                                                 />
                                                 <a-button type="text" size="small" @click="removeControlPlaneHost(index)" style="color: #ff4d4f; font-size: 16px; padding: 0;">
@@ -254,13 +254,13 @@
                                     </div>
                                 </a-form-item>
                            
-                                <a-form-item label="工作节点" field="workerHosts">
+                                <a-form-item :label="t('edit.form.label.worker')" field="workerHosts">
                                     <div style="display: flex; flex-direction: column; width: 60%;">
                                         <div style="display: flex; align-items: center; margin-bottom: 10px;">
                                             <a-select
                                                 v-model="workerHost"
                                                 class="select-input"
-                                                placeholder="请选择工作节点主机"
+                                                :placeholder="t('edit.form.placeholder.worker')"
                                                 style="flex: 1; margin-right: 10px;"
                                                 multiple
                                             >
@@ -316,7 +316,8 @@
 </template>
 <script lang="ts" setup>
 
-    import { ref, onMounted, computed, reactive, watch } from 'vue';
+    import { useI18n } from 'vue-i18n';
+import { ref, onMounted, reactive, computed, watch } from 'vue';
     import useLoading from '@/hooks/loading';
     import { getResources } from '@/api/resources';
     import { getAvailableHostList } from '@/api/hosts';
@@ -326,7 +327,8 @@
     import router from '@/router';
     import { useRoute } from 'vue-router';
 
-    const route = useRoute();
+    const { t } = useI18n();
+const route = useRoute();
     const { loading, setLoading } = useLoading();
     const resourceList = ref();
     const hostList = ref([]);
