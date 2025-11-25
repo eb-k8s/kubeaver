@@ -31,12 +31,6 @@ Kubeaver is a tool for quickly deploying high-availability Kubernetes (K8s) clus
   <img src="./docs/imgs/arch.png" alt="System Architecture" />
 </div>
 
-## System Architecture
-
-<div align="center">
-  <img src="./docs/imgs/arch.png" alt="System Architecture" />
-</div>
-
 ## Screenshots
 
 <table>
