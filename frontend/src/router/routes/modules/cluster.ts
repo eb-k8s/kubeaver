@@ -6,7 +6,7 @@ const CLUSTER: AppRouteRecordRaw = {
   name: 'cluster',
   component: DEFAULT_LAYOUT,
   meta: {
-    locale: '集群管理',
+    locale: 'menu.cluster',
     requiresAuth: true,
     icon: 'icon-relation',
     order: 1,
@@ -19,7 +19,7 @@ const CLUSTER: AppRouteRecordRaw = {
       name: 'cluster.list',
       component: () => import('@/views/cluster/list/index.vue'),
       meta: {
-        locale: '集群管理',
+        locale: 'menu.cluster',
         requiresAuth: true,
         roles: ['*'],
         hideInMenu: true,

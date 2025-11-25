@@ -1,5 +1,5 @@
 import { mergeConfig } from 'vite';
-import eslint from 'vite-plugin-eslint';
+// import eslint from 'vite-plugin-eslint';
 import baseConfig from './vite.config.base';
 
 export default mergeConfig(
@@ -34,14 +34,14 @@ export default mergeConfig(
           changeOrigin: true,
           secure: false,
           ws: true,
-          rewrite: (path) => path.replace(/^\/v125\/ws/, '/'),
+          rewrite: (path: string) => path.replace(/^\/v125\/ws/, '/'),
         },
         '/v128/ws/': {
           target: 'http://kubeaver_backend_v1-128:8000/',
           changeOrigin: true,
           secure: false,
           ws: true,
-          rewrite: (path) => path.replace(/^\/v128\/ws/, '/'),
+          rewrite: (path: string) => path.replace(/^\/v128\/ws/, '/'),
         },
       },
     },

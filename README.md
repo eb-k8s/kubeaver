@@ -1,11 +1,38 @@
-<div align="center">
+
+<div style="display: flex; align-items: center; justify-content: center;">
+  <!-- 左侧 logo -->
+  <img src="./docs/imgs/logo_without_k.svg" height="100px" style="vertical-align: middle;" />
+  <!-- 中间文字 -->
+  <span style="font-size: 2.5em; font-weight: bold; margin: 0 20px;">Kubeaver</span>
+  <!-- 右侧 conformance icon -->
+  <img src="./docs/imgs/conformance-icon.svg" height="60px" style="margin-left: auto;" />
+
+  <a href="https://github.com/eb-k8s/kubeaver/releases"><img src="https://img.shields.io/github/v/release/eb-k8s/kubeaver" alt="Latest Release"></a>
+
+</div>
+
+
+
+<!-- <div align="center">
   <h1><img src="./docs/imgs/logo_without_k.svg" height="100px" style="vertical-align: middle;" />Kubeaver</h1>
 
   <a href="https://github.com/eb-k8s/kubeaver/releases"><img src="https://img.shields.io/github/v/release/eb-k8s/kubeaver" alt="Latest Release"></a>
 </div>
 
-Kubeaver is a tool for quickly deploying high-availability Kubernetes (K8s) clusters, supporting **online(in progress) and offline** methods. The project is based on [kubespray](https://github.com/kubernetes-sigs/kubespray), leveraging Ansible to automate deployment tasks, and provides a user-friendly **graphical user interface**.
+<img align="right" alt="conformance-icon" width="75" height="100" src="https://www.cncf.io/wp-content/uploads/2020/07/certified_kubernetes_color-1.png"> -->
 
+Kubeaver is a tool for quickly deploying high-availability Kubernetes (K8s) clusters, supporting **online(in progress) and offline** methods. The project is based on [kubespray](https://github.com/kubernetes-sigs/kubespray), leveraging Ansible to automate deployment tasks, and provides a user-friendly **graphical user interface**. Refer to the **[documentation](https://eb-k8s.github.io/kubeaver/)** for more details on how to use Kubeaver.
+
+## Features 
+
+* Cluster Management  
+* Deploy Cluster (Offline Cluster Deployment) 
+* Task Management
+* Task Time Statistics
+* Task Real-time Output
+* Node Management  
+* Offline Package Management
+* Host Management
 
 ## System Architecture
 
@@ -15,26 +42,35 @@ Kubeaver is a tool for quickly deploying high-availability Kubernetes (K8s) clus
 
 ## Screenshots
 
-<div align="center">
-  <img src="./docs/imgs/screenshots.png" alt="Screenshots" />
-</div>
+<table>
+    <tr>
+        <td width="33%"><img src="./docs/imgs/screenshots/clusterManagement.png"></td>
+        <td width="33%"><img src="./docs/imgs/screenshots/task.png"></td>
+    </tr>
+    <tr>
+        <td width="33%"><img src="./docs/imgs/screenshots/taskinstance.png"></td>
+        <td width="33%"><img src="./docs/imgs/screenshots/taskTimeStatistics.png"></td>
+    </tr>
+    <tr>
+        <td width="33%"><img src="./docs/imgs/screenshots/hostManagement.png"></td>
+        <td width="33%"><img src="./docs/imgs/screenshots/offlinePackages.png"></td>
+    </tr>
+</table>
 
 
-## Install & Run
+## Install & Run kubeaver
 
 **System requirements:**
 
-**On a Linux host:** docker 20.10.10-ce+ and docker-compose 1.18.0+ .
+On a Linux host: docker 20.10.10-ce+ and docker-compose 1.18.0+ .
 
-Download binaries of **[Kubeaver release ](https://github.com/eb-k8s/kubeaver/releases)** and follow **[Installation & Configuration Guide](https://goharbor.io/docs/latest/install-config/)** to install Kubeaver.
-
-Refer to the **[documentation](https://eb-k8s.github.io/kubeaver/)** for more details on how to use Kubeaver.
-
-Download and Unpack the Installer:
+**Download and Unpack the Installer:**
 
 1. Go to the Kubeaver releases page.
 
 2. Download the online or offline installer for the version you want to install.
+
+   Download binaries of **[Kubeaver release ](https://github.com/eb-k8s/kubeaver/releases)** and follow.
 
 3. Use tar to extract the installer package:
 
@@ -48,6 +84,7 @@ tar xzvf kubeaver-offline-installer-x.x.x.tgz
 ```
 
 After this, Kubeaver will be successfully installed on your host. You can now access it via port 80.
+
 
 ### Offline Package Import
 
@@ -81,15 +118,6 @@ Click here to view more detailed offline package download methods: [Offline pack
 3. Click **Save**, then select the newly created cluster in the **Cluster Management** interface and click **Deploy** to start the deployment.
 4. View the status and progress of tasks in the **Task Queue** or check running/completed tasks in the **Task History**.
 
-### Feature Introduction
-
-* **Offline deployment capability**: It can deploy K8s clusters without internet access, completely isolating network dependencies. Users can download offline packages and import them into Kubeaver for one-click deployment.
-
-* **Basic cluster management operations**: Use Kubeaver to deploy, upgrade, scale, or reset clusters.
-
-* **customizable cluster configuration**: Choose custom components for your cluster, such as network plugins and applications, and configure advanced parameters.
-
-* **Real-time task progress tracking**: View task stages and time statistics.
 
 ## Supported Linux Distributions
 

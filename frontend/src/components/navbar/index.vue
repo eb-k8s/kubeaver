@@ -43,6 +43,33 @@
         </a-tooltip>
       </li>
       <li>
+        <a-dropdown @select="changeLocale">
+          <a-tooltip :content="$t('settings.language')">
+            <a-button
+              class="nav-btn"
+              type="outline"
+              :shape="'circle'"
+            >
+              <template #icon>
+                <icon-language />
+              </template>
+            </a-button>
+          </a-tooltip>
+          <template #content>
+            <a-doption
+              v-for="item in locales"
+              :key="item.value"
+              :value="item.value"
+            >
+              <template #icon>
+                <icon-check v-show="item.value === currentLocale" />
+              </template>
+              {{ item.label }}
+            </a-doption>
+          </template>
+        </a-dropdown>
+      </li>
+      <li>
         <a-tooltip
           :content="
             isFullscreen
