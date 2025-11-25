@@ -1,13 +1,16 @@
 
-<div align="center">
+<h1 align="center">
 
   <img src="./docs/imgs/logo_with_kubeaver.png" height="100px" style="vertical-align: middle;" />
 
   <img align="right" alt="conformance-icon" width="75" height="100" src="https://www.cncf.io/wp-content/uploads/2020/07/certified_kubernetes_color-1.png"> 
 
-  <a href="https://github.com/eb-k8s/kubeaver/releases"><img src="https://img.shields.io/github/v/release/eb-k8s/kubeaver" alt="Latest Release"></a>
+</h1>
 
-</div>
+> **NOTICE:** Kubeaver is a [CNCF conformance-certified installer](https://www.cncf.io/training/certification/software-conformance/).
+
+
+  <a href="https://github.com/eb-k8s/kubeaver/releases"><img src="https://img.shields.io/github/v/release/eb-k8s/kubeaver" alt="Latest Release"></a>
 
 <!-- <div align="center">
   <h1><img src="./docs/imgs/logo_without_k.svg" height="100px" style="vertical-align: middle;" />Kubeaver</h1>
