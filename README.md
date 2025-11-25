@@ -12,14 +12,6 @@
 
   <a href="https://github.com/eb-k8s/kubeaver/releases"><img src="https://img.shields.io/github/v/release/eb-k8s/kubeaver" alt="Latest Release"></a>
 
-<!-- <div align="center">
-  <h1><img src="./docs/imgs/logo_without_k.svg" height="100px" style="vertical-align: middle;" />Kubeaver</h1>
-
-  <a href="https://github.com/eb-k8s/kubeaver/releases"><img src="https://img.shields.io/github/v/release/eb-k8s/kubeaver" alt="Latest Release"></a>
-</div>
-
-<img align="right" alt="conformance-icon" width="75" height="100" src="https://www.cncf.io/wp-content/uploads/2020/07/certified_kubernetes_color-1.png"> -->
-
 Kubeaver is a tool for quickly deploying high-availability Kubernetes (K8s) clusters, supporting **online(in progress) and offline** methods. The project is based on [kubespray](https://github.com/kubernetes-sigs/kubespray), leveraging Ansible to automate deployment tasks, and provides a user-friendly **graphical user interface**. Refer to the **[documentation](https://eb-k8s.github.io/kubeaver/)** for more details on how to use Kubeaver.
 
 ## Features 
@@ -32,6 +24,12 @@ Kubeaver is a tool for quickly deploying high-availability Kubernetes (K8s) clus
 * Node Management  
 * Offline Package Management
 * Host Management
+
+## System Architecture
+
+<div align="center">
+  <img src="./docs/imgs/arch.png" alt="System Architecture" />
+</div>
 
 ## System Architecture
 
@@ -56,6 +54,7 @@ Kubeaver is a tool for quickly deploying high-availability Kubernetes (K8s) clus
     </tr>
 </table>
 
+Download and Unpack the Installer:
 
 ## Install & Run kubeaver
 
