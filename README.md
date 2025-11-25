@@ -1,17 +1,13 @@
 
-<div style="display: flex; align-items: center; justify-content: center;">
-  <!-- 左侧 logo -->
-  <img src="./docs/imgs/logo_without_k.svg" height="100px" style="vertical-align: middle;" />
-  <!-- 中间文字 -->
-  <span style="font-size: 2.5em; font-weight: bold; margin: 0 20px;">Kubeaver</span>
-  <!-- 右侧 conformance icon -->
-  <img src="./docs/imgs/conformance-icon.svg" height="60px" style="margin-left: auto;" />
+<div align="center">
+
+  <img src="./docs/imgs/logo_with_kubeaver.png" height="100px" style="vertical-align: middle;" />
+
+  <img align="right" alt="conformance-icon" width="75" height="100" src="https://www.cncf.io/wp-content/uploads/2020/07/certified_kubernetes_color-1.png"> 
 
   <a href="https://github.com/eb-k8s/kubeaver/releases"><img src="https://img.shields.io/github/v/release/eb-k8s/kubeaver" alt="Latest Release"></a>
 
 </div>
-
-
 
 <!-- <div align="center">
   <h1><img src="./docs/imgs/logo_without_k.svg" height="100px" style="vertical-align: middle;" />Kubeaver</h1>
