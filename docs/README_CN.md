@@ -1,89 +1,127 @@
-# Kubeaver
 
-注意：该文档有可能不是最新版，请以英文版为准！
+<h1 align="center">
 
-Kubeaver是快速部署高可用Kubernetes (K8s) 集群的工具，支持**在线和离线**两种方式，项目基于[kubespray](https://github.com/kubernetes-sigs/kubespray)，使用Ansible实现部署任务的自动化，并且提供了用户友好的**图形化界面**。
+  <img src="../docs/imgs/logo_with_kubeaver.png" height="100px" style="vertical-align: middle;" />
 
-Kubeaver具有以下优点：
+  <img align="right" alt="conformance-icon" width="75" height="100" src="https://www.cncf.io/wp-content/uploads/2020/07/certified_kubernetes_color-1.png"> 
 
-* **任务并发**：部署集群所需时间不随集群规模增加而显著增加。
+</h1>
 
-* **离线部署**：能够在完全离线的情况下部署K8s集群，完全屏蔽网络的影响，根据自己的需求下载离线包导入Kubeaver，实现快速一键部署。
+> **注意：** Kubeaver已经通过[CNCF一致性测试认证的installer](https://www.cncf.io/training/certification/software-conformance/)。
 
-* **基本集群管理功能**：使用Kubeaver进行集群的部署、升级、扩缩容、重置操作。
+[![Static Badge](https://img.shields.io/badge/CNCFStatus-Certified-informational)](https://www.cncf.io/training/certification/software-conformance/)
+[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/eb-k8s/kubeaver/build_package.yaml)](https://github.com/eb-k8s/kubeaver/actions/workflows/build_package.yaml)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![GitHub Release](https://img.shields.io/github/v/release/eb-k8s/kubeaver)](https://github.com/eb-k8s/kubeaver/releases)
 
-* **自定义集群配置**：你可以选择自定义集群的组件，如网络插件、应用，同时可以配置集群的高级参数。
+Kubeaver 是一个用于快速部署高可用 Kubernetes (K8s) 集群的工具，支持**在线（开发中）和离线**部署方式。项目基于 [kubespray](https://github.com/kubernetes-sigs/kubespray)，利用 Ansible 自动化部署任务，并提供友好的**图形化界面**。更多使用方法请参考**[文档](https://eb-k8s.github.io/kubeaver/)**。
 
-* **实时任务进度追踪**：任务进度实时查看，任务阶段时间统计。
+English [README](../README.md)
 
-⚠️ 注意：如果您能够访问互联网，但是因为网络问题无法下载K8s集群相关的镜像和文件而无法使用在线模式部署K8s集群，我们十分推荐您使用离线模式来快速部署K8s集群。
+## 功能特性
 
-下图展示了使用Kubeaver部署的K8s集群整体架构：
+* 集群管理  
+* 集群部署（离线集群部署） 
+* 任务管理
+* 任务耗时统计
+* 任务实时输出
+* 节点管理  
+* 离线包管理
+* 主机管理
 
-<img src="./imgs/architecture.png" height="400px"  />
+## 系统架构
 
-🚧 该项目目前处于开发阶段（进行中），如果您对我们的项目有什么想法或建议，请提issue，我们都会尽快回复。
+<div align="center">
+  <img src="../docs/imgs/arch_cn.png" alt="系统架构" />
+</div>
 
-[English](../README.md)
+## 截图展示
 
+<table>
+    <tr>
+        <td width="33%"><img src="../docs/imgs/screenshots/clusterManagement.png"></td>
+        <td width="33%"><img src="../docs/imgs/screenshots/task.png"></td>
+    </tr>
+    <tr>
+        <td width="33%"><img src="../docs/imgs/screenshots/taskinstance.png"></td>
+        <td width="33%"><img src="../docs/imgs/screenshots/taskTimeStatistics.png"></td>
+    </tr>
+    <tr>
+        <td width="33%"><img src="../docs/imgs/screenshots/hostManagement.png"></td>
+        <td width="33%"><img src="../docs/imgs/screenshots/offlinePackages.png"></td>
+    </tr>
+</table>
 
-## 快速开始
+## 兼容性
 
-### 安装Docker和Docker Compose
+Kubeaver 1.0.0 默认后端版本为 v1.0.0-125，支持 Kubernetes 1.25 到 1.27 版本。若需支持 1.28 到 1.30，可修改 Docker Compose 配置。
 
-在您需要安装Kubeaver的主机上安装Docker，请使用Docker的官方指引安装Docker：[Install Docker Engine](https://docs.docker.com/engine/install/)，安装完成后运行`docker compose version`命令，确保Docker Compose已正确安装，如果没有，请额外手动安装Docker Compose。
+| kubeaver 版本 | 后端版本      | 1.25.x | 1.26.x | 1.27.x | 1.28.x | 1.29.x | 1.30.x |
+|--------------|--------------|--------|--------|--------|--------|--------|--------|
+| 1.0.0        | v1.0.0-125   |   ✔    |   ✔    |   ✔    |   x    |   x    |   x    |
+| 1.0.0        | v1.0.0-128   |   x    |   x    |   x    |   ✔    |   ✔    |   ✔    |
 
-### 部署Kubeaver
+说明：
+* ✔：兼容，已通过测试，保证可在该 Kubernetes 版本中正常运行
+* x：不兼容，不能保证支持该 Kubernetes 版本，因其不在测试和支持范围内
 
-下载Kubeaver代码：
+## 安装与运行 Kubeaver
+
+**系统要求：**
+
+Linux 主机：docker 20.10.10-ce+ 和 docker-compose 1.18.0+。
+
+**下载安装包：**
+
+1. 访问 Kubeaver 发布页面。
+2. 下载所需版本的在线或离线安装包。
+   下载二进制文件请访问 **[Kubeaver release ](https://github.com/eb-k8s/kubeaver/releases)** 并按说明操作。
+3. 使用 tar 解压安装包：
+
+```shell
+tar xzvf kubeaver-offline-installer-x.x.x.tgz
 ```
-git clone https://github.com/eb-k8s/kubeaver.git
+4. 运行 start.sh 安装并启动 Kubeaver：
+
+```shell
+./start.sh
 ```
-使用Docker Compose启动Kubeaver:
-```
-# 切换到Docker Compose文件所在目录
-cd ./deploy
-# 启动Kubeaver
-docker compose up -d
-```
-至此，Kubeaver已经成功安装在您的主机上，您此时可以访问 http://127.0.0.1:80 打开Kubeaver。
+
+安装完成后，可通过 80 端口访问 Kubeaver。
 
 ### 离线包导入
 
-下载对应的离线包:
-```
+在部署 Kubernetes 集群前，需要根据需求导入基础包和扩展包。基础包包含 K8s 集群部署所需的核心组件及 Flannel 网络插件。如需使用 Calico，请导入 Calico 扩展包。请根据目标集群节点的操作系统导入对应的操作系统扩展包。
+
+以下示例展示如何下载 v1.27.10 版本的 Kubernetes 基础包和 CentOS 7 操作系统扩展包：
+
+```shell
+# 下载基础包
+cd ./deploy/data/kubeaver/offline   
+
 docker pull ghcr.io/eb-k8s/kubeaver/kubeaver_offline:v1.27.10
-docker pull ghcr.io/eb-k8s/kubeaver/kubeaver_oslib:v1.0
-docker run -d ghcr.io/eb-k8s/kubeaver/kubeaver_offline:v1.27.10 --name kubeaver_offline 
-docker run -d ghcr.io/eb-k8s/kubeaver/kubeaver_oslib:v1.0 --name kubeaver_oslib
-# 获取到基础包
+docker run -d --name kubeaver_offline ghcr.io/eb-k8s/kubeaver/kubeaver_offline:v1.27.10  
 docker cp kubeaver_offline:/root/base_k8s_v1.27.10.tgz .
-# 获取到操作系统依赖包
+docker rm -f kubeaver_offline    ##删除容器
+
+# 下载操作系统包
+docker pull ghcr.io/eb-k8s/kubeaver/oslib_centos:v1.0
+docker run -d --name kubeaver_oslib ghcr.io/eb-k8s/kubeaver/oslib_centos:v1.0 
 docker cp kubeaver_oslib:/root/extend_CentOS_7_Core.tgz .
+docker rm -f kubeaver_oslib    ##删除容器
 ```
-然后你就可以获得离线包 `base_k8s_v1.27.10.tgz、extend_CentOS_7_Core.tgz` 并且将其导入Kubeaver中.
+获得离线包 `base_k8s_v1.27.10.tgz、extend_CentOS_7_Core.tgz` 后，导入至 Kubeaver。
 
-离线包所包含的内容如下图所示：
+点击查看更详细的离线包下载方法：[离线包下载](../docs/offline_package.md)
 
-<img src="./imgs/offline_package.png" height="400px"  />
+### 部署 K8s 集群
 
-### 部署K8s集群
+1. 在**主机管理**中添加待部署 K8s 集群的主机。
+2. 在**集群管理**界面，选择集群版本、网络插件及包含的主机，创建集群。
+3. 点击**保存**，然后在**集群管理**界面选择新建集群并点击**部署**开始安装。
+4. 可在**任务队列**查看任务状态和进度，或在**任务历史**查看运行/完成的任务。
 
-1. 在主机管理部分添加您想要部署 K8s 集群的主机。
-2. 在集群管理界面中，通过选择集群版本、网络插件以及集群中包含的主机来创建您的集群。
-3. 点击保存，然后在集群管理界面中选择新创建的集群并点击部署以开始部署。
-4. 在任务队列中查看任务的状态和进度，或在任务历史中检查正在运行或已完成的任务。
-
-### 功能介绍
-
-*  添加主机
-*  创建集群
-*  部署集群
-*  集群管理
-*  节点管理
-*  离线包管理
-
-## 支持的操作系统
+## 支持的 Linux 发行版
 
 - **Ubuntu** 22.04
 - **CentOS** 7
@@ -92,26 +130,24 @@ docker cp kubeaver_oslib:/root/extend_CentOS_7_Core.tgz .
 
 ## 支持的组件
 
-- Core
+- 核心组件
   - [kubernetes](https://github.com/kubernetes/kubernetes) 
   - [etcd](https://github.com/etcd-io/etcd) 
   - [containerd](https://containerd.io/) 
-- Network Plugin
+- 网络插件
   - [cni-plugins](https://github.com/containernetworking/plugins) 
   - [calico](https://github.com/projectcalico/calico) 
   - [flannel](https://github.com/flannel-io/flannel) 
-- Application
+- 应用组件
   - [coredns](https://github.com/coredns/coredns) 
 
-## 硬件需求
+## 硬件要求
 
-- 控制平面
-  - 内存: 2 GB
+- 控制节点
+  - 内存：2 GB
 - 工作节点
-  - 内存: 1 GB
+  - 内存：1 GB
 
-## 相关文档
+## 许可证
 
-* [How it works](./how_it_works_CN.md)
-
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+Kubeaver 以 [Apache 2.0](../LICENSE) 协议发布。
