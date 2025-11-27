@@ -157,3 +157,4 @@ Click here to view more detailed offline package download methods: [Offline pack
 ## License
 
 Kubeaver is released under the terms of the [Apache 2.0](./LICENSE) license.
+
