@@ -14,7 +14,7 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![GitHub Release](https://img.shields.io/github/v/release/eb-k8s/kubeaver)](https://github.com/eb-k8s/kubeaver/releases)
 
-Kubeaver 是一个用于快速部署高可用 Kubernetes (K8s) 集群的工具，支持**在线（开发中）和离线**部署方式。项目基于 [kubespray](https://github.com/kubernetes-sigs/kubespray)，利用 Ansible 自动化部署任务，并提供友好的**图形化界面**。更多使用方法请参考**[文档](https://eb-k8s.github.io/kubeaver/)**。
+Kubeaver 是一个用于快速部署高可用 Kubernetes (K8s) 集群的工具，支持**在线（开发中）和离线**部署方式。项目基于 [kubespray](https://github.com/kubernetes-sigs/kubespray)，利用 Ansible 自动化部署任务，并提供友好的**图形化界面**。更多使用方法请参考 **[文档](https://eb-k8s.github.io/kubeaver/)**。
 
 English [README](../README.md)
 
