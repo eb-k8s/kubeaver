@@ -9,8 +9,14 @@
 
 > **NOTICE:** Kubeaver is a [CNCF conformance-certified installer](https://www.cncf.io/training/certification/software-conformance/).
 
+![Static Badge](https://img.shields.io/badge/CNCFStatus-Certified-informational)(https://www.cncf.io/training/certification/software-conformance/).
 
-  <a href="https://github.com/eb-k8s/kubeaver/releases"><img src="https://img.shields.io/github/v/release/eb-k8s/kubeaver" alt="Latest Release"></a>
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/eb-k8s/kubeaver/build_package.yaml)
+
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+
+![GitHub Release](https://img.shields.io/github/v/release/eb-k8s/kubeaver)(https://github.com/eb-k8s/kubeaver/releases)
+
 
 Kubeaver is a tool for quickly deploying high-availability Kubernetes (K8s) clusters, supporting **online(in progress) and offline** methods. The project is based on [kubespray](https://github.com/kubernetes-sigs/kubespray), leveraging Ansible to automate deployment tasks, and provides a user-friendly **graphical user interface**. Refer to the **[documentation](https://eb-k8s.github.io/kubeaver/)** for more details on how to use Kubeaver.
 
@@ -48,7 +54,18 @@ Kubeaver is a tool for quickly deploying high-availability Kubernetes (K8s) clus
     </tr>
 </table>
 
-Download and Unpack the Installer:
+## Compatibility
+
+The default backend for Kubeaver 1.0.0 is v1.0.0-125, which supports Kubernetes versions 1.25 to 1.27. To extend support to include versions 1.28 through 1.30, you can modify the Docker Compose configuration.
+
+| kubeaver version | backend version | 1.25.x | 1.26.x | 1.27.x | 1.28.x | 1.29.x | 1.30.x |
+|------------------|----------------|--------|--------|--------|--------|--------|--------|
+| 1.0.0            | v1.0.0-125     |   ✔    |   ✔    |   ✔   |   x    |   x    |   x    |
+| 1.0.0            | v1.0.0-128     |   x    |   x    |    x   |   ✔    |   ✔   |   ✔    |
+
+Key:
+* ✔: Compatible: The components are tested and guaranteed to work with this Kubernetes version.
+* x: Incompatible: The components are not guaranteed to support this Kubernetes version, as it falls outside the tested and supported range.
 
 ## Install & Run kubeaver
 
@@ -137,5 +154,3 @@ Click here to view more detailed offline package download methods: [Offline pack
   - Memory: 2 GB
 - Worker Node
   - Memory: 1 GB
-
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)

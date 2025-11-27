@@ -72,4 +72,5 @@ export default {
   'task.column.status': 'Status',
   'task.column.progress': 'Progress',
   'task.column.operations': 'Operations',
+  
 };
