@@ -151,3 +151,8 @@ Click here to view more detailed offline package download methods: [Offline pack
   - Memory: 2 GB
 - Worker Node
   - Memory: 1 GB
+
+## License
+
+Kubeaver is released under the terms of the [Apache 2.0](./LICENSE) license.
+
