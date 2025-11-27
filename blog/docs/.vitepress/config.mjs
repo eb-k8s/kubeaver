@@ -33,9 +33,9 @@ export default defineConfig({
         text: '产品介绍',
         items: [
           { text: '概述', link: '/introduce/overview.md' },
-          { text: '平台功能', link: '/introduce/use.md' },
           { text: '架构说明', link: '/introduce/framework.md' },
           { text: '环境要求', link: '/introduce/prepare.md' },
+          { text: '版本说明', link: '/introduce/version.md' },
         ]
       },
       {
