@@ -1,9 +1,9 @@
 
 <h1 align="center">
 
-  <img src="./docs/imgs/logo_with_kubeaver.png" height="100px" style="vertical-align: middle;" />
+  <img src="./docs/imgs/logo_with_kubeaver.png" height="150px" style="vertical-align: middle;" />
 
-  <img align="right" alt="conformance-icon" width="75" height="100" src="https://www.cncf.io/wp-content/uploads/2020/07/certified_kubernetes_color-1.png"> 
+  <img align="right" alt="conformance-icon" width="75" height="120" src="https://www.cncf.io/wp-content/uploads/2020/07/certified_kubernetes_color-1.png"> 
 
 </h1>
 
@@ -15,7 +15,7 @@
 [![GitHub Release](https://img.shields.io/github/v/release/eb-k8s/kubeaver)](https://github.com/eb-k8s/kubeaver/releases)
 
 
-Kubeaver is a tool for quickly deploying high-availability Kubernetes (K8s) clusters, supporting **online(in progress) and offline** methods. The project is based on [kubespray](https://github.com/kubernetes-sigs/kubespray), leveraging Ansible to automate deployment tasks, and provides a user-friendly **graphical user interface**. Refer to the **[documentation](https://eb-k8s.github.io/kubeaver/)** for more details on how to use Kubeaver.
+Kubeaver is a tool for quickly deploying high-availability Kubernetes (K8s) clusters, supporting **offline and online(in progress) ** methods. The project is based on [kubespray](https://github.com/kubernetes-sigs/kubespray), leveraging Ansible to automate deployment tasks, and provides a user-friendly **graphical user interface**. Refer to the **[documentation](https://eb-k8s.github.io/kubeaver/)** for more details on how to use Kubeaver.
 
 中文版 [README](./docs/README_CN.md)
 
