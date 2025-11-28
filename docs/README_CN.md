@@ -1,7 +1,7 @@
 
 <h1 align="center">
 
-  <img src="../docs/imgs/logo_with_kubeaver.png" height="100px" style="vertical-align: middle;" />
+  <img src="../docs/imgs/logo_with_kubeaver.png" height="150px" style="vertical-align: middle;" />
 
   <img align="right" alt="conformance-icon" width="75" height="100" src="https://www.cncf.io/wp-content/uploads/2020/07/certified_kubernetes_color-1.png"> 
 
@@ -14,7 +14,7 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![GitHub Release](https://img.shields.io/github/v/release/eb-k8s/kubeaver)](https://github.com/eb-k8s/kubeaver/releases)
 
-Kubeaver 是一个用于快速部署高可用 Kubernetes (K8s) 集群的工具，支持**在线（开发中）和离线**部署方式。项目基于 [kubespray](https://github.com/kubernetes-sigs/kubespray)，利用 Ansible 自动化部署任务，并提供友好的**图形化界面**。更多使用方法请参考 **[文档](https://eb-k8s.github.io/kubeaver/)**。
+Kubeaver 是一个用于快速部署高可用 Kubernetes (K8s) 集群的工具，支持**离线和在线（开发中）**部署方式。项目基于 [kubespray](https://github.com/kubernetes-sigs/kubespray)，利用 Ansible 自动化部署任务，并提供友好的**图形化界面**。更多使用方法请参考 **[文档](https://eb-k8s.github.io/kubeaver/)**。
 
 English [README](../README.md)
 
