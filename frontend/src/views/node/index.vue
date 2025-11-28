@@ -7,10 +7,10 @@
                         <icon-refresh />
                     </a-button>
                     <a-button type="primary" @click="handleAddNode()" :style="{ marginBottom: '10px' }">
-                        添加节点
+                        {{ t('node.button.addNode') }}
                     </a-button>
                     <a-button type="primary" :disabled="isBatchJoinDisabled" @click="handleBatchJoin()" :style="{ marginBottom: '10px', marginLeft: '2px'}">
-                        批量加入
+                        {{ t('node.button.batchJoin')}}
                     </a-button>
                 </div>
                 <a-table :columns="columns" :data="nodeList" :loading="loading">
@@ -60,16 +60,16 @@
                     </template>
                     <template #activeStatus="{ record }">
                         <div class="status-container">
-                            <span v-if="record.activeStatus === '运行中'" class="status-icon running">
+                            <span v-if="record.activeStatus === NODE_STATUS_RUNNING" class="status-icon running">
                                 <icon-sync class="rotating" />
                             </span>
-                            <span v-if="record.activeStatus === '等待中'" class="status-icon waiting">
+                            <span v-if="record.activeStatus === NODE_STATUS_WAITING" class="status-icon waiting">
                                 <icon-clock-circle />
                             </span>
-                            <span v-if="record.activeStatus === '已完成'" class="status-icon completed">
+                            <span v-if="record.activeStatus === NODE_STATUS_COMPLETED" class="status-icon completed">
                                 <icon-check-circle />
                             </span>
-                            <span class="status-text1">{{ record.activeStatus }}</span>
+                            <span class="status-text1">{{ activeStatusMap[record.activeStatus] ? t(activeStatusMap[record.activeStatus]) : record.activeStatus }}</span>
                         </div>
                     </template>
                     <template #lastJobStatus="{ record }">
@@ -87,35 +87,35 @@
                     </template>
                     <template #operations="{ record }">
                         <template v-if="record.role === 'master'">
-                            <a-button v-if="record.status === 'Unknown' && record.activeJobType === '暂无任务' && !isAnyNodeBusy" type="text" size="small" @click="onClickJoinMaster(record)">
-                                加入
-                            </a-button>
-                            <a-button v-if="record.status === 'Unknown' && record.activeJobType === '暂无任务'" type="text" size="small" @click="onClickDelete(record)">
-                                删除
-                            </a-button>
-                            <a-button v-if="master1.value !== record.name && record.status !== 'Unknown' && record.activeJobType === '暂无任务'" type="text" size="small" @click="onClickRemove(record)">
-                                移除
-                            </a-button>
-                            <a-button v-if="!isAnyNodeBusy && record.lastJobType === '升级集群' && record.lastJobStatus === '失败' && record.activeJobType === '暂无任务'" type="text" size="small" @click="onClickRetry(record)">
-                                重试
-                            </a-button>
+                            <a-button v-if="record.status === NODE_STATUS_UNKNOWN && record.activeJobType === JOB_TYPE_NONE && !isAnyNodeBusy" type="text" size="small" @click="onClickJoinMaster(record)">
+                            {{ t('node.button.join') }}
+                        </a-button>
+                        <a-button v-if="record.status === NODE_STATUS_UNKNOWN && record.activeJobType === JOB_TYPE_NONE" type="text" size="small" @click="onClickDelete(record)">
+                            {{ t('node.button.delete') }}
+                        </a-button>
+                        <a-button v-if="master1.value !== record.name && record.status !== NODE_STATUS_UNKNOWN && record.activeJobType === JOB_TYPE_NONE" type="text" size="small" @click="onClickRemove(record)">
+                            {{ t('node.button.remove') }}
+                        </a-button>
+                        <a-button v-if="!isAnyNodeBusy && record.lastJobType === JOB_TYPE_UPGRADE_CLUSTER && record.lastJobStatus === JOB_STATUS_FAILED && record.activeJobType === JOB_TYPE_NONE" type="text" size="small" @click="onClickRetry(record)">
+                            {{ t('node.button.retry') }}
+                        </a-button>
                         </template>
                         <template v-else-if="record.role === 'node'">
                             <!-- <a-button v-if="record.status === 'Unknown' && record.activeJobType === '暂无任务' &&  
                                             (isMasterRunning || !isMasterResetting || !isNodeUpgrading || !isNodeTrying )" type="text" size="small" @click="onClickJoinNode(record)">
                                 加入
                             </a-button> -->
-                            <a-button v-if="record.status === 'Unknown' && record.activeJobType === '暂无任务' && !isAnyNodeBusy" type="text" size="small" @click="onClickJoinNode(record)">
-                                加入
+                            <a-button v-if="record.status === NODE_STATUS_UNKNOWN && record.activeJobType === JOB_TYPE_NONE && !isAnyNodeBusy" type="text" size="small" @click="onClickJoinNode(record)">
+                                {{ t('node.button.join') }}
                             </a-button>
-                            <a-button v-if="record.status === 'Unknown' && record.activeJobType === '暂无任务'" type="text" size="small" @click="onClickDelete(record)">
-                                删除
+                            <a-button v-if="record.status === NODE_STATUS_UNKNOWN && record.activeJobType === JOB_TYPE_NONE" type="text" size="small" @click="onClickDelete(record)">
+                                {{ t('node.button.delete') }}
                             </a-button>
-                            <a-button v-if="record.status !== 'Unknown' && record.activeJobType === '暂无任务' && isMasterNotReadyAndDeploying" type="text" size="small" @click="onClickRemove(record)">
-                                移除
+                            <a-button v-if="record.status !== NODE_STATUS_UNKNOWN && record.activeJobType === JOB_TYPE_NONE && isMasterNotReadyAndDeploying" type="text" size="small" @click="onClickRemove(record)">
+                                {{ t('node.button.remove') }}
                             </a-button>
-                            <a-button v-if="!isAnyNodeBusy && record.lastJobType === '升级集群' && record.lastJobStatus === '失败' && record.activeJobType === '暂无任务'" type="text" size="small" @click="onClickRetry(record)">
-                                重试
+                            <a-button v-if="!isAnyNodeBusy && record.lastJobType === JOB_TYPE_UPGRADE_CLUSTER && record.lastJobStatus === JOB_STATUS_FAILED && record.activeJobType === JOB_TYPE_NONE" type="text" size="small" @click="onClickRetry(record)">
+                                {{ t('node.button.retry') }}
                             </a-button>
                         </template>
                     </template>
@@ -123,18 +123,18 @@
             </a-card>
         </div>
     </div>
-    <a-modal v-model:visible="joinVisible" @ok="handleJoinOk" @cancel="handleJoinCancel">
-        <p>确定将 <span style="color: red; font-weight: bold;">{{ name }}</span> 节点加入到集群吗？</p>
+    <a-modal v-model:visible="joinVisible" :title="t('node.modal.join.title')" @ok="handleJoinOk" @cancel="handleJoinCancel">
+        <p>{{ t('node.modal.join.content', { name: name }) }}</p>
     </a-modal>
-    <a-modal v-model:visible="addNodeVisible" @ok="handleAddNodeOk" @cancel="handleAddNodeCancel">
-        <a-card title="主机">
-            <a-form-item label="控制节点" field="controlPlaneHosts" >
+    <a-modal v-model:visible="addNodeVisible" :title="t('node.modal.add.title')" @ok="handleAddNodeOk" @cancel="handleAddNodeCancel">
+        <a-card :title="t('node.modal.add.title')">
+            <a-form-item :label="t('node.modal.add.controlPlane')" field="controlPlaneHosts" >
                 <div style="display: flex; flex-direction: column; width: 100%;">
                     <div style="display: flex; align-items: center; margin-bottom: 10px;">
                         <a-select
                             v-model="controlPlaneHost"
                             class="select-input"
-                            placeholder="请选择控制节点主机"
+                            :placeholder="t('node.modal.add.controlPlane.placeholder')"
                             style="flex: 1; margin-right: 10px;"
                             multiple
                         >
@@ -142,7 +142,7 @@
                                 {{ `${item.hostIP} (${item.os})` }}
                             </a-option>
                         </a-select>
-                        <a-button type="primary" size="small" @click="addControlPlaneHost">添加</a-button>
+                        <a-button type="primary" size="small" @click="addControlPlaneHost">{{ t('node.modal.add.button.add') }}</a-button>
                     </div>
                     <ul style="list-style: none; padding: 0; width: 100%;">
                         <li
@@ -152,7 +152,7 @@
                         >
                             <span>{{ host.ip }}</span>
                             <span style="margin-left:10%;">名字：</span>
-                            <a-input v-model="host.hostName" placeholder="请输入主机名" style="flex-grow: 1; width: 40%;" />
+                            <a-input v-model="host.hostName" :placeholder="t('node.modal.add.hostName.placeholder')" style="flex-grow: 1; width: 40%;" />
                             <a-button type="text" size="small" @click="removeControlPlaneHost(index)" style="color: #ff4d4f; font-size: 16px; padding: 0;">
                                 <icon-close />
                             </a-button>
@@ -161,13 +161,13 @@
                 </div>
             </a-form-item>
         
-            <a-form-item label="工作节点" field="workerHosts">
+            <a-form-item :label="t('node.modal.add.worker')" field="workerHosts">
                 <div style="display: flex; flex-direction: column; width: 100%;">
                     <div style="display: flex; align-items: center; margin-bottom: 10px;">
                         <a-select
                             v-model="workerHost"
                             class="select-input"
-                            placeholder="请选择工作节点主机"
+                            :placeholder="t('node.modal.add.worker.placeholder')"
                             style="flex: 1; margin-right: 10px;"
                             multiple
                         >
@@ -177,7 +177,7 @@
                             </a-option>
 
                         </a-select>
-                        <a-button type="primary" size="small" @click="addWorkerHost">添加</a-button>
+                        <a-button type="primary" size="small" @click="addWorkerHost">{{ t('node.modal.add.button.add') }}</a-button>
                     </div>
                     <ul style="list-style: none; padding: 0; width: 100%;">
                         <li
@@ -187,7 +187,7 @@
                         >
                             <span>{{ host.ip }}</span>
                             <span style="margin-left:10%;">名字：</span>
-                            <a-input v-model="host.hostName" placeholder="请输入主机名" style="flex-grow: 1; width: 40%;" />
+                            <a-input v-model="host.hostName" :placeholder="t('node.modal.add.hostName.placeholder')" style="flex-grow: 1; width: 40%;" />
                             <a-button type="text" size="small" @click="removeWorkerHost(index)" style="color: #ff4d4f; font-size: 16px; padding: 0;">
                                 <icon-close />
                             </a-button>
@@ -197,12 +197,12 @@
             </a-form-item>
         </a-card>
     </a-modal>
-    <a-modal v-model:visible="deleteVisible" @ok="handleDeleteOk" @cancel="handleDeleteCancel">
-       <p>确定删除 <span style="color: red; font-weight: bold;">{{ name }}</span> 节点吗？</p>
+    <a-modal v-model:visible="deleteVisible" :title="t('node.modal.delete.title')" @ok="handleDeleteOk" @cancel="handleDeleteCancel">
+       <p>{{ t('node.modal.delete.content', { name: name }) }}</p>
     </a-modal>
-    <a-modal v-model:visible="removeVisible" @ok="handleRemoveOk" @cancel="handleRemoveCancel">
-       <p>确定将 <span style="color: red; font-weight: bold;">{{ name }}</span> 节点从集群中移除吗？</p>
-       <p style="color: red; font-weight: bold;">警告：移除操作不可恢复，请谨慎操作！</p>
+    <a-modal v-model:visible="removeVisible" :title="t('node.modal.remove.title')" @ok="handleRemoveOk" @cancel="handleRemoveCancel">
+       <p>{{ t('node.modal.remove.content', { name: name }) }}</p>
+       <p style="color: red; font-weight: bold;">{{ t('node.modal.remove.warning') }}</p>
     </a-modal>
 
     <a-modal v-model:visible="batchAddNodeVisible" 
@@ -222,7 +222,7 @@
                 type="primary" 
                 @click="toggleSelectAll"
             >
-                {{ isSelectAllChecked ? '取消全选' : '全选' }}
+                {{ isSelectAllChecked ? t('node.modal.batchJoin.button.cancelSelectAll') : t('node.modal.batchJoin.button.selectAll') }}
             </a-button>
         </div>
         <a-checkbox-group v-model="selectedBatchNodes">
@@ -251,6 +251,7 @@
 <script lang="ts" setup>
 
     import { reactive, ref, onMounted, computed, watch, nextTick } from 'vue';
+    import { useI18n } from 'vue-i18n';
     import { getNodeList, deleteNode, removeNode, addNode, joinCluster } from '@/api/node';
     import { getResources } from '@/api/resources';
     import { deployCluster } from '@/api/cluster';
@@ -262,6 +263,7 @@
     import { formatTime } from '@/utils/time';
 
     const { loading, setLoading } = useLoading();
+    const { t } = useI18n();
 
     const deleteVisible = ref(false);
     const addNodeVisible = ref(false);
@@ -300,6 +302,20 @@
     });
     const name = ref();
 
+    const JOB_TYPE_NONE = '暂无任务';
+    const JOB_TYPE_UPGRADE_CLUSTER = '升级集群';
+    const JOB_STATUS_FAILED = '失败';
+    const NODE_STATUS_UNKNOWN = 'Unknown';
+    const NODE_STATUS_RUNNING = '运行中';
+    const NODE_STATUS_WAITING = '等待中';
+    const NODE_STATUS_COMPLETED = '已完成';
+
+    const activeStatusMap = {
+        '运行中': 'node.status.running',
+        '等待中': 'node.status.waiting',
+        '已完成': 'node.status.completed',
+    };
+
     id.value = route.query.id;
     version.value = route.query.version;
     clusterName.value = route.query.clusterName;
@@ -308,7 +324,7 @@
 
     const isMasterRunning = computed(() => {
         return nodeList.value && nodeList.value.some(node => 
-            node.role === 'master' && node.status === 'Unknown' && node.activeStatus === '暂无状态' && node.activeJobType === '暂无任务'
+            node.role === 'master' && node.status === NODE_STATUS_UNKNOWN && node.activeStatus === '暂无状态' && node.activeJobType === JOB_TYPE_NONE
         );
     });
 
@@ -348,7 +364,7 @@
     });
 
     const isBatchJoinDisabled = computed(() => {
-        const hasRunningTasks = nodeList.value?.some(node => node.activeJobType !== '暂无任务');
+        const hasRunningTasks = nodeList.value?.some(node => node.activeJobType !== JOB_TYPE_NONE);
 
         const hasUnjoinedHosts = filteredUnjoinedHosts.value.length > 0;
 
@@ -356,7 +372,7 @@
     });
 
     const isAnyNodeBusy = computed(() => {
-        return nodeList.value && nodeList.value.some(node => node.activeJobType !== '暂无任务');
+        return nodeList.value && nodeList.value.some(node => node.activeJobType !== JOB_TYPE_NONE);
     });
 
     const getFirstK8sVersionFromStorage = (key = 'k8sVersionList'): string => {
@@ -390,7 +406,7 @@
 
     const isMasterNotReadyAndDeploying = computed(() => {
         return nodeList.value && nodeList.value.some(node =>
-           node.role === 'master' && node.status !== 'Unknown' && node.activeJobType === '暂无任务' 
+           node.role === 'master' && node.status !== NODE_STATUS_UNKNOWN && node.activeJobType === JOB_TYPE_NONE 
         );
     });
 
@@ -1049,37 +1065,37 @@
             createTime: formatTime(node.createTime), 
             activeJobType: (() => {
                 const typeMap = {
-                    initCluster: '初始化集群',
-                    addNode: '添加节点',
-                    upgradeCluster: '升级集群',
-                    resetCluster: '重置集群',
-                    resetNode: '重置节点',
+                    initCluster: t('node.jobType.initCluster'),
+                    addNode: t('node.jobType.addNode'),
+                    upgradeCluster: t('node.jobType.upgradeCluster'),
+                    resetCluster: t('node.jobType.resetCluster'),
+                    resetNode: t('node.jobType.resetNode'),
                 };
-                return typeMap[node.activeJobType] || '暂无任务';
+                return typeMap[node.activeJobType] || t('node.jobType.noTask');
             })(),
             activeStatus: (() => {
                 const statusMap = {
-                    running: '运行中',
-                    waiting: '等待中',
+                    running: t('node.status.running'),
+                    waiting: t('node.status.waiting'),
                 };
-                return statusMap[node.activeStatus] || '暂无状态';
+                return statusMap[node.activeStatus] || t('node.status.noStatus');
             })(),
             lastJobType: (() => {
                 const typeMap = {
-                    initCluster: '初始化集群',
-                    addNode: '添加节点',
-                    upgradeCluster: '升级集群',
-                    resetCluster: '重置集群',
-                    resetNode: '重置节点',
+                    initCluster: t('node.jobType.initCluster'),
+                    addNode: t('node.jobType.addNode'),
+                    upgradeCluster: t('node.jobType.upgradeCluster'),
+                    resetCluster: t('node.jobType.resetCluster'),
+                    resetNode: t('node.jobType.resetNode'),
                 };
-                return typeMap[node.lastJobType] || '暂无任务';
+                return typeMap[node.lastJobType] || t('node.jobType.noTask');
             })(),
             lastJobStatus: (() => {
                 const statusMap = {
-                    worked: '成功',
-                    failed: '失败',
+                    worked: t('node.lastJobStatus.worked'),
+                    failed: t('node.lastJobStatus.failed'),
                 };
-                return statusMap[node.lastJobStatus] || '暂无状态';
+                return statusMap[node.lastJobStatus] || t('node.status.noStatus');
             })(),
         }));
       } catch (err) {
@@ -1117,71 +1133,71 @@
         });
     });
 
-    const columns = [
+    const columns =  computed(() => [
     {
         title: '',
         dataIndex: 'icon',
         slotName: 'icon',
     },
     {
-        title: 'IP',
+        title: t('node.columns.ip'),
         dataIndex: 'ip',
         slotName: 'ip',
     },
     {
-        title: '节点名字',
+        title: t('list.node.name'),
         dataIndex: 'hostName',
     },
     {
-        title: '节点角色',
+        title: t('list.node.role'),
         dataIndex: 'role',
         slotName: 'role',
     },
     {
-        title: '操作系统',
+        title: t('list.node.os'),
         dataIndex: 'os',
         slotName: 'os',
     },
     {
-        title: 'k8s版本',
+        title: t('list.node.k8sVersion'),
         dataIndex: 'k8sVersion',
         slotName: 'k8sVersion',
     },
     {
-        title: '状态',
+        title: t('list.node.status'),
         dataIndex: 'status',
         slotName: 'status',
     },
     {
-        title: '任务类型',
+        title: t('list.node.activeJobType'),
         dataIndex: 'activeJobType',
         slotName: 'activeJobType',
     },
     {
-        title: '任务状态',
+        title: t('list.node.activeStatus'),
         dataIndex: 'activeStatus',
         slotName: 'activeStatus',
     },
     {
-        title: '上次任务类型',
+        title: t('list.node.lastJobType'),
         dataIndex: 'lastJobType',
         slotName: 'lastJobType',
     },
     {
-        title: '上次任务状态',
+        title: t('list.node.lastJobStatus'),
         dataIndex: 'lastJobStatus',
         slotName: 'lastJobStatus',
     },
     {
-        title: '加入时间',
+        title: t('list.node.joinTime'),
         dataIndex: 'createTime',
     },
     {
-        title: '操作',
+        title: t('list.node.operations'),
         dataIndex: 'operations',
         slotName: 'operations',
-    },
-    ];
+    }
+    ]);
 </script> 
  
 <style scoped lang="less">

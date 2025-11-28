@@ -44,6 +44,7 @@ async function getRedis(id) {
       user: hostInfo.user,
       hostName: nodeInfo.hostName,
       password: hostInfo.password,
+      port: hostInfo.hostPort,
       role: nodeInfo.role,
       k8sVersion: nodeInfo.k8sVersion,
       status: nodeInfo.status

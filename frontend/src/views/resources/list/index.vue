@@ -4,7 +4,7 @@
             <a-breadcrumb-item>
                 <icon-apps />
             </a-breadcrumb-item>
-            <a-breadcrumb-item>离线包管理</a-breadcrumb-item>
+            <a-breadcrumb-item>{{ t('resources.breadcrumb.title') }}</a-breadcrumb-item>
         </a-breadcrumb>
         <div class="layout">
             <a-card :style="{ marginBottom: '24px' }">
@@ -13,7 +13,7 @@
                         type="text" 
                         size="small" 
                         @click="handleLink">
-                        离线包导入
+                        {{ t('resources.button.import') }}
                     </a-button>
                     <a-button class="nav-btn" type="outline" :shape="'circle'" @click="handleRefresh()" :style="{ marginRight: '10px', marginBottom: '10px' }">
                         <icon-refresh />
@@ -21,11 +21,11 @@
                 </div>
                 <a-row :gutter="16">
                     <a-col :span="12" :style="{ padding: '0 8px' }">
-                        <a-card title="k8s版本" :style="{ marginBottom: '16px' }">
+                        <a-card :title="t('resources.card.title.k8s')" :style="{ marginBottom: '16px' }">
                             <a-collapse accordion>
                                 <a-collapse-item v-for="version in k8sCache?.children || []" :key="version.name" :header="version.name">
                                     <a-tabs default-active-key="files">
-                                        <a-tab-pane key="files" title="文件">
+                                        <a-tab-pane key="files" :title="t('resources.tab.file')">
                                             <a-table
                                                 :columns="fileColumns"
                                                 :data="version.children.filter(item => item.type === 'file')"
@@ -34,7 +34,7 @@
                                                 row-key="name"
                                             />
                                         </a-tab-pane>
-                                        <a-tab-pane key="image" title="镜像">
+                                        <a-tab-pane key="image" :title="t('resources.tab.image')">
                                             <a-table
                                                 :columns="imageColumns"
                                                 :data="version.children
@@ -50,11 +50,11 @@
                         </a-card>
                     </a-col>
                     <a-col :span="12" :style="{ padding: '0 8px' }">
-                        <a-card title="网络插件" :style="{ marginBottom: '16px' }"> 
+                        <a-card :title="t('resources.card.title.network')" :style="{ marginBottom: '16px' }"> 
                             <a-collapse accordion>
                                 <a-collapse-item v-for="plugin in formattedPlugins" :key="plugin.name + plugin.version" :header="`${plugin.name} - ${plugin.version}`">
                                     <a-tabs default-active-key="images">
-                                        <a-tab-pane key="images" title="镜像">
+                                        <a-tab-pane key="images" :title="t('resources.tab.image')">
                                             <a-table
                                                 :columns="imageColumns"
                                                 :data="plugin.images"
@@ -63,7 +63,7 @@
                                                 row-key="name"
                                             />
                                         </a-tab-pane>
-                                        <a-tab-pane key="files" title="文件">
+                                        <a-tab-pane key="files" :title="t('resources.tab.files')">
                                             <a-table
                                                 :columns="fileColumns"
                                                 :data="plugin.files"
@@ -80,7 +80,7 @@
                 </a-row>
                 <a-row :gutter="16" style="margin-top: 24px;">
                     <a-col :span="12" :style="{ padding: '0 8px' }">
-                        <a-card title="操作系统" :style="{ marginBottom: '16px' }">
+                        <a-card :title="t('resources.card.title.os')" :style="{ marginBottom: '16px' }">
                         <a-collapse accordion>
                             <a-collapse-item
                             v-for="(directory, index) in repoFiles"
@@ -106,11 +106,11 @@
                         </a-card>
                     </a-col>
                     <a-col :span="12" :style="{ padding: '0 8px' }">
-                        <a-card title="系统软件" :style="{ marginBottom: '16px' }">
+                        <a-card :title="t('resources.card.title.software')" :style="{ marginBottom: '16px' }">
                             <a-collapse accordion>
                                 <a-collapse-item v-for="app in systemApp" :key="app.name" :header="app.name">
                                     <a-tabs default-active-key="images">
-                                        <a-tab-pane key="images" title="镜像">
+                                        <a-tab-pane key="images" :title="t('resources.tab.image')">
                                             <a-table
                                                 :columns="imageColumns"
                                                 :data="getChildrenData(app.images)"
@@ -119,7 +119,7 @@
                                                 row-key="name"
                                             />
                                         </a-tab-pane>
-                                        <a-tab-pane key="files" title="文件">
+                                        <a-tab-pane key="files" :title="t('resources.tab.file')">
                                             <a-table
                                                 :columns="fileColumns"
                                                 :data="getChildrenData(app.files)"
@@ -141,12 +141,14 @@
 
 <script lang="ts" setup>
     import { ref, onMounted, computed } from 'vue';
+    import { useI18n } from 'vue-i18n';
     import router from '@/router';
     import useLoading from '@/hooks/loading';
     import { getResources } from '@/api/resources';
     import { Message } from '@arco-design/web-vue';
 
     const { loading, setLoading } = useLoading();
+    const { t } = useI18n();
     const k8sCache = ref(null)
     const networkPlugins = ref(null)
     const repoFiles = ref(null)
@@ -172,7 +174,7 @@
                     return versionArray[0]; // 返回第一个版本
                 }
             } catch (parseError) {
-                console.error('版本信息解析失败:', parseError);
+                console.error(t('resources.message.error.parse'), parseError);
             }
         }
         return '';
@@ -184,7 +186,7 @@
             // 检查次版本是否存在
             const versionMapStr = localStorage.getItem('k8sVersionMap');
             if (!versionMapStr) {
-                Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
+                Message.error(t('resources.message.error.noBackend'));
                 return;
             }
             
@@ -282,13 +284,13 @@
     })
 
     const fileColumns = [
-        { title: '文件名', dataIndex: 'name', key: 'name' },
-        { title: '大小', dataIndex: 'size', key: 'size' },
+        { title: t('resources.table.columns.fileName'), dataIndex: 'name', key: 'name' },
+        { title: t('resources.table.columns.size'), dataIndex: 'size', key: 'size' },
     ];
 
     const imageColumns = [
-        { title: '镜像名', dataIndex: 'name', key: 'name' },
-        { title: '大小', dataIndex: 'size', key: 'size' },
+        { title: t('resources.table.columns.imageName'), dataIndex: 'name', key: 'name' },
+        { title: t('resources.table.columns.size'), dataIndex: 'size', key: 'size' },
     ];
 
     // 跳转离线包导入

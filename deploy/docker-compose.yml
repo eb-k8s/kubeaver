@@ -58,7 +58,7 @@ services:
       - "store.e-byte.cn:${HOST_IP}"
 
   init-db:
-    image: sqlite:3
+    image: alpine/sqlite:3.45.3
     container_name: db
     volumes: 
       - ./data/kubeadmin:/data/kubeadmin

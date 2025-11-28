@@ -3,8 +3,6 @@ title: 环境要求
 ---
 # 环境要求
 
-
-
 控制主机（kubeaver所在主机）：
 - 准备一台 Linux 主机，并确保其满足最低硬件要求：CPU > 2 核，内存 > 4 GB， 磁盘空间 > 40 GB。
 - 您需要提前安装tar命令
@@ -12,10 +10,10 @@ title: 环境要求
 
 目标主机（最低硬件要求）：
 - 控制节点内存2GB
-- 工作节点内存1GB
+- 工作节点内存2GB
 - 磁盘空闲空间20GB
 
-## 准备工作
+<!-- ## 准备工作
   
   首先检查控制主机是否有tar 和 docker命令，若无需下述步骤进行下载相应的安装包进行安装：
 
@@ -106,14 +104,14 @@ tar xfvz docker_centos.tgz
 cd docker_centos
 ./setup-docker.sh
 docker compose version
-~~~
+~~~ -->
 
 
 
 
 
 
-<style scoped>
+<!-- <style scoped>
 /* 悬浮框整体背景和阴影 */
 .popover-download-list {
   background: #f6fff9;
@@ -162,4 +160,4 @@ docker compose version
   color: #179a2e;
   background: transparent;
 }
-</style>
+</style> -->

@@ -1,62 +1,131 @@
-# Kubeaver
 
-<img src="./docs/imgs/logo_without_k.svg" height="100px"  />
+<h1 align="center">
 
+  <img src="./docs/imgs/logo_with_kubeaver.png" height="150px" style="vertical-align: middle;" />
 
-Kubeaver is a tool for quickly deploying high-availability Kubernetes (K8s) clusters, supporting **online(in progress) and offline** methods. The project is based on [kubespray](https://github.com/kubernetes-sigs/kubespray), leveraging Ansible to automate deployment tasks, and provides a user-friendly **graphical user interface**.
+  <img align="right" alt="conformance-icon" width="75" height="120" src="https://www.cncf.io/wp-content/uploads/2020/07/certified_kubernetes_color-1.png"> 
 
-Advantages of Kubeaver:
+</h1>
 
-* **Offline deployment capability**: It can deploy K8s clusters without internet access, completely isolating network dependencies. Users can download offline packages and import them into Kubeaver for one-click deployment.
+> **NOTICE:** Kubeaver is a [CNCF conformance-certified installer](https://www.cncf.io/training/certification/software-conformance/).
 
-* **Basic cluster management operations**: Use Kubeaver to deploy, upgrade, scale, or reset clusters.
-
-* **customizable cluster configuration**: Choose custom components for your cluster, such as network plugins and applications, and configure advanced parameters.
-
-* **Real-time task progress tracking**: View task stages and time statistics.
-
-⚠️ Note: If you can access the internet but face issues downloading K8s-related images and files due to network problems, we strongly recommend using the offline mode for rapid K8s cluster deployment.
+[![Static Badge](https://img.shields.io/badge/CNCFStatus-Certified-informational)](https://www.cncf.io/training/certification/software-conformance/)
+[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/eb-k8s/kubeaver/build_package.yaml)](https://github.com/eb-k8s/kubeaver/actions/workflows/build_package.yaml)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![GitHub Release](https://img.shields.io/github/v/release/eb-k8s/kubeaver)](https://github.com/eb-k8s/kubeaver/releases)
 
 
-文档语言：[简体中文](./docs/README_CN.md)
+Kubeaver is a tool for quickly deploying high-availability Kubernetes (K8s) clusters, supporting **offline and online(in progress) ** methods. The project is based on [kubespray](https://github.com/kubernetes-sigs/kubespray), leveraging Ansible to automate deployment tasks, and provides a user-friendly **graphical user interface**. Refer to the **[documentation](https://eb-k8s.github.io/kubeaver/)** for more details on how to use Kubeaver.
 
-## Quick Start
+中文版 [README](./docs/README_CN.md)
 
-### Install Docker and Docker Compose
+## Features 
 
-Install Docker on the host where you want to install Kubeaver using the official Docker guide: [Install Docker Engine](https://docs.docker.com/engine/install). After installation, run the `docker compose version` command to ensure Docker Compose is correctly installed. If not, manually install Docker Compose.
+* Cluster Management  
+* Deploy Cluster (Offline Cluster Deployment) 
+* Task Management
+* Task Time Statistics
+* Task Real-time Output
+* Node Management  
+* Offline Package Management
+* Host Management
 
-### Deploy Kubeaver
+## System Architecture
 
-Download Kubeaver code:
+<div align="center">
+  <img src="./docs/imgs/arch.png" alt="System Architecture" />
+</div>
+
+## Screenshots
+
+<table>
+    <tr>
+        <td width="33%"><img src="./docs/imgs/screenshots/clusterManagement.png"></td>
+        <td width="33%"><img src="./docs/imgs/screenshots/task.png"></td>
+    </tr>
+    <tr>
+        <td width="33%"><img src="./docs/imgs/screenshots/taskinstance.png"></td>
+        <td width="33%"><img src="./docs/imgs/screenshots/taskTimeStatistics.png"></td>
+    </tr>
+    <tr>
+        <td width="33%"><img src="./docs/imgs/screenshots/hostManagement.png"></td>
+        <td width="33%"><img src="./docs/imgs/screenshots/offlinePackages.png"></td>
+    </tr>
+</table>
+
+## Compatibility
+
+The default backend for Kubeaver 1.0.0 is v1.0.0-125, which supports Kubernetes versions 1.25 to 1.27. To extend support to include versions 1.28 through 1.30, you can modify the Docker Compose configuration.
+
+| kubeaver version | backend version | 1.25.x | 1.26.x | 1.27.x | 1.28.x | 1.29.x | 1.30.x |
+|------------------|----------------|--------|--------|--------|--------|--------|--------|
+| 1.0.0            | v1.0.0-125     |   ✔    |   ✔    |   ✔   |   x    |   x    |   x    |
+| 1.0.0            | v1.0.0-128     |   x    |   x    |    x   |   ✔    |   ✔   |   ✔    |
+
+Key:
+* ✔: Compatible: The components are tested and guaranteed to work with this Kubernetes version.
+* x: Incompatible: The components are not guaranteed to support this Kubernetes version, as it falls outside the tested and supported range.
+
+## Install & Run kubeaver
+
+**System requirements:**
+
+On a Linux host:   
+  - Software: 
+    - docker 20.10.10-ce+
+  - Hardware:
+    - CPU: 2 vCPU
+    - Memory: 4 GB
+    - Disk: 60 GB
+
+**Download and Unpack the Installer:**
+
+1. Go to the Kubeaver releases page.
+
+2. Download the online or offline installer for the version you want to install.
+
+   Download binaries of **[Kubeaver release ](https://github.com/eb-k8s/kubeaver/releases)** and follow.
+
+3. Use tar to extract the installer package:
+
+```ShellSession
+tar xzvf kubeaver-offline-installer-1.0.0.tgz
 ```
-git clone https://github.com/eb-k8s/kubeaver.git
+4. Change to the installation directory:
+
+```ShellSession
+cd kubeaver-offline-installer-1.0.0
 ```
 
-Start Kubeaver using Docker Compose:
-```
-# Switch to the directory containing the Docker Compose file
-cd ./deploy
-# Start Kubeaver
-docker compose up -d
+5. Install and start Kubeaver by using the start.sh script:
+
+```ShellSession
+./start.sh
 ```
 
 After this, Kubeaver will be successfully installed on your host. You can now access it via port 80.
+
 
 ### Offline Package Import
 
 Before deploying a Kubernetes cluster, you need to import the base package and extension packages according to your requirements. The base package contains essential components required for K8s cluster deployment, including the basic Flannel network plugin. If you intend to use Calico, you will need to import the Calico extension package. It’s important to note that you must import the corresponding operating system extension package based on the OS of your target cluster nodes.
 
 Below shows how to download the Kubernetes base package for version v1.27.10 and the extension package for CentOS 7 operating system:
-```
+
+```ShellSession
 # download base package
+cd ./deploy/data/kubeaver/offline   
+
 docker pull ghcr.io/eb-k8s/kubeaver/kubeaver_offline:v1.27.10
-docker run -d ghcr.io/eb-k8s/kubeaver/kubeaver_offline:v1.27.10 --name kubeaver_offline 
+docker run -d --name kubeaver_offline ghcr.io/eb-k8s/kubeaver/kubeaver_offline:v1.27.10  
 docker cp kubeaver_offline:/root/base_k8s_v1.27.10.tgz .
+docker rm -f kubeaver_offline    ##delete container
+
 # download os package
 docker pull ghcr.io/eb-k8s/kubeaver/oslib_centos:v1.0
-docker run -d ghcr.io/eb-k8s/kubeaver/oslib_centos:v1.0 --name kubeaver_oslib
+docker run -d --name kubeaver_oslib ghcr.io/eb-k8s/kubeaver/oslib_centos:v1.0 
 docker cp kubeaver_oslib:/root/extend_CentOS_7_Core.tgz .
+docker rm -f kubeaver_oslib    ##delete container
 ```
 You can then obtain the offline package `base_k8s_v1.27.10.tgz、extend_CentOS_7_Core.tgz` and import it into Kubeaver.
 
@@ -69,21 +138,17 @@ Click here to view more detailed offline package download methods: [Offline pack
 3. Click **Save**, then select the newly created cluster in the **Cluster Management** interface and click **Deploy** to start the deployment.
 4. View the status and progress of tasks in the **Task Queue** or check running/completed tasks in the **Task History**.
 
-### Feature Introduction
+#### K8s Node Requirements
 
-* Add Host  
-* Create Cluster  
-* Deploy Cluster  
-* Cluster Management  
-* Node Management  
-* Offline Package Management  
-
-## Supported Linux Distributions
-
-- **Ubuntu** 22.04
-- **CentOS** 7
-- **Rocky Linux** 9
-- **openEuler** 22.03
+- Control Plane
+  - Memory: 2 GB
+- Worker Node
+  - Memory: 2 GB
+- OS
+  - **Ubuntu** 22.04
+  - **CentOS** 7
+  - **Rocky Linux** 9
+  - **openEuler** 22.03
 
 ## Supported Components
 
@@ -98,11 +163,9 @@ Click here to view more detailed offline package download methods: [Offline pack
 - Application
   - [coredns](https://github.com/coredns/coredns) 
 
-## Requirements
 
-- Control Plane
-  - Memory: 2 GB
-- Worker Node
-  - Memory: 1 GB
 
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+## License
+
+Kubeaver is released under the terms of the [Apache 2.0](./LICENSE) license.
+

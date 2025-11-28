@@ -4,7 +4,7 @@
         <a-breadcrumb-item>
             <icon-apps />
         </a-breadcrumb-item>
-        <a-breadcrumb-item>安装部署</a-breadcrumb-item>
+        <a-breadcrumb-item>{{ t('list.breadcrumb.install') }}</a-breadcrumb-item>
         </a-breadcrumb>
         <div class="layout">
             <a-card>
@@ -13,7 +13,7 @@
                         <icon-refresh />
                     </a-button>
                     <a-button type="primary" @click="handleCreateCluster()" :style="{ marginBottom: '10px' }">
-                        创建集群
+                        {{ t('list.button.create') }}
                     </a-button>
                 </div>
                 <a-table :columns="columns" :data="clusterList" :loading="loading">
@@ -55,10 +55,10 @@
                     </template>
                     <template #taskProcess="{ record }">
                         <div class="status-container">
-                            <span v-if="translateTaskProcess(record.taskProcess) !== '暂无任务'" class="status-icon running">
+                            <span v-if="translateTaskProcess(record.taskProcess) !== t('list.task.process.unknown')" class="status-icon running">
                                 <icon-sync class="rotating" />
                             </span>
-                            <span v-if="translateTaskProcess(record.taskProcess) === '暂无任务'" class="circle Unknown"></span>
+                            <span va_if="translateTaskProcess(record.taskProcess) === t('list.task.process.unknown')" class="circle Unknown"></span>
                             <span class="status-text1">{{ translateTaskProcess(record.taskProcess) }}</span>
                         </div>
                     </template>
@@ -76,49 +76,49 @@
                                 type="text" 
                                 size="small" 
                                 @click="onClickUpgrade(record)">
-                                升级
+                                {{ t('list.button.upgrade') }}
                             </a-button>
                             <a-button 
                                 v-if="record.status === 'Ready' && record.taskProcess === 'Unknown'" 
                                 type="text" 
                                 size="small" 
                                 @click="handleLink(record)">
-                                应用管理
+                                {{ t('list.button.appManagement') }}
                             </a-button>
                             <a-button 
                                 v-if="record.taskProcess === 'Unknown' && record.status === 'Unknown'" 
                                 type="text" 
                                 size="small" 
                                 @click="onClickDeploy(record)">
-                                部署
+                                {{ t('list.button.deploy') }}
                             </a-button>
                             <a-button 
                                 v-if="record.status === 'Unknown' && record.taskProcess === 'Unknown'" 
                                 type="text" 
                                 size="small" 
                                 @click="onClickEdit(record)">
-                                编辑
+                                {{ t('list.button.edit') }}
                             </a-button>
                             <a-button 
                                 v-if="record.taskProcess === 'Unknown' && record.status !== 'Unknown'" 
                                 type="text" 
                                 size="small" 
                                 @click="onClickReset(record)">
-                                重置
+                                {{ t('list.button.reset') }}
                             </a-button>
                             <a-button 
                                 v-if="record.status === 'Unknown' && record.taskProcess === 'Unknown'" 
                                 type="text" 
                                 size="small" 
                                 @click="onClickDeleteBeforeDeploy(record)">
-                                删除
+                                {{ t('list.button.delete') }}
                             </a-button>
                             <a-button 
                                 v-if="record.status === 'Ready' && record.taskProcess === 'Unknown'" 
                                 type="text" 
                                 size="small" 
                                 @click="onClickDownloadConfig(record)">
-                                证书下载
+                                {{ t('list.button.downloadConfig') }}
                             </a-button>
                         </div>
                     </template>
@@ -129,29 +129,29 @@
             </a-card>
         </div>
         <a-modal v-model:visible="deployVisible" @ok="handleDeployOk" @cancel="handleDeployCancel">
-           确定部署<span style="color: red; font-weight: bold;">{{ version }}</span>版本的集群吗？
+           {{ t('list.modal.deploy.title', { version: version }) }}
         </a-modal>
         <a-modal v-model:visible="resetVisible" @ok="handleResetOk" @cancel="handleResetCancel">
             <template #title>
-                <span>重置确认</span>
+                <span>{{ t('list.modal.reset.title') }}</span>
             </template>
-            <p>确定重置 <span style="color: red; font-weight: bold;">{{ name }}</span> 集群吗？</p>
-            <p style="color: red; font-weight: bold;">警告：重置操作不可恢复，请谨慎操作！</p>
+            <p>{{ t('list.modal.reset.content', { name: name }) }}</p>
+            <p style="color: red; font-weight: bold;">{{ t('list.modal.reset.warning') }}</p>
         </a-modal>
         <a-modal v-model:visible="deleteVisible" @ok="handleDeleteOk" @cancel="handleDeleteCancel">
-            确定删除 <span style="color: red; font-weight: bold;">{{ name }}</span> 的集群吗？
+            {{ t('list.modal.delete.content', { name: name }) }}
         </a-modal>
         <a-modal v-model:visible="upgradeVisible" @ok="handleUpgradeOk" @cancel="handleUpgradeCancel">
             <a-form :model="cluster" style="margin-top: 20px;">
                 <a-form-item
-                    label="版本："
+                    :label="t('list.form.label.version')"
                     field="version"
-                    :rules="[{ required: true, message: '请选择集群版本' }]"
+                    :rules="[{ required: true, message: t('list.form.placeholder.version') }]"
                     >
                     <a-select
                         v-model="cluster.version"
                         class="select-input"
-                        placeholder="请选择集群版本"
+                        :placeholder="t('list.form.placeholder.version')"
                         style="width: 400px;"
                     >
                         <a-option
@@ -166,14 +166,14 @@
             </a-form>
             <a-form :model="cluster" style="margin-top: 20px;">
                 <a-form-item
-                    label="网络插件："
+                    :label="t('list.form.label.networkPlugins')"
                     field="networkPlugins"
-                    :rules="[{ required: true, message: '请选择网络插件' }]"
+                    :rules="[{ required: true, message: t('list.form.placeholder.networkPlugins') }]"
                     >
                     <a-select
                         v-model="cluster.networkPlugins"
                         class="select-input"
-                        placeholder="请选择网络插件"
+                        :placeholder="t('list.form.placeholder.networkPlugins')"
                         style="width: 400px;"
                     >
                         <a-option
@@ -188,6 +188,7 @@
     </div>
 </template>
 <script lang="ts" setup>
+    import { useI18n } from 'vue-i18n';
     import { ref, onMounted, reactive, computed, watch } from 'vue';
     import router from '@/router';
     import useLoading from '@/hooks/loading';
@@ -200,6 +201,7 @@
     import { formatTime } from '@/utils/time';
     import { saveAs } from 'file-saver';
 
+    const { t } = useI18n();
     const { loading, setLoading } = useLoading();
     const deleteVisible = ref(false);
     const deployVisible = ref(false);
@@ -233,7 +235,7 @@
                     return versionArray[0]; // 返回第一个版本
                 }
             } catch (parseError) {
-                console.error('版本信息解析失败:', parseError);
+                console.error(t('list.message.error.versionParse'), parseError);
             }
         }
         return '';
@@ -254,7 +256,7 @@
         // 检查次版本是否存在
         const versionMapStr = localStorage.getItem('k8sVersionMap');
         if (!versionMapStr) {
-            Message.error("未检测到可用的后端，请启动后端后退出重新登录！");
+            Message.error(t('list.message.error.noBackend'));
             return;
         }
         try {
@@ -778,19 +780,15 @@
             setLoading(false);
         }
     };
+    const processMap: Record<string, string> = {
+        Unknown: t('list.task.process.unknown'),
+        deploying: t('list.task.process.deploying'),
+        upgrading: t('list.task.process.upgrading'),
+        resetting: t('list.task.process.resetting'),
+    };
+
     const translateTaskProcess = (taskProcess: string) => {
-        switch (taskProcess) {
-            case 'Unknown':
-                return '暂无任务';
-            case 'deploying':
-                return '部署中';
-            case 'upgrading':
-                return '升级中';
-            case 'resetting':
-                return '重置中';
-            default:
-                return taskProcess; // 如果没有匹配到，返回原值
-        }
+        return processMap[taskProcess] || taskProcess;
     };
 
     // 校验当前选择的插件是否与当前 K8s 版本兼容
@@ -827,25 +825,25 @@
         fetchHostList();
     });
   
-    const columns = [
+    const columns = computed(() => [            
     {
         title: '',
         dataIndex: 'icon',
         slotName: 'icon',
     },
     {
-        title: '集群名称',
+        title: t('list.table.header.name'),
         dataIndex: 'clusterName',
         slotName: 'clusterName',
     },
     {
-        title: '集群版本',
+        title: t('list.table.header.version'),
         dataIndex: 'version',
         slotName: 'version',
     },
   
     {
-        title: '节点总数(master/node)',
+        title: t('list.table.header.nodes'),
         dataIndex: 'count',
         slotName: 'count',
     },
@@ -855,7 +853,7 @@
     //     slotName: 'master1',
     // },
     {
-        title: '集群状态',
+        title: t('list.table.header.status'),
         dataIndex: 'status',
         slotName: 'status',
     },
@@ -865,21 +863,21 @@
     //     slotName: 'activeTask',
     // },
     {
-        title: '任务状态',
+        title: t('list.table.header.task'),
         dataIndex: 'taskProcess', 
         slotName: 'taskProcess',
     },
     {
-        title: '创建时间',
+        title: t('list.table.header.createTime'),
         dataIndex: 'createTime',
     },
  
     {
-        title: '操作',
+        title: t('list.table.header.action'),
         dataIndex: 'operations',
         slotName: 'operations',
-    },
-    ];
+    }
+    ]);
    
 </script> 
  

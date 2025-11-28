@@ -6,7 +6,7 @@ const HOST: AppRouteRecordRaw = {
   name: 'host',
   component: DEFAULT_LAYOUT,
   meta: {
-    locale: '主机管理',
+    locale: 'menu.host',
     requiresAuth: true,
     icon: 'icon-computer',
     order: 3,
@@ -18,7 +18,7 @@ const HOST: AppRouteRecordRaw = {
       name: 'host.list',
       component: () => import('@/views/host/index.vue'),
       meta: {
-        locale: '主机管理',
+        locale: 'menu.host',
         requiresAuth: true,
         roles: ['*'],
         hideInMenu: true,
