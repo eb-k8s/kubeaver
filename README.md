@@ -9,7 +9,7 @@
 
 > **NOTICE:** Kubeaver is a [CNCF conformance-certified installer](https://www.cncf.io/training/certification/software-conformance/).
 
-[![Static Badge](https://img.shields.io/badge/CNCFStatus-Certified-informational)](https://www.cncf.io/training/certification/software-conformance/).
+[![Static Badge](https://img.shields.io/badge/CNCFStatus-Certified-informational)](https://www.cncf.io/training/certification/software-conformance/)
 [![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/eb-k8s/kubeaver/build_package.yaml)](https://github.com/eb-k8s/kubeaver/actions/workflows/build_package.yaml)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![GitHub Release](https://img.shields.io/github/v/release/eb-k8s/kubeaver)](https://github.com/eb-k8s/kubeaver/releases)
@@ -70,7 +70,13 @@ Key:
 
 **System requirements:**
 
-On a Linux host: docker 20.10.10-ce+ and docker-compose 1.18.0+ .
+On a Linux host:   
+  - Software: 
+    - docker 20.10.10-ce+
+  - Hardware:
+    - CPU: 2 vCPU
+    - Memory: 4 GB
+    - Disk: 60 GB
 
 **Download and Unpack the Installer:**
 
@@ -83,9 +89,15 @@ On a Linux host: docker 20.10.10-ce+ and docker-compose 1.18.0+ .
 3. Use tar to extract the installer package:
 
 ```ShellSession
-tar xzvf kubeaver-offline-installer-x.x.x.tgz
+tar xzvf kubeaver-offline-installer-1.0.0.tgz
 ```
-4. Install and start Kubeaver by using the start.sh script:
+4. Change to the installation directory:
+
+```ShellSession
+cd kubeaver-offline-installer-1.0.0
+```
+
+5. Install and start Kubeaver by using the start.sh script:
 
 ```ShellSession
 ./start.sh
@@ -126,13 +138,17 @@ Click here to view more detailed offline package download methods: [Offline pack
 3. Click **Save**, then select the newly created cluster in the **Cluster Management** interface and click **Deploy** to start the deployment.
 4. View the status and progress of tasks in the **Task Queue** or check running/completed tasks in the **Task History**.
 
+#### K8s Node Requirements
 
-## Supported Linux Distributions
-
-- **Ubuntu** 22.04
-- **CentOS** 7
-- **Rocky Linux** 9
-- **openEuler** 22.03
+- Control Plane
+  - Memory: 2 GB
+- Worker Node
+  - Memory: 2 GB
+- OS
+  - **Ubuntu** 22.04
+  - **CentOS** 7
+  - **Rocky Linux** 9
+  - **openEuler** 22.03
 
 ## Supported Components
 
@@ -147,12 +163,7 @@ Click here to view more detailed offline package download methods: [Offline pack
 - Application
   - [coredns](https://github.com/coredns/coredns) 
 
-## Requirements
 
-- Control Plane
-  - Memory: 2 GB
-- Worker Node
-  - Memory: 1 GB
 
 ## License
 
