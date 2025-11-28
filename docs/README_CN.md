@@ -69,7 +69,14 @@ Kubeaver 1.0.0 默认后端版本为 v1.0.0-125，支持 Kubernetes 1.25 到 1.2
 
 **系统要求：**
 
-Linux 主机：docker 20.10.10-ce+ 和 docker-compose 1.18.0+。
+Linux 主机：
+- 软件：
+  - docker 20.10.10-ce+
+
+- 硬件：
+  - CPU: 2 vCPU
+  - Memory: 4 GB
+  - Disk: 60 GB
 
 **下载安装包：**
 
@@ -79,9 +86,14 @@ Linux 主机：docker 20.10.10-ce+ 和 docker-compose 1.18.0+。
 3. 使用 tar 解压安装包：
 
 ```shell
-tar xzvf kubeaver-offline-installer-x.x.x.tgz
+tar xzvf kubeaver-offline-installer-1.0.0.tgz
 ```
-4. 运行 start.sh 安装并启动 Kubeaver：
+4. 切换到安装目录：
+~~~shell
+cd kubeaver-offline-installer-1.0.0
+~~~
+
+5. 运行 start.sh 安装并启动 Kubeaver：
 
 ```shell
 ./start.sh
@@ -121,12 +133,17 @@ docker rm -f kubeaver_oslib    ##删除容器
 3. 点击**保存**，然后在**集群管理**界面选择新建集群并点击**部署**开始安装。
 4. 可在**任务队列**查看任务状态和进度，或在**任务历史**查看运行/完成的任务。
 
-## 支持的 Linux 发行版
+#### K8s节点要求
 
-- **Ubuntu** 22.04
-- **CentOS** 7
-- **Rocky Linux** 9
-- **openEuler** 22.03
+- 控制节点
+  - Memory: 2 GB
+- 工作节点
+  - Memory: 2 GB
+- 操作系统
+  - **Ubuntu** 22.04
+  - **CentOS** 7
+  - **Rocky Linux** 9
+  - **openEuler** 22.03
 
 ## 支持的组件
 
@@ -140,13 +157,6 @@ docker rm -f kubeaver_oslib    ##删除容器
   - [flannel](https://github.com/flannel-io/flannel) 
 - 应用组件
   - [coredns](https://github.com/coredns/coredns) 
-
-## 硬件要求
-
-- 控制节点
-  - 内存：2 GB
-- 工作节点
-  - 内存：1 GB
 
 ## 许可证
 
