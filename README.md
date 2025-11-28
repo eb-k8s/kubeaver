@@ -15,7 +15,7 @@
 [![GitHub Release](https://img.shields.io/github/v/release/eb-k8s/kubeaver)](https://github.com/eb-k8s/kubeaver/releases)
 
 
-Kubeaver is a tool for quickly deploying high-availability Kubernetes (K8s) clusters, supporting **offline and online(in progress) ** methods. The project is based on [kubespray](https://github.com/kubernetes-sigs/kubespray), leveraging Ansible to automate deployment tasks, and provides a user-friendly **graphical user interface**. Refer to the **[documentation](https://eb-k8s.github.io/kubeaver/)** for more details on how to use Kubeaver.
+Kubeaver is a tool for quickly deploying high-availability Kubernetes (K8s) clusters, supporting **offline and online(in progress)** methods. The project is based on [kubespray](https://github.com/kubernetes-sigs/kubespray), leveraging Ansible to automate deployment tasks, and provides a user-friendly **graphical user interface**. Refer to the **[documentation](https://eb-k8s.github.io/kubeaver/)** for more details on how to use Kubeaver.
 
 中文版 [README](./docs/README_CN.md)
 
