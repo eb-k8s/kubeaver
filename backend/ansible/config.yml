@@ -15,6 +15,7 @@ calico_version: "{{ kube_network_version if kube_network_plugin == 'calico' else
 flannel_supported_versions:
   v0.22.0: "v1.1.2"
   v0.26.5: "v1.6.2-flannel1"
+  v0.27.3: "v1.7.1-flannel1"
 flannel_cni_version: "{{ flannel_supported_versions[flannel_version] }}"
 # 默认配置metrics-server
 metrics_server_enabled: true
