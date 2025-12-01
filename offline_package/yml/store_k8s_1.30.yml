@@ -1,4 +1,4 @@
-kube_version: v1.28
+kube_version: v1.30
 kubespray_version: v2.26.0
 dependency:
   files:

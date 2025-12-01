@@ -1,31 +1,31 @@
-kube_version: v1.29
-kubespray_version: v2.26.0
+kube_version: v1.33
+kubespray_version: v2.29.0
 dependency:
   files:
     - name: containerd
-      version: '1.7.21'
+      version: '2.1.4'
       path: others/containerd
-      filename: containerd-1.7.21-linux-{{image_arch}}.tar.gz
+      filename: containerd-2.1.4-linux-{{image_arch}}.tar.gz
     - name: crictl
-      version: v1.29.0
+      version: v1.33.0  
       path: others/crictl
-      filename: crictl-v1.29.0-linux-{{image_arch}}.tar.gz
+      filename: crictl-v1.33.0-linux-{{image_arch}}.tar.gz
     - name: etcd
-      version: v3.5.12
+      version: v3.5.23
       path: etcd
-      filename: etcd-v3.5.12-linux-{{ image_arch }}.tar.gz
+      filename: etcd-v3.5.23-linux-{{ image_arch }}.tar.gz
     - name: runc
-      version: v1.1.13
+      version: v1.3.2
       path: others/runc
-      filename: runc-v1.1.13.{{image_arch}}
+      filename: runc-v1.3.2.{{image_arch}}
     - name: cni-plugins
-      version: v1.4.0
+      version: v1.8.0
       path: others/cni-plugins-linux
-      filename: cni-plugins-linux-{{image_arch}}-v1.4.0.tgz
+      filename: cni-plugins-linux-{{image_arch}}-v1.8.0.tgz
     - name: nerdctl
-      version: '1.7.6'
+      version: '2.1.6'
       path: others/nerdctl
-      filename: nerdctl-1.7.6-linux-{{image_arch}}.tar.gz
+      filename: nerdctl-2.1.6-linux-{{image_arch}}.tar.gz
     - name: kubeadm
       version: "{{kube_version}}"
       path: k8s/{{kube_version}}/{{image_arch}}
@@ -40,16 +40,16 @@ dependency:
       filename: kubelet-{{kube_version}}-{{image_arch}}
   images:
     - name: etcd
-      version: v3.5.12
+      version: v3.5.23
       tag: store.e-byte.cn/k8s/etcd
     - name: coredns
-      version: v1.11.1
+      version: v1.12.0
       tag: store.e-byte.cn/k8s/coredns
     - name: cluster-proportional-autoscaler
       version: v1.8.8
       tag: store.e-byte.cn/k8s/cluster-proportional-autoscaler
     - name: pause
-      version: '3.9'
+      version: '3.10'
       tag: store.e-byte.cn/k8s/pause
     # - name: k8s-dns-node-cache
     #   version: '1.22.28'
@@ -67,49 +67,49 @@ dependency:
       version: "{{kube_version}}"
       tag: store.e-byte.cn/k8s/kube-scheduler
     - name: nginx
-      version: 1.25.2-alpine
+      version: 1.28.0-alpine
       tag: store.e-byte.cn/app/webserver/nginx
 network_plugins:
   - name: flannel
-    version: v0.22.0
+    version: v0.27.3
     dependency:
       images:
         - name: flannel
-          version: v0.22.0
+          version: v0.27.3
           tag: store.e-byte.cn/sysapp/network/flannel/flannel
         - name: flannel-cni-plugin
-          version: v1.1.2
+          version: v1.7.1-flannel1
           tag: store.e-byte.cn/sysapp/network/flannel/flannel-cni-plugin
   - name: calico
-    version: v3.28.1
+    version: v3.30.3
     dependency:
       files:
         - name: calicoctl
-          version: v3.28.1
-          path: sysapp/network/calico/v3.28.1
-          filename: calicoctl-v3.28.1-{{image_arch}}
+          version: v3.30.3
+          path: sysapp/network/calico/v3.30.3
+          filename: calicoctl-v3.30.3-{{image_arch}}
         - name: calico
-          version: v3.28.1
-          path: sysapp/network/calico/v3.28.1
-          filename: v3.28.1.tar.gz
+          version: v3.30.3
+          path: sysapp/network/calico/v3.30.3
+          filename: v3.30.3.tar.gz
       images:
         - name: node
-          version: v3.28.1
+          version: v3.30.3
           tag: store.e-byte.cn/sysapp/network/calico/node
         - name: cni
-          version: v3.28.1
+          version: v3.30.3
           tag: store.e-byte.cn/sysapp/network/calico/cni
         - name: kube-controllers
-          version: v3.28.1
+          version: v3.30.3
           tag: store.e-byte.cn/sysapp/network/calico/kube-controllers
         - name: pod2daemon-flexvol
-          version: v3.28.1
+          version: v3.30.3
           tag: store.e-byte.cn/sysapp/network/calico/pod2daemon-flexvol
 system_app:
   - name: metrics_server
-    version: v0.6.4
+    version: v0.8.0
     dependency:
       images:
         - name: metrics_server
-          version: v0.6.4
+          version: v0.8.0
           tag: store.e-byte.cn/sysapp/metrics-server/metrics-server
