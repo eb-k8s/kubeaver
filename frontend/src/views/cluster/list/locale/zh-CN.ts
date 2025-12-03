@@ -19,7 +19,7 @@ export default {
     'list.form.placeholder.networkPlugins': '请选择网络插件',
     'list.message.error.versionParse': '版本信息解析失败:',
     'list.message.error.noBackend': '未检测到可用的后端，请启动后端后退出重新登录！',
-    'list.task.process.unknown': '无',
+    'list.task.process.unknown': '暂无任务',
     'list.task.process.initCluster': '初始化集群',
     'list.task.process.addNode': '添加节点',
     'list.task.process.upgradeCluster': '升级集群',
