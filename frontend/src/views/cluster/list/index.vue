@@ -58,7 +58,7 @@
                             <span v-if="translateTaskProcess(record.taskProcess) !== t('list.task.process.unknown')" class="status-icon running">
                                 <icon-sync class="rotating" />
                             </span>
-                            <span va_if="translateTaskProcess(record.taskProcess) === t('list.task.process.unknown')" class="circle Unknown"></span>
+                            <span va_if="translateTaskProcess(record.taskProcess) === t('list.task.process.unknown')"></span>
                             <span class="status-text1">{{ translateTaskProcess(record.taskProcess) }}</span>
                         </div>
                     </template>

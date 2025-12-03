@@ -1,4 +1,5 @@
 export default {
+  'task.history.button.detail': '详情',
   'task.history.message.error.parse': '版本信息解析失败',
   'task.history.message.error.json': '数据格式不正确，无法解析为 JSON 对象',
   'task.history.message.error.array': '数据格式不正确，期望为数组',
