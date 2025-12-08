@@ -9,6 +9,6 @@ database_mapping:
     database: "2"
     kubespray_version: "v2.26.0"
   - min_version: "v1.31"
-    max_version: "v1.32"
+    max_version: "v1.33"
     database: "3"
-    kubespray_version: "v2.28.0"
+    kubespray_version: "v2.29.0"
