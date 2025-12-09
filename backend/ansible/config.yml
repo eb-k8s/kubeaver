@@ -125,4 +125,4 @@ metrics_server_image_repo: "{{ registry_host }}/sysapp/metrics-server/metrics-se
 ## Kubernetes files 
 # kubeadm_download_url: "{{ files_repo }}/k8s/{{ kubeadm_version }}/{{ image_arch }}/kubeadm"
 # kubectl_download_url: "{{ files_repo }}/k8s/{{ kube_version }}/{{ image_arch }}/kubectl"
-# kubelet_download_url: "{{ files_repo }}/k8s/
+# kubelet_download_url: "{{ files_repo }}/k8s/{{ kube_version }}/{{ image_arch }}/kubelet"
