@@ -215,11 +215,12 @@ def main():
     # # 将更改写入文件
     # write_yaml_file(f"{kubespray_path}/roles/kubernetes-apps/network_plugin/meta/main.yml", modified_lines)
     #修改roles/download/defaults/main/main.yml
-    lines = read_yaml_file(f"{kubespray_path}/roles/kubernetes-apps/network_plugin/meta/main.yml")
-    # 删除sha256: "{{ metrics_server_digest_checksum | default(None) }}"的后面两行内容
-    modified_lines = remove_lines_after_pattern(lines, "      - kube-router", 5)
-    # 将更改写入文件
-    write_yaml_file(f"{kubespray_path}/roles/kubernetes-apps/network_plugin/meta/main.yml", modified_lines)
+    if kubespray_version != "2.29.0":
+      lines = read_yaml_file(f"{kubespray_path}/roles/kubernetes-apps/network_plugin/meta/main.yml")
+      # 删除sha256: "{{ metrics_server_digest_checksum | default(None) }}"的后面两行内容
+      modified_lines = remove_lines_after_pattern(lines, "      - kube-router", 5)
+      # 将更改写入文件
+      write_yaml_file(f"{kubespray_path}/roles/kubernetes-apps/network_plugin/meta/main.yml", modified_lines)
 
     # 修改/roles/network_plugin/meta/main.yml中multus相关配置
     # 读入该文件
@@ -231,12 +232,13 @@ def main():
 
     # 修改roles/kubernetes-apps/network_plugin/multus/tasks/main.yml
     # 读入该文件
-    lines = read_yaml_file(f"{kubespray_path}/roles/kubernetes-apps/network_plugin/multus/tasks/main.yml")
-    # 将    when: kube_network_plugin_multus中新增- false
-    modified_lines = replace_line_with_pattern(lines, "    - not item is skipped", "    - false")
-    modified_lines = insert_line_after_pattern(lines, "  run_once: true", "  ignore_errors: true")
-    # 将更改写入文件
-    write_yaml_file(f"{kubespray_path}/roles/kubernetes-apps/network_plugin/multus/tasks/main.yml", modified_lines)
+    if kubespray_version != "2.29.0":
+      lines = read_yaml_file(f"{kubespray_path}/roles/kubernetes-apps/network_plugin/multus/tasks/main.yml")
+      # 将    when: kube_network_plugin_multus中新增- false
+      modified_lines = replace_line_with_pattern(lines, "    - not item is skipped", "    - false")
+      modified_lines = insert_line_after_pattern(lines, "  run_once: true", "  ignore_errors: true")
+      # 将更改写入文件
+      write_yaml_file(f"{kubespray_path}/roles/kubernetes-apps/network_plugin/multus/tasks/main.yml", modified_lines)
 
     # 根据kubespray的版本来修复metrics_server的镜像拉取问题
     if kubespray_version == "2.23.3":
@@ -268,7 +270,7 @@ def main():
         # 将更改写入文件
         write_yaml_file(f"{kubespray_path}/roles/kubespray-defaults/defaults/main/download.yml", modified_lines)
     
-    elif kubespray_version == "2.28.0":
+    elif kubespray_version == "2.29.0":
         # 修改roles/kubespray-defaults/defaults/main/download.yml
         lines = read_yaml_file(f"{kubespray_path}/roles/kubespray_defaults/defaults/main/download.yml")
         # 删除sha256: "{{ metrics_server_digest_checksum | default(None) }}"的后面两行内容
@@ -367,7 +369,7 @@ def main():
       # 将更改写入文件
       write_yaml_file(f"{kubespray_path}/roles/kubernetes/preinstall/vars/main.yml", modified_lines)
     
-    elif kubespray_version == "2.28.0":
+    elif kubespray_version == "2.29.0":
         lines = read_yaml_file(f"{kubespray_path}/roles/system_packages/vars/main.yml")
         # 去掉CentOS
         modified_lines = replace_line_with_pattern(lines, '''    - "{{ ansible_distribution in ['RedHat', 'CentOS'] }}"''', '''    - "{{ ansible_distribution in ['RedHat'] }}"''')
@@ -394,7 +396,7 @@ def main():
     elif kubespray_version == "2.26.0":
         shutil.copytree(f"{kubespray_path}/inventory/sample/group_vars/all", f"{kubespray_path}/roles/kubespray-defaults/defaults/main/all")
         shutil.copytree(f"{kubespray_path}/inventory/sample/group_vars/k8s_cluster", f"{kubespray_path}/roles/kubespray-defaults/defaults/main/k8s_cluster")
-    elif kubespray_version == "2.28.0":
+    elif kubespray_version == "2.29.0":
         shutil.copytree(f"{kubespray_path}/inventory/sample/group_vars/all", f"{kubespray_path}/roles/kubespray_defaults/defaults/main/all")
         shutil.copytree(f"{kubespray_path}/inventory/sample/group_vars/k8s_cluster", f"{kubespray_path}/roles/kubespray_defaults/defaults/main/k8s_cluster")
 

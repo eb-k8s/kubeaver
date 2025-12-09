@@ -93,7 +93,7 @@ for file_item in base_files:
     # 读取下载过后的文件名
     download_filename = file_url.split('/')[-1]
     # 输出下载链接
-    # print(f"下载链接为: {file_url}")
+    print(f"下载链接为: {file_url}")
     # 使用 wget 下载文件到指定目录，文件名保持不变
     subprocess.run(['wget', file_url, '-P', f'{offline_dir}'], check=True)
     print(f"下载文件{file_name}到{offline_dir}")
@@ -101,9 +101,29 @@ for file_item in base_files:
     save_filename = file_item['filename']
     save_filename = save_filename.replace("{{ image_arch }}", image_arch)
     if file_name in ['kubeadm', 'kubelet', 'kubectl']:
-        save_filename = save_filename.replace("{{ kube_version }}", file_version)
-    if file_name == 'runc':
-        save_filename = f'runc-{file_version}.{ image_arch }'
+        # 默认使用带 v 的版本
+        clean_version = file_version
+        
+        # 判断版本是否 >= 1.31
+        try:
+            # 去掉可能的 v 前缀进行解析
+            v_str = file_version.lstrip('v')
+            v_parts = v_str.split('.')
+            if len(v_parts) >= 2:
+                major = int(v_parts[0])
+                minor = int(v_parts[1])
+                # 如果是 v1.31 及以上，且原版本带 v，则去掉 v
+                if (major > 1 or (major == 1 and minor >= 31)) and file_version.startswith('v'):
+                    clean_version = file_version[1:]
+        except ValueError:
+            pass
+        
+        # save_filename = save_filename.replace("{{kube_version}}", clean_version)
+        save_filename = save_filename.replace(file_version, clean_version)
+    # print(save_filename)
+    # if file_name == 'runc':
+    #     save_filename = f'runc-{file_version}.{ image_arch }'
+    #     print(save_filename)
 
     subprocess.run(['mv', f'{offline_dir}/{download_filename}', f'{offline_dir}/k8s_cache/{args.k8s_version}/{save_filename}'], check=True)
     print(f"移动文件{offline_dir}/{download_filename}到{offline_dir}/k8s_cache/{args.k8s_version}/{save_filename}")
