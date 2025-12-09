@@ -120,14 +120,13 @@ for file_item in base_files:
         
         # save_filename = save_filename.replace("{{kube_version}}", clean_version)
         save_filename = save_filename.replace(file_version, clean_version)
-    print(save_filename)
+    # print(save_filename)
     # if file_name == 'runc':
     #     save_filename = f'runc-{file_version}.{ image_arch }'
     #     print(save_filename)
 
     # subprocess.run(['mv', f'{offline_dir}/{download_filename}', f'{offline_dir}/k8s_cache/{args.k8s_version}/{save_filename}'], check=True)
     # print(f"移动文件{offline_dir}/{download_filename}到{offline_dir}/k8s_cache/{args.k8s_version}/{save_filename}")
-exit()
 # 拉取镜像
 for image_item in base_images:
     image_name = image_item['name']
