@@ -3,29 +3,29 @@ kubespray_version: v2.28.0
 dependency:
   files:
     - name: containerd
-      version: '2.0.5'
+      version: '2.1.4'
       path: others/containerd
-      filename: containerd-2.0.5-linux-{{image_arch}}.tar.gz
+      filename: containerd-2.1.4-linux-{{image_arch}}.tar.gz
     - name: crictl
       version: v1.32.0  
       path: others/crictl
-      filename: crictl-v1.32.0-linux-{{image_arch}}.tar.gz
+      filename: crictl-1.32.0-linux-{{image_arch}}.tar.gz
     - name: etcd
-      version: v3.5.16
+      version: v3.5.23
       path: etcd
-      filename: etcd-v3.5.16-linux-{{ image_arch }}.tar.gz
+      filename: etcd-3.5.23-linux-{{ image_arch }}.tar.gz
     - name: runc
-      version: v1.2.6
+      version: v1.3.2
       path: others/runc
-      filename: runc-v1.2.6.{{image_arch}}
+      filename: runc-1.3.2.{{image_arch}}
     - name: cni-plugins
-      version: v1.4.1
+      version: v1.8.0
       path: others/cni-plugins-linux
-      filename: cni-plugins-linux-{{image_arch}}-v1.4.1.tgz
+      filename: cni-plugins-linux-{{image_arch}}-1.8.0.tgz
     - name: nerdctl
-      version: '2.0.5'
+      version: '2.1.6'
       path: others/nerdctl
-      filename: nerdctl-2.0.5-linux-{{image_arch}}.tar.gz
+      filename: nerdctl-2.1.6-linux-{{image_arch}}.tar.gz
     - name: kubeadm
       version: "{{kube_version}}"
       path: k8s/{{kube_version}}/{{image_arch}}
@@ -40,7 +40,7 @@ dependency:
       filename: kubelet-{{kube_version}}-{{image_arch}}
   images:
     - name: etcd
-      version: v3.5.16
+      version: v3.5.23
       tag: store.e-byte.cn/k8s/etcd
     - name: coredns
       version: v1.11.3
@@ -71,39 +71,39 @@ dependency:
       tag: store.e-byte.cn/app/webserver/nginx
 network_plugins:
   - name: flannel
-    version: v0.22.0
+    version: v0.27.3
     dependency:
       images:
         - name: flannel
-          version: v0.22.0
+          version: v0.27.3
           tag: store.e-byte.cn/sysapp/network/flannel/flannel
         - name: flannel-cni-plugin
-          version: v1.1.2
+          version: v1.7.1-flannel1
           tag: store.e-byte.cn/sysapp/network/flannel/flannel-cni-plugin
   - name: calico
-    version: v3.28.1
+    version: v3.30.3
     dependency:
       files:
         - name: calicoctl
-          version: v3.28.1
-          path: sysapp/network/calico/v3.28.1
-          filename: calicoctl-v3.28.1-{{image_arch}}
+          version: v3.30.3
+          path: sysapp/network/calico/v3.30.3
+          filename: calicoctl-v3.30.3-{{image_arch}}
         - name: calico
-          version: v3.28.1
-          path: sysapp/network/calico/v3.28.1
-          filename: v3.28.1.tar.gz
+          version: v3.30.3
+          path: sysapp/network/calico/v3.30.3
+          filename: v3.30.3.tar.gz
       images:
         - name: node
-          version: v3.28.1
+          version: v3.30.3
           tag: store.e-byte.cn/sysapp/network/calico/node
         - name: cni
-          version: v3.28.1
+          version: v3.30.3
           tag: store.e-byte.cn/sysapp/network/calico/cni
         - name: kube-controllers
-          version: v3.28.1
+          version: v3.30.3
           tag: store.e-byte.cn/sysapp/network/calico/kube-controllers
         - name: pod2daemon-flexvol
-          version: v3.28.1
+          version: v3.30.3
           tag: store.e-byte.cn/sysapp/network/calico/pod2daemon-flexvol
 system_app:
   - name: metrics_server
