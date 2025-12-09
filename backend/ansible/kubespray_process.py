@@ -369,7 +369,7 @@ def main():
       # 将更改写入文件
       write_yaml_file(f"{kubespray_path}/roles/kubernetes/preinstall/vars/main.yml", modified_lines)
     
-    elif kubespray_version == "2.28.0":
+    elif kubespray_version == "2.29.0":
         lines = read_yaml_file(f"{kubespray_path}/roles/system_packages/vars/main.yml")
         # 去掉CentOS
         modified_lines = replace_line_with_pattern(lines, '''    - "{{ ansible_distribution in ['RedHat', 'CentOS'] }}"''', '''    - "{{ ansible_distribution in ['RedHat'] }}"''')
@@ -396,7 +396,7 @@ def main():
     elif kubespray_version == "2.26.0":
         shutil.copytree(f"{kubespray_path}/inventory/sample/group_vars/all", f"{kubespray_path}/roles/kubespray-defaults/defaults/main/all")
         shutil.copytree(f"{kubespray_path}/inventory/sample/group_vars/k8s_cluster", f"{kubespray_path}/roles/kubespray-defaults/defaults/main/k8s_cluster")
-    elif kubespray_version == "2.28.0":
+    elif kubespray_version == "2.29.0":
         shutil.copytree(f"{kubespray_path}/inventory/sample/group_vars/all", f"{kubespray_path}/roles/kubespray_defaults/defaults/main/all")
         shutil.copytree(f"{kubespray_path}/inventory/sample/group_vars/k8s_cluster", f"{kubespray_path}/roles/kubespray_defaults/defaults/main/k8s_cluster")
 
