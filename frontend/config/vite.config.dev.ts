@@ -29,6 +29,12 @@ export default mergeConfig(
           secure: false,
           rewrite: (path: string) => path.replace(/^\/v128\/api/, '/api'),
         },
+        '/v131/api/': {
+          target: 'http://kubeaver_backend_v1-131:8000/',
+          changeOrigin: true,
+          secure: false,
+          rewrite: (path: string) => path.replace(/^\/v131\/api/, '/api'),
+        },
         '/v125/ws/': {
           target: 'http://kubeaver_backend_v1-125:8000/',
           changeOrigin: true,
@@ -42,6 +48,13 @@ export default mergeConfig(
           secure: false,
           ws: true,
           rewrite: (path: string) => path.replace(/^\/v128\/ws/, '/'),
+        },
+        '/v131/ws/': {
+          target: 'http://kubeaver_backend_v1-131:8000/',
+          changeOrigin: true,
+          secure: false,
+          ws: true,
+          rewrite: (path: string) => path.replace(/^\/v131\/ws/, '/'),
         },
       },
     },
