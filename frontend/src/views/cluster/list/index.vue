@@ -816,6 +816,8 @@
         k8sLogos.value['v1.29'] = (await import('@/assets/images/logo/k8s-1.29.png')).default;
         k8sLogos.value['v1.30'] = (await import('@/assets/images/logo/k8s-1.30.png')).default;
         k8sLogos.value['v1.31'] = (await import('@/assets/images/logo/k8s-1.31.png')).default;
+        k8sLogos.value['v1.32'] = (await import('@/assets/images/logo/k8s-1.32.png')).default;
+        k8sLogos.value['v1.33'] = (await import('@/assets/images/logo/k8s-1.33.png')).default;
         k8sLogos.value['logo'] = (await import('@/assets/images/logo/logo.png')).default;
     });
     
