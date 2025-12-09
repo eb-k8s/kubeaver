@@ -35,6 +35,7 @@ download_run_once: true
 # 将containerd配置镜像仓库的方式改为路径
 containerd_use_config_path: true
 #offline_cache_dir: /root/data/offline/spray-2.26.0-k8s-1.28.12_amd
+#offline_cache_dir: /root/data/offline/spray-2.26.0-k8s-1.28.12_amd
 download_cache_dir: "{{ offline_cache_dir }}/all_files"
 # 本地存放repo文件路径
 localhost_repo_path: "{{ offline_cache_dir }}/repo_files"
