@@ -31,3 +31,94 @@ download_run_once: true
 # 将containerd配置镜像仓库的方式改为路径
 containerd_use_config_path: true
 #offline_cache_dir: /root/data/offline/spray-2.26.0-k8s-1.28.12_amd
+#offline_cache_dir: /root/data/offline/spray-2.26.0-k8s-1.28.12_amd
+download_cache_dir: "{{ offline_cache_dir }}/all_files"
+# 本地存放repo文件路径
+localhost_repo_path: "{{ offline_cache_dir }}/repo_files"
+# 操作系统依赖包默认名字
+repo_filename: repo.tgz
+RedHat_tar_name: tar.rpm
+Debian_tar_name: tar.deb
+# Ansible受控节点repo文件路径
+node_repo_path: /tmp/releases
+# etcd部署方式
+etcd_deployment_type: kubeadm
+etcd_image_repo: "{{registry_host}}/k8s/etcd"
+
+files_repo: "http://{{registry_host}}/file"
+# set registry host as registry mirror
+containerd_registries_mirrors:
+ - server: http://{{registry_host}}
+   prefix: "{{registry_host}}"
+   mirrors:
+    - host: http://{{registry_host}}
+      capabilities: ["pull", "resolve"]
+      skip_verify: true
+      plain-http: true
+# kube images
+kube_image_repo: "{{ registry_host }}/k8s"
+kubeadm_images: 
+  kube-apiserver:
+    enabled: true
+    container: true
+    repo: "{{ kube_image_repo }}/kube-apiserver"
+    tag: "{{ kubeadm_version }}"
+    groups:
+      - k8s_cluster
+  kube-scheduler:
+    enabled: true
+    container: true
+    repo: "{{ kube_image_repo }}/kube-scheduler"
+    tag: "{{ kubeadm_version }}"
+    groups:
+      - k8s_cluster
+  kube-controller-manager:
+    enabled: true
+    container: true
+    repo: "{{ kube_image_repo }}/kube-controller-manager"
+    tag: "{{ kubeadm_version }}"
+    groups:
+      - k8s_cluster
+  kube-proxy:
+    enabled: true
+    container: true
+    repo: "{{ kube_image_repo }}/kube-proxy"
+    tag: "{{ kubeadm_version }}"
+    groups:
+      - k8s_cluster
+# calico images
+quay_image_repo: "{{registry_host}}/sysapp/network"
+# flannel images
+flannel_image_repo: "{{registry_host}}/sysapp/network/flannel/flannel"
+flannel_init_image_repo: "{{registry_host}}/sysapp/network/flannel/flannel-cni-plugin"
+
+# Images
+# coredns
+coredns_image_repo: "{{registry_host}}/k8s/coredns"
+# cluster-proportional-autoscaler
+dnsautoscaler_image_repo: "{{registry_host}}/k8s/cluster-proportional-autoscaler"
+# k8s-dns-node-cache
+nodelocaldns_image_repo: "{{registry_host}}/k8s/k8s-dns-node-cache"
+# nginx
+nginx_image_repo: "{{registry_host}}/app/webserver/nginx"
+# metrics-server
+metrics_server_image_repo: "{{ registry_host }}/sysapp/metrics-server/metrics-server"
+# Files
+# containerd
+# containerd_download_url: "{{ files_repo }}/others/containerd/containerd-{{ containerd_version }}-linux-{{ image_arch }}.tar.gz"
+# # etcd
+# etcd_download_url: "{{ files_repo }}/etcd/etcd-{{ etcd_version }}-linux-{{ image_arch }}.tar.gz"
+# # cri-tools
+# crictl_download_url: "{{ files_repo }}/others/crictl/crictl-{{ crictl_version }}-{{ ansible_system | lower }}-{{ image_arch }}.tar.gz"
+# runc_download_url: "{{ files_repo }}/others/runc/runc-{{ runc_version }}.{{ image_arch }}"
+# # CNI Plugins
+# cni_download_url: "{{ files_repo }}/others/cni-plugins-linux/cni-plugins-linux-{{ image_arch }}-{{ cni_version }}.tgz"
+# # nerdctl
+# nerdctl_download_url: "{{ files_repo }}/others/nerdctl/nerdctl-{{ nerdctl_version }}-{{ ansible_system | lower }}-{{ image_arch }}.tar.gz"
+# # Calico: If using Calico network plugin
+# calicoctl_download_url: "{{ files_repo }}/sysapp/network/calico/{{ calico_ctl_version }}/calicoctl-linux-{{ image_arch }}"
+# calico_crds_download_url: "{{ files_repo }}/sysapp/network/calico/{{ calico_version }}/calico.tar.gz"
+## Kubernetes files 
+# kubeadm_download_url: "{{ files_repo }}/k8s/{{ kubeadm_version }}/{{ image_arch }}/kubeadm"
+# kubectl_download_url: "{{ files_repo }}/k8s/{{ kube_version }}/{{ image_arch }}/kubectl"
+# kubelet_download_url: "{{ files_repo }}/k8s/{{ kube_version }}/{{ image_arch }}/kubelet"
