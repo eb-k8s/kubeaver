@@ -1,53 +1,86 @@
-name: "Build Package Workflow"
+name: Build Backend Docker Image
 
 on:
   push:
-    tags:
-      - '*'
+    branches: [ "release" ]
+  pull_request:
+    branches: [ "release" ]
+  workflow_dispatch:
+    inputs:
+      kubeaver_tag:
+        description: 'Select kubeaver a tag to build'
+        required: true
+        default: 'v1.0.0'
+      kubespray_version:
+        description: 'Select a Kubespray version to use'
+        required: true
+        default: 'v2.26.0'
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: eb-k8s/kubeaver/kubeaver_backend
 
 jobs:
-  build-package:
+  build:
     runs-on: ubuntu-latest
-    env:
-      REGISTRY: ghcr.io
+    strategy:
+      matrix:
+        node-version: [18.19.1]
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Get Version
-      id: get_version
-      run: echo "version=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
 
+    - name: Download and Kubespray
+      run: |
+        cd backend/ansible
+        wget https://github.com/kubernetes-sigs/kubespray/archive/refs/tags/${{ github.event.inputs.kubespray_version }}.zip
+        unzip ${{ github.event.inputs.kubespray_version }}.zip
+        version_without_v=$(echo "${{ github.event.inputs.kubespray_version }}" | sed 's/^v//')
+        # 重命名目录（检查是否存在）
+        if [ -d "kubespray-$version_without_v" ]; then
+          mv "kubespray-$version_without_v" kubespray
+        else
+          echo "Error: Directory kubespray-$version_without_v not found!"
+          ls -l  # 调试：查看当前目录内容
+          exit 1
+        fi
+    - name: Run Kubespray process script
+      run: |
+        cd backend/ansible
+        python3 kubespray_process.py --kubespray_version=${{ github.event.inputs.kubespray_version }}
+    - name: Move backend to Dockerfile
+      run: |
+        mv backend docker/backend/backend
+        
+    - name: Install dependencies in backend
+      run: |
+        cd docker/backend/backend
+        npm install
     - name: Log in to the Container registry
-      uses: docker/login-action@v3
+      uses: docker/login-action@v2
       with:
         registry: ${{ env.REGISTRY }}
         username: ${{ github.repository_owner }}
         password: ${{ secrets.GITHUB_TOKEN }}
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@988b5a0280414f521da01fcc63a27aeeb4b104db # v3.6.1      
 
-    - name: Pull and Save Docker images
-      run: |
-        IMAGES=$(awk '/image:/ {print $2}' ${{ github.workspace }}/deploy/docker-compose.yml)
-        for IMG in $IMAGES; do
-          docker pull "$IMG"
-        done
-        docker save -o kubeaver-${{ steps.get_version.outputs.version }}.tar $IMAGES
-
-    - name: Prepare package
-      run: |
-        mkdir -p package/deploy
-        cp ${{ github.workspace }}/deploy/docker-compose.yml package/deploy/
-        cp ${{ github.workspace }}/deploy/nginx-proxy.conf package/deploy/
-        cp ${{ github.workspace }}/deploy/start.sh      package/deploy/
-        cp ${{ github.workspace }}/deploy/stop.sh       package/deploy/
-        mv kubeaver-${{ steps.get_version.outputs.version }}.tar package/
-
-    - name: Create tarball
-      run: tar -czvf kubeaver-offline-installer-${{ steps.get_version.outputs.version }}.tgz -C package .
-
-    - name: Upload package artifact
-      uses: actions/upload-artifact@v4
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v6
       with:
-        name: kubeaver-offline-installer
-        path: kubeaver-offline-installer-${{ steps.get_version.outputs.version }}.tgz
+        context: docker/backend
+        file: docker/backend/Dockerfile
+        push: true
+        pull: true
+        platforms: linux/amd64
+        tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME}}:${{ github.event.inputs.kubeaver_tag }}
+        provenance: true
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        build-args: |
+          KUBESPRAY_VERSION=${{ github.event.inputs.kubespray_version }}
