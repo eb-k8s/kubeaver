@@ -2,9 +2,9 @@ name: Build Backend Docker Image
 
 on:
   push:
-    branches: [ "release" ]
+    branches: [ "release", "1.0.0" ]
   pull_request:
-    branches: [ "release" ]
+    branches: [ "release", "1.0.0" ]
   workflow_dispatch:
     inputs:
       kubeaver_tag:
