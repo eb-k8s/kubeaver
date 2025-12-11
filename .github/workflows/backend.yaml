@@ -2,9 +2,15 @@ name: Build Backend Docker Image
 
 on:
   push:
-    branches: [ "release", "1.0.0" ]
+    branches: 
+      - "release"
+      - "v*"
+    tags:
+      - "v*"
   pull_request:
-    branches: [ "release", "1.0.0" ]
+    branches: 
+      - "release"
+      - "v*"
   workflow_dispatch:
     inputs:
       kubeaver_tag:
@@ -35,12 +41,22 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
 
+    - name: Set environment variables
+      run: |
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          echo "KUBEAVER_TAG=${{ github.event.inputs.kubeaver_tag }}" >> $GITHUB_ENV
+          echo "KUBESPRAY_VERSION=${{ github.event.inputs.kubespray_version }}" >> $GITHUB_ENV
+        else
+          echo "KUBEAVER_TAG=${{ github.ref_name }}" >> $GITHUB_ENV
+          echo "KUBESPRAY_VERSION=v2.26.0" >> $GITHUB_ENV
+        fi
+
     - name: Download and Kubespray
       run: |
         cd backend/ansible
-        wget https://github.com/kubernetes-sigs/kubespray/archive/refs/tags/${{ github.event.inputs.kubespray_version }}.zip
-        unzip ${{ github.event.inputs.kubespray_version }}.zip
-        version_without_v=$(echo "${{ github.event.inputs.kubespray_version }}" | sed 's/^v//')
+        wget https://github.com/kubernetes-sigs/kubespray/archive/refs/tags/${{ env.KUBESPRAY_VERSION }}.zip
+        unzip ${{ env.KUBESPRAY_VERSION }}.zip
+        version_without_v=$(echo "${{ env.KUBESPRAY_VERSION }}" | sed 's/^v//')
         # 重命名目录（检查是否存在）
         if [ -d "kubespray-$version_without_v" ]; then
           mv "kubespray-$version_without_v" kubespray
@@ -52,7 +68,7 @@ jobs:
     - name: Run Kubespray process script
       run: |
         cd backend/ansible
-        python3 kubespray_process.py --kubespray_version=${{ github.event.inputs.kubespray_version }}
+        python3 kubespray_process.py --kubespray_version=${{ env.KUBESPRAY_VERSION }}
     - name: Move backend to Dockerfile
       run: |
         mv backend docker/backend/backend
@@ -78,9 +94,9 @@ jobs:
         push: true
         pull: true
         platforms: linux/amd64
-        tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME}}:${{ github.event.inputs.kubeaver_tag }}
+        tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME}}:${{ env.KUBEAVER_TAG }}
         provenance: true
         cache-from: type=gha
         cache-to: type=gha,mode=max
         build-args: |
-          KUBESPRAY_VERSION=${{ github.event.inputs.kubespray_version }}
+          KUBESPRAY_VERSION=${{ env.KUBESPRAY_VERSION }}
