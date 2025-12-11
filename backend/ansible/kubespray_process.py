@@ -377,6 +377,14 @@ def main():
         # 将更改写入文件
         write_yaml_file(f"{kubespray_path}/roles/system_packages/vars/main.yml", modified_lines)
 
+        # 修改roles/kubernetes/preinstall/tasks/0040-verify-settings.yml
+        # 读入该文件
+        lines = read_yaml_file(f"{kubespray_path}/roles/kubernetes/preinstall/tasks/0040-verify-settings.yml")
+        # 将 - ansible_limit is defined 替换为 - false
+        modified_lines = replace_line_with_pattern(lines, "    - ansible_limit is defined", "    - false")
+        # 将更改写入文件
+        write_yaml_file(f"{kubespray_path}/roles/kubernetes/preinstall/tasks/0040-verify-settings.yml", modified_lines)
+
     # 拷贝group_vars目录，解决变量传递问题
     if kubespray_version == "2.23.3":
         shutil.copytree(f"{kubespray_path}/inventory/sample/group_vars/all", f"{kubespray_path}/roles/kubespray-defaults/defaults/main/all")
