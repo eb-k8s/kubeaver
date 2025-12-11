@@ -10,9 +10,9 @@ registry_host: "store.e-byte.cn"
 calico_crds_archive_checksum: "ignore_checksum_placeholder"
 calicoctl_binary_checksum: "ignore_checksum_placeholder"
 loadbalancer_apiserver_keepalive_timeout: 5m
-metrics_server_version: "{{ 'v0.6.4' if kube_version is version('v1.31', '<') else '0.6.4' }}"
-flannel_version: "{{ (kube_network_version if kube_network_plugin == 'flannel' else ('v0.22.0' if kube_version is version('v1.31', '<') else '0.27.3')) }}"
-calico_version: "{{ (kube_network_version if kube_network_plugin == 'calico' else ('v3.26.1' if kube_version is version('v1.31', '<') else '3.28.1')) }}"
+metrics_server_version: "{{ 'v0.6.4' if kube_version | string | regex_replace('^v', '') is version('1.31', '<') else '0.6.4' }}"
+flannel_version: "{{ (kube_network_version if kube_network_plugin == 'flannel' else ('v0.22.0' if kube_version | string | regex_replace('^v', '') is version('1.31', '<') else '0.27.3')) }}"
+calico_version: "{{ (kube_network_version if kube_network_plugin == 'calico' else ('v3.26.1' if kube_version | string | regex_replace('^v', '') is version('1.31', '<') else '3.28.1')) }}"
 flannel_supported_versions:
   v0.22.0: "v1.1.2"
   v0.26.5: "v1.6.2-flannel1"
@@ -66,28 +66,28 @@ kubeadm_images:
     enabled: true
     container: true
     repo: "{{ kube_image_repo }}/kube-apiserver"
-    tag: "{{ kubeadm_version if kube_version is version('v1.31', '<') else 'v' ~ kubeadm_version }}"
+    tag: "{{ kubeadm_version if kube_version | string | regex_replace('^v', '') is version('1.31', '<') else 'v' ~ kubeadm_version }}"
     groups:
       - k8s_cluster
   kube-scheduler:
     enabled: true
     container: true
     repo: "{{ kube_image_repo }}/kube-scheduler"
-    tag: "{{ kubeadm_version if kube_version is version('v1.31', '<') else 'v' ~ kubeadm_version }}"
+    tag: "{{ kubeadm_version if kube_version | string | regex_replace('^v', '') is version('1.31', '<') else 'v' ~ kubeadm_version }}"
     groups:
       - k8s_cluster
   kube-controller-manager:
     enabled: true
     container: true
     repo: "{{ kube_image_repo }}/kube-controller-manager"
-    tag: "{{ kubeadm_version if kube_version is version('v1.31', '<') else 'v' ~ kubeadm_version }}"
+    tag: "{{ kubeadm_version if kube_version | string | regex_replace('^v', '') is version('1.31', '<') else 'v' ~ kubeadm_version }}"
     groups:
       - k8s_cluster
   kube-proxy:
     enabled: true
     container: true
     repo: "{{ kube_image_repo }}/kube-proxy"
-    tag: "{{ kubeadm_version if kube_version is version('v1.31', '<') else 'v' ~ kubeadm_version }}"
+    tag: "{{ kubeadm_version if kube_version | string | regex_replace('^v', '') is version('1.31', '<') else 'v' ~ kubeadm_version }}"
     groups:
       - k8s_cluster
 # calico images
