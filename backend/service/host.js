@@ -53,15 +53,60 @@ async function addHost(hostIP, hostPort, user, password) {
     fs.mkdirSync(localSSHDir, { mode: 0o700 }); // 权限设为 700
   }
   const publicKeyPath = path.join(__dirname, '../ssh', 'id_rsa.pub');
-  const sshCommand = `sshpass -p '${password}' ssh-copy-id -i ${publicKeyPath} -o StrictHostKeyChecking=no -p ${hostPort} ${user}@${hostIP}`;
+  const privateKeyPath = path.join(__dirname, '../ssh', 'id_rsa');
+
+  // === 第1步：验证密码是否正确 ===
+  console.log("=== 第1步：验证密码是否正确 ===");
+  // -o PubkeyAuthentication=no: 强制禁用公钥认证，仅使用密码验证
+  const checkPasswordCmd = `sshpass -p '${password}' ssh -o StrictHostKeyChecking=no -o PubkeyAuthentication=no -p ${hostPort} ${user}@${hostIP} "echo '密码验证成功'"`;
   try {
-    // 执行 SSH 命令
-    await execAsync(sshCommand);
+    await execAsync(checkPasswordCmd);
+    console.log("✓ 密码正确");
   } catch (error) {
+    console.error(`密码验证失败: ${error.message}`);
     return {
       code: 50000,
       data: "",
-      msg: error.message,
+      msg: "密码错误或连接失败，请检查账号密码是否正确",
+      status: "error"
+    };
+  }
+
+  // === 第2步：部署SSH公钥 ===
+  console.log("=== 第2步：部署SSH公钥 ===");
+  try {
+    // 使用 ssh-copy-id 标准工具部署公钥
+    // 它会自动处理目录创建、权限设置以及检查 key 是否已存在
+    // -o PubkeyAuthentication=no: 在部署阶段也强制使用密码认证，确保流程一致性
+    const copyIdCmd = `sshpass -p '${password}' ssh-copy-id -i ${publicKeyPath} -o StrictHostKeyChecking=no -o PubkeyAuthentication=no -p ${hostPort} ${user}@${hostIP}`;
+    
+    // 注意：ssh-copy-id 的输出通常包含 "Number of key(s) added" 或者 "All keys were skipped"
+    // 但只要 exit code 为 0，就说明操作成功（或者状态已满足要求）
+    await execAsync(copyIdCmd);
+    console.log("SSH公钥部署操作完成");
+  } catch (error) {
+    console.error(`部署SSH公钥失败: ${error.message}`);
+    return {
+      code: 50000,
+      data: "",
+      msg: `部署SSH公钥失败: ${error.message}`,
+      status: "error"
+    };
+  }
+
+  // === 第3步：验证无密码登录 ===
+  console.log("=== 第3步：验证无密码登录 ===");
+  // -o PasswordAuthentication=no: 强制禁用密码认证，仅使用密钥验证
+  const verifyKeyCmd = `ssh -i ${privateKeyPath} -o StrictHostKeyChecking=no -o PasswordAuthentication=no -p ${hostPort} ${user}@${hostIP} "echo '✓ 无密码SSH登录成功'"`;
+  try {
+    await execAsync(verifyKeyCmd);
+    console.log("SSH密钥认证配置成功！");
+  } catch (error) {
+    console.error(`SSH密钥认证验证失败: ${error.message}`);
+    return {
+      code: 50000,
+      data: "",
+      msg: "SSH密钥认证配置失败，请检查远程主机配置（如防火墙、SSH服务配置等）",
       status: "error"
     };
   }

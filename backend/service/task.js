@@ -122,6 +122,18 @@ async function addK8sMasterJob(clusterInfo) {
         let configFile = `@${resultPackageData.kubesprayPath}/config.yml`
         let offlineCacheDir = `${resultPackageData.offlinePackagePath}`
         deleteTmpHostnameSync(node.hostName);
+        let kubeVersion = resultData.k8sVersion;
+        let networkVersion = resultData.networkVersion;
+        const versionMatch = kubeVersion.match(/v(\d+\.\d+)/);
+        if (versionMatch) {
+          const versionNum = parseFloat(versionMatch[1]);
+          if (versionNum >= 1.31) {
+            kubeVersion = kubeVersion.replace(/^v/, '');
+            if (networkVersion && networkVersion.startsWith('v')) {
+              networkVersion = networkVersion.replace(/^v/, '');
+            }
+          }
+        }
         const playbook = {
           id: id,
           taskId: taskId,
@@ -133,10 +145,10 @@ async function addK8sMasterJob(clusterInfo) {
           ip: node.ip,
           hostsPath: hostsPath,
           offlineCacheDir: offlineCacheDir,
-          kubeVersion: resultData.k8sVersion,
+          kubeVersion: kubeVersion,
           imageArch: resultPackageData.imageArch,
           networkPlugin: resultData.networkPlugin,
-          networkVersion: resultData.networkVersion,
+          networkVersion: networkVersion,
           workDir: workDir,
           configFile: configFile,
         }
@@ -151,6 +163,18 @@ async function addK8sMasterJob(clusterInfo) {
         let configFile = `@${resultPackageData.kubesprayPath}/config.yml`
         let offlineCacheDir = `${resultPackageData.offlinePackagePath}`
         deleteTmpHostnameSync(node.hostName);
+        let kubeVersion = resultData.k8sVersion;
+        let networkVersion = resultData.networkVersion;
+        const versionMatch = kubeVersion.match(/v(\d+\.\d+)/);
+        if (versionMatch) {
+          const versionNum = parseFloat(versionMatch[1]);
+          if (versionNum >= 1.31) {
+            kubeVersion = kubeVersion.replace(/^v/, '');
+            if (networkVersion && networkVersion.startsWith('v')) {
+              networkVersion = networkVersion.replace(/^v/, '');
+            }
+          }
+        }
         const playbook = {
           //ansible-playbook scale.yml -b -i inventory/mycluster/hosts.yaml -e kube_version=v1.30.3 --limit node2
           task: task,
@@ -163,10 +187,10 @@ async function addK8sMasterJob(clusterInfo) {
           ip: node.ip,
           hostsPath: hostsPath,
           offlineCacheDir: offlineCacheDir,
-          kubeVersion: resultData.k8sVersion,
+          kubeVersion: kubeVersion,
           imageArch: resultPackageData.imageArch,
           networkPlugin: resultData.networkPlugin,
-          networkVersion: resultData.networkVersion,
+          networkVersion: networkVersion,
           workDir: workDir,
           configFile: configFile,
         }
@@ -229,6 +253,18 @@ async function addK8sNodeJob(clusterInfo) {
         let workDir = `${resultPackageData.kubesprayPath}/kubespray`
         let configFile = `@${resultPackageData.kubesprayPath}/config.yml`
         let offlineCacheDir = `${resultPackageData.offlinePackagePath}`
+        let kubeVersion = resultData.k8sVersion;
+        let networkVersion = resultData.networkVersion;
+        const versionMatch = kubeVersion.match(/v(\d+\.\d+)/);
+        if (versionMatch) {
+          const versionNum = parseFloat(versionMatch[1]);
+          if (versionNum >= 1.31) {
+            kubeVersion = kubeVersion.replace(/^v/, '');
+            if (networkVersion && networkVersion.startsWith('v')) {
+              networkVersion = networkVersion.replace(/^v/, '');
+            }
+          }
+        }
         const playbook = {
           task: task,
           id: id,
@@ -240,10 +276,10 @@ async function addK8sNodeJob(clusterInfo) {
           ip: node.ip,
           hostsPath: hostsPath,
           offlineCacheDir: offlineCacheDir,
-          kubeVersion: resultData.k8sVersion,
+          kubeVersion: kubeVersion,
           imageArch: resultPackageData.imageArch,
           networkPlugin: resultData.networkPlugin,
-          networkVersion: resultData.networkVersion,
+          networkVersion: networkVersion,
           workDir: workDir,
           configFile: configFile,
         }
@@ -311,12 +347,20 @@ async function removeK8sNodeJob(id, ip) {
         const resultPackageData = await offlinePackagesPath()
         let task = `${resultPackageData.kubesprayPath}/kubespray/reset.yml`
         let workDir = `${resultPackageData.kubesprayPath}/kubespray`
+        let kubeVersion = resultData.k8sVersion;
+        const versionMatch = kubeVersion.match(/v(\d+\.\d+)/);
+        if (versionMatch) {
+          const versionNum = parseFloat(versionMatch[1]);
+          if (versionNum >= 1.31) {
+            kubeVersion = kubeVersion.replace(/^v/, '');
+          }
+        }
         const playbook = {
           task: task,
           id: id,
           taskId: taskId,
           clusterName: resultData.clusterName,
-          kubeVersion: resultData.k8sVersion,
+          kubeVersion: kubeVersion,
           taskName: taskName,
           hostName: node.hostName,
           role: node.role,
@@ -401,6 +445,14 @@ async function resetK8sClusterJob(id) {
     const resultPackageData = await offlinePackagesPath()
     let task = `${resultPackageData.kubesprayPath}/kubespray/reset.yml`
     let workDir = `${resultPackageData.kubesprayPath}/kubespray`
+        let kubeVersion = resultData.k8sVersion;
+        const versionMatch = kubeVersion.match(/v(\d+\.\d+)/);
+        if (versionMatch) {
+          const versionNum = parseFloat(versionMatch[1]);
+          if (versionNum >= 1.31) {
+            kubeVersion = kubeVersion.replace(/^v/, '');
+          }
+        }
     const playbook = {
       id: id,
       task: task,
@@ -408,7 +460,7 @@ async function resetK8sClusterJob(id) {
       clusterName: resultData.clusterName,
       taskName: taskName,
       hostName: node.hostName,
-      kubeVersion: resultData.k8sVersion,
+      kubeVersion: kubeVersion,
       role: node.role,
       ip: node.ip,
       hostsPath: hostsPath,
@@ -657,8 +709,21 @@ async function upgradeK8sClusterJob(newClusterInfo, targetIP = null) {
       let configFile = `@${resultPackageData.kubesprayPath}/config.yml`
       let offlineCacheDir = `${resultPackageData.offlinePackagePath}`
       //新的网络插件处理
-      const [networkPlugin, networkVersion] = newClusterInfo.networkPlugin.split(' - ');
+      const [networkPlugin, networkVersions] = newClusterInfo.networkPlugin.split(' - ');
       //let localhostRepoPath = `${resultPackageData.offlinePackagePath}/repo_files`
+      let kubeVersion = newClusterInfo.version;
+      let networkVersion = networkVersions;
+      const versionMatch = kubeVersion.match(/v(\d+\.\d+)/);
+      if (versionMatch) {
+        const versionNum = parseFloat(versionMatch[1]);
+        if (versionNum >= 1.31) {
+          kubeVersion = kubeVersion.replace(/^v/, '');
+          if (networkVersion && networkVersion.startsWith('v')) {
+            networkVersion = networkVersion.replace(/^v/, '');
+          }
+        }
+      }
+
       const playbook = {
         id: newClusterInfo.id,
         task: task,
@@ -671,7 +736,7 @@ async function upgradeK8sClusterJob(newClusterInfo, targetIP = null) {
         ip: node.ip,
         hostsPath: hostsPath,
         offlineCacheDir: offlineCacheDir,
-        kubeVersion: newClusterInfo.version,
+        kubeVersion: kubeVersion,
         imageArch: resultPackageData.imageArch,
         networkPlugin: networkPlugin,
         networkVersion: networkVersion,
