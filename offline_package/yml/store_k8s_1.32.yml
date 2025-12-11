@@ -67,7 +67,7 @@ dependency:
       version: "{{kube_version}}"
       tag: store.e-byte.cn/k8s/kube-scheduler
     - name: nginx
-      version: 1.27.4-alpine
+      version: 1.28.0-alpine
       tag: store.e-byte.cn/app/webserver/nginx
 network_plugins:
   - name: flannel
