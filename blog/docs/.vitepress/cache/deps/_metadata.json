@@ -1,37 +1,37 @@
 {
-  "hash": "9955817f",
-  "configHash": "c525b54c",
+  "hash": "db0ac6ae",
+  "configHash": "485f459a",
   "lockfileHash": "34c42f23",
-  "browserHash": "9610442a",
+  "browserHash": "ff8675ca",
   "optimized": {
     "vue": {
       "src": "../../../../node_modules/vue/dist/vue.runtime.esm-bundler.js",
       "file": "vue.js",
-      "fileHash": "a5db992b",
+      "fileHash": "0104ce51",
       "needsInterop": false
     },
     "vitepress > @vue/devtools-api": {
       "src": "../../../../node_modules/@vue/devtools-api/dist/index.js",
       "file": "vitepress___@vue_devtools-api.js",
-      "fileHash": "edef600b",
+      "fileHash": "e9ef12f4",
       "needsInterop": false
     },
     "vitepress > @vueuse/core": {
       "src": "../../../../node_modules/vitepress/node_modules/@vueuse/core/index.mjs",
       "file": "vitepress___@vueuse_core.js",
-      "fileHash": "2562dfcf",
+      "fileHash": "a05624b6",
       "needsInterop": false
     },
     "@arco-design/web-vue": {
       "src": "../../../../node_modules/@arco-design/web-vue/es/index.js",
       "file": "@arco-design_web-vue.js",
-      "fileHash": "ffade810",
+      "fileHash": "e3e57f67",
       "needsInterop": false
     },
     "@arco-design/web-vue/lib/icon": {
       "src": "../../../../node_modules/@arco-design/web-vue/lib/icon/index.js",
       "file": "@arco-design_web-vue_lib_icon.js",
-      "fileHash": "48dc2255",
+      "fileHash": "52fd0c39",
       "needsInterop": true
     }
   },

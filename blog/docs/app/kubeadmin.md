@@ -8,7 +8,11 @@ title: kubeadmin平台
 
 ## 访问方式
 
-集群安装成功之后，在集群列表可以看到<span style="color: #3491FA;">**容器云**</span>,点击容器云即可跳转到kubeadmin平台。
+集群安装成功之后，在集群列表可以看到<span style="color: #3491FA;">**应用管理**</span>,点击容器云即可跳转到kubeadmin平台。
+
+
+[![应用管理](/images/kubeadmin.png)](/images/kubeadmin.png)
+
 
 ## 平台功能
 
