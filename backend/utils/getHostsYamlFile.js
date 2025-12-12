@@ -33,6 +33,7 @@ async function getHostsYamlFile(data, clusterId) {
         ansible_user: user,
         ansible_port: port,
         ansible_become_password: password,
+        main_access_ip: ip,
       };
 
       if (role === 'master') {
@@ -56,6 +57,7 @@ async function getHostsYamlFile(data, clusterId) {
         ansible_user: user,
         ansible_port: port,
         ansible_become_password: password,
+        main_access_ip: ip,
       };
 
       if (role === 'master') {
