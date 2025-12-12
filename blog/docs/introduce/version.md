@@ -16,4 +16,3 @@ kubeaver 1.0.0版本默认后端v1.0.0-125，支持的k8s版本v1.25-1.27.若想
 | 1.0.0            | v1.0.0-125     |   ✔    |   ✔    |   ✔   |   x    |   x    |   x    |
 | 1.0.0            | v1.0.0-128     |   x    |   x    |    x   |   ✔    |   ✔   |   ✔    |
 
-[![kubeaver版本图](/images/kubeaver_version.png)](/images/kubeaver_version.png)

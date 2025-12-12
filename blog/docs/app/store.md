@@ -1,14 +1,6 @@
 ---
 title: 应用商店
 ---
-
-## 概述
-
-
-
-<!-- ---
-title: 应用商店
----
 # 应用商店
 ## 概述
 
@@ -58,7 +50,14 @@ title: 应用商店
 </a-row>
 </div>
 
+**应用商店中应用包制作可参考[应用模版](./template.html)**
 
+kubeadmin管理平台中应用仓库应用来源于应用商店和自定义应用，将应用打包之后，通过目标主机:8080/apploader访问文件管理器，文件管理器，账号admin，密码admin，将应用上传到app目录即可。
+
+
+[![kubeaver平台应用离线包功能](/images/kubeaver_app.png)](/images/kubeaver_app.png)
+
+[![kubeaver平台应用离线包导入功能](/images/kubeaver_app_2.png)](/images/kubeaver_app_2.png)
 
 
 <script setup>
@@ -69,7 +68,7 @@ const selectedCategories = ref([]);
 const applications = ref([
   {
     name: 'nginx',
-    logo: '../public/images/nginx.png',
+    logo: '/images/nginx.png',
     versions: ['0.1.0', '0.2.0', '1.0.0'],
     selectedVersion: '0.1.0',
     apptype: 'webserver',
@@ -77,7 +76,7 @@ const applications = ref([
   },
   {
     name: 'mysql',
-    logo: '../public/images/mysql.png',
+    logo: '/images/mysql.png',
     versions: ['8.0.36', '5.4.47'],
     selectedVersion: '8.0.36',
     apptype: 'database',
@@ -85,7 +84,7 @@ const applications = ref([
   },
   {
     name: 'redis',
-    logo: '../public/images/redis.png',
+    logo: '/images/redis.png',
     versions: ['5.0.7'],
     selectedVersion: '5.0.7',
     apptype: 'database',
@@ -93,7 +92,7 @@ const applications = ref([
   },
   {
     name: 'adminer',
-    logo: '../public/images/adminer.png',
+    logo: '/images/adminer.png',
     versions: ['4.8.0'],
     selectedVersion: '4.8.0',
     apptype: 'database',
@@ -101,7 +100,7 @@ const applications = ref([
   },
   {
     name: 'nfs-provisioner',
-    logo: '../public/images/nfs.png',
+    logo: '/images/nfs.png',
     versions: ['4.0.18'],
     selectedVersion: '4.0.18',
     apptype: 'sysapp',
@@ -109,7 +108,7 @@ const applications = ref([
   },
   {
     name: 'kube-prometheus-stack',
-    logo: '../public/images/prometheus_logo.png',
+    logo: '/images/prometheus_logo.png',
     versions: ['43.0.0'],
     selectedVersion: '43.0.0',
     apptype: 'sysapp',
@@ -171,4 +170,4 @@ button.active {
 button:hover {
   background-color: #e0e0e0; /* Optional: Change background on hover */
 }
-</style> -->
+</style>

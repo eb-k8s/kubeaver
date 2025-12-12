@@ -7,7 +7,8 @@ export default defineConfig({
   // export default withMermaid({
   title: "Kubeaver",
   description: "Kubeaver",
-  base: '/kubeaver/',
+  // base: '/kubeaver/',
+  base: '/',
   vite: {
     build: {
       chunkSizeWarningLimit: Infinity, // 调整警告阈值为 1000 kB
@@ -46,6 +47,12 @@ export default defineConfig({
         ]
       },
       {
+        text: '主机管理',
+        items: [
+          { text: '主机管理', link: '/host/manage.md' },
+        ]
+      },
+      {
         text: '离线包管理',
         items: [
           { text: '基础包功能', link: '/offline/base.md' },
@@ -62,8 +69,8 @@ export default defineConfig({
         text: '应用管理',
         items: [
           { text: 'kubeadmin平台', link: '/app/kubeadmin.md' },
-          { text: '应用导入', link: '/app/load.md' },
           { text: '应用商店', link: '/app/store.md' },
+          { text: '应用模板', link: '/app/template.md' },
           { text: '应用部署', link: '/app/deploy.md' },
         ]
       }

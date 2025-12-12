@@ -1,30 +1,85 @@
-# 构建 kubeaver 站点并将其部署到 GitHub Pages 的示例工作流程
-#
-name: Deploy kubeaver site to Pages
+# # 构建 kubeaver 站点并将其部署到 GitHub Pages 的示例工作流程
+# #
+# name: Deploy kubeaver site to Pages
+
+# on:
+#   # 在针对 `main` 分支的推送上运行。如果你
+#   # 使用 `master` 分支作为默认分支，请将其更改为 `master`
+#   push:
+#     branches: [main]
+
+#   # 允许你从 Actions 选项卡手动运行此工作流程
+#   workflow_dispatch:
+
+# # 设置 GITHUB_TOKEN 的权限，以允许部署到 GitHub Pages
+# permissions:
+#   contents: read
+#   pages: write
+#   id-token: write
+
+# # 只允许同时进行一次部署，跳过正在运行和最新队列之间的运行队列
+# # 但是，不要取消正在进行的运行，因为我们希望允许这些生产部署完成
+# concurrency:
+#   group: pages
+#   cancel-in-progress: false
+
+# jobs:
+#   build:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v4
+#         with:
+#           fetch-depth: 0
+      
+#       - uses: actions/setup-node@v4
+#         with:
+#           node-version: 22
+#           cache: npm
+#           cache-dependency-path: blog/package-lock.json  
+      
+#       - uses: actions/configure-pages@v4
+      
+#       - name: Install dependencies
+#         working-directory: ./blog  
+#         run: npm ci
+      
+#       - name: Build with VitePress
+#         working-directory: ./blog
+#         run: npm run docs:build 
+      
+#       - name: Upload artifact
+#         uses: actions/upload-pages-artifact@v3
+#         with:
+#           path: blog/docs/.vitepress/dist
+
+#   # 部署工作
+#   deploy:
+#     environment:
+#       name: github-pages
+#       url: ${{ steps.deployment.outputs.page_url }}
+#     needs: build
+#     runs-on: ubuntu-latest
+#     name: Deploy
+#     steps:
+#       - name: Deploy to GitHub Pages
+#         id: deployment
+#         uses: actions/deploy-pages@v4
+
+name: Deploy kubeaver site to SSH Host
 
 on:
-  # 在针对 `main` 分支的推送上运行。如果你
-  # 使用 `master` 分支作为默认分支，请将其更改为 `master`
   push:
     branches: [main]
-
-  # 允许你从 Actions 选项卡手动运行此工作流程
   workflow_dispatch:
 
-# 设置 GITHUB_TOKEN 的权限，以允许部署到 GitHub Pages
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-# 只允许同时进行一次部署，跳过正在运行和最新队列之间的运行队列
-# 但是，不要取消正在进行的运行，因为我们希望允许这些生产部署完成
-concurrency:
-  group: pages
-  cancel-in-progress: false
+env:
+  REMOTE_HOST: "39.105.98.62"  # 设置为您的 SSH 主机地址
+  REMOTE_USER: "root"          # 设置为 SSH 用户名
+  REMOTE_PORT: "22"                # SSH 端口，默认是 22
+  DEPLOY_PATH: "/root/kubeaver" # 远程主机上的部署路径
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -37,30 +92,74 @@ jobs:
           cache: npm
           cache-dependency-path: blog/package-lock.json  
       
-      - uses: actions/configure-pages@v4
-      
       - name: Install dependencies
         working-directory: ./blog  
         run: npm ci
       
       - name: Build with VitePress
         working-directory: ./blog
-        run: npm run docs:build 
+        run: npm run docs:build
       
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+      - name: Create deployment artifact
+        run: |
+          mkdir -p deploy
+          cp -r blog/docs/.vitepress/dist/* deploy/
+      
+      - name: Deploy to SSH host
+        uses: appleboy/scp-action@v0.1.7
         with:
-          path: blog/docs/.vitepress/dist
-
-  # 部署工作
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    needs: build
-    runs-on: ubuntu-latest
-    name: Deploy
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          host: ${{ env.REMOTE_HOST }}
+          username: ${{ env.REMOTE_USER }}
+          port: ${{ env.REMOTE_PORT }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "deploy/"
+          target: "${{ env.DEPLOY_PATH }}/dist-new/"
+          strip_components: 0
+      
+      - name: Execute deployment script on remote host
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ env.REMOTE_HOST }}
+          username: ${{ env.REMOTE_USER }}
+          port: ${{ env.REMOTE_PORT }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            # 切换到部署目录
+            cd ${{ env.DEPLOY_PATH }}
+            
+            # 备份旧的 dist 目录
+            if [ -d "dist" ]; then
+              rm -rf dist-old
+              mv dist dist-old
+            fi
+            
+            # 移动新的 dist 目录
+            mv dist-new dist
+            
+            # 检查并更新 Docker Compose 配置
+            if [ -f "docker-compose.yml" ]; then
+              # 重启 Docker Compose 服务
+              docker compose down
+              docker compose up -d
+              
+              # 清理旧镜像和容器
+              docker system prune -f
+              
+              echo "Deployment completed and Docker Compose restarted successfully!"
+            else
+              echo "Warning: docker-compose.yml not found at ${{ env.DEPLOY_PATH }}"
+              echo "Dist files have been updated, but Docker Compose was not restarted."
+            fi
+            
+            # 清理临时文件
+            rm -rf dist-old
+            
+            # 验证服务状态
+            if [ -f "docker-compose.yml" ]; then
+              echo "Current service status:"
+              docker compose ps
+            fi
+      
+      - name: Clean up local files
+        if: always()
+        run: rm -rf deploy
