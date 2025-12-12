@@ -112,9 +112,9 @@ jobs:
           username: ${{ env.REMOTE_USER }}
           port: ${{ env.REMOTE_PORT }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "deploy/*"
+          source: "deploy/"
           target: "${{ env.DEPLOY_PATH }}/dist-new/"
-          strip_components: 1
+          strip_components: 0
       
       - name: Execute deployment script on remote host
         uses: appleboy/ssh-action@v1.2.0
