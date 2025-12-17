@@ -35,11 +35,11 @@ Kubeaver平台是一个在离线环境下可快速管理kubernetes集群的一�
 
 2. 解压安装包：
 ~~~shell
-tar xzvf kubeaver-offline-installer-x.x.x.tgz
+tar xzvf kubeaver-offline-installer-1.0.0.tgz
 ~~~
 3. 切换到安装目录：
 ~~~shell
-cd kubeaver-offline-installer-x.x.x
+cd kubeaver-offline-installer-1.0.0
 ~~~
 4. 执行启动命令：
 ~~~shell
@@ -52,6 +52,12 @@ cd kubeaver-offline-installer-x.x.x
 
 访问方式：
 通过浏览器访问控制主机上的80端口，即可进入kubeaver管理页面。
+
+  <div style="margin-top: 10px;">
+    <a href="../host/manage" style="color: #3491FA; font-size: 16px; text-decoration: none;">
+      <strong>添加主机</strong>
+    </a>
+  </div>
 
   <div style="margin-top: 10px;">
     <a href="../offline/base" style="color: #3491FA; font-size: 16px; text-decoration: none;">

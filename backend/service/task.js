@@ -728,7 +728,7 @@ async function upgradeK8sClusterJob(newClusterInfo, targetIP = null) {
         id: newClusterInfo.id,
         task: task,
         taskId: taskId,
-        version: newClusterInfo.version,
+        version: kubeVersion,
         clusterName: resultData.clusterName,
         taskName: taskName,
         hostName: node.hostName,
