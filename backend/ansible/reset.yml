@@ -17,6 +17,7 @@
     drain_retries: 3
     drain_retry_delay_seconds: 10
     reset_cluster: true
+    enable_dual_stack_networks: false
     reset_restart_network_service_name: >-
       {% if ansible_os_family == "RedHat" -%}
       {%-
