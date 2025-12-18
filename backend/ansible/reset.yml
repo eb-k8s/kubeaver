@@ -434,6 +434,18 @@
       tags:
         - mounts
 
+    - name: Set IPv4 iptables default policies to ACCEPT
+      iptables:
+        chain: "{{ item }}"
+        policy: ACCEPT
+      with_items:
+        - INPUT
+        - FORWARD
+        - OUTPUT
+      when: flush_iptables | bool 
+      tags:
+        - iptables
+
     - name: Flush iptables
       iptables:
         table: "{{ item }}"
@@ -444,6 +456,12 @@
         - mangle
         - raw
       when: flush_iptables | bool
+      tags:
+        - iptables
+
+    - name: Delete IPv4 user-defined chains # noqa command-instead-of-module
+      command: iptables -X
+      when: flush_iptables | bool 
       tags:
         - iptables
 
