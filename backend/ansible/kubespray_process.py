@@ -273,15 +273,15 @@ def main():
     elif kubespray_version == "2.29.0":
         # 修改roles/kubespray-defaults/defaults/main/download.yml
         lines = read_yaml_file(f"{kubespray_path}/roles/kubespray_defaults/defaults/main/download.yml")
-        # 删除sha256: "{{ metrics_server_digest_checksum | default(None) }}"的后面两行内容
-        modified_lines = remove_lines_after_pattern(lines, "sha256: \"{{ metrics_server_digest_checksum | default(None) }}\"")
-        # 在sha256: "{{ metrics_server_digest_checksum | default(None) }}"后新增    groups:和    - k8s_cluster
-        modified_lines = insert_line_after_pattern(modified_lines, "sha256: \"{{ metrics_server_digest_checksum | default(None) }}\"", "    groups:\n    - k8s_cluster")
+        # 删除checksum: "{{ metrics_server_digest_checksum | default(None) }}"的后面两行内容
+        modified_lines = remove_lines_after_pattern(lines, "checksum: \"{{ metrics_server_digest_checksum | default(None) }}\"")
+        # 在checksum: "{{ metrics_server_digest_checksum | default(None) }}"后新增    groups:和    - k8s_cluster
+        modified_lines = insert_line_after_pattern(modified_lines, "checksum: \"{{ metrics_server_digest_checksum | default(None) }}\"", "    groups:\n    - k8s_cluster")
 
-        # 删除sha256: "{{ dnsautoscaler_digest_checksum | default(None) }}"
-        modified_lines = remove_lines_after_pattern(modified_lines, "sha256: \"{{ dnsautoscaler_digest_checksum | default(None) }}\"")
-        # 在sha256: "{{ dnsautoscaler_digest_checksum | default(None) }}"后新增    groups:和    - k8s_cluster
-        modified_lines = insert_line_after_pattern(modified_lines, "sha256: \"{{ dnsautoscaler_digest_checksum | default(None) }}\"", "    groups:\n    - k8s_cluster")
+        # 删除checksum: "{{ dnsautoscaler_digest_checksum | default(None) }}"
+        modified_lines = remove_lines_after_pattern(modified_lines, "checksum: \"{{ dnsautoscaler_digest_checksum | default(None) }}\"")
+        # 在checksum: "{{ dnsautoscaler_digest_checksum | default(None) }}"后新增    groups:和    - k8s_cluster
+        modified_lines = insert_line_after_pattern(modified_lines, "checksum: \"{{ dnsautoscaler_digest_checksum | default(None) }}\"", "    groups:\n    - k8s_cluster")
         # 将更改写入文件
         write_yaml_file(f"{kubespray_path}/roles/kubespray_defaults/defaults/main/download.yml", modified_lines)
 
