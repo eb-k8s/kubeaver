@@ -17,6 +17,7 @@
     drain_retries: 3
     drain_retry_delay_seconds: 10
     reset_cluster: true
+    enable_dual_stack_networks: false
     reset_restart_network_service_name: >-
       {% if ansible_os_family == "RedHat" -%}
       {%-
@@ -433,6 +434,18 @@
       tags:
         - mounts
 
+    - name: Set IPv4 iptables default policies to ACCEPT
+      iptables:
+        chain: "{{ item }}"
+        policy: ACCEPT
+      with_items:
+        - INPUT
+        - FORWARD
+        - OUTPUT
+      when: flush_iptables | bool 
+      tags:
+        - iptables
+
     - name: Flush iptables
       iptables:
         table: "{{ item }}"
@@ -443,6 +456,12 @@
         - mangle
         - raw
       when: flush_iptables | bool
+      tags:
+        - iptables
+
+    - name: Delete IPv4 user-defined chains # noqa command-instead-of-module
+      command: iptables -X
+      when: flush_iptables | bool 
       tags:
         - iptables
 
