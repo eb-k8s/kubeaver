@@ -63,7 +63,7 @@
                                                 row-key="name"
                                             />
                                         </a-tab-pane>
-                                        <a-tab-pane key="files" :title="t('resources.tab.files')">
+                                        <a-tab-pane key="files" :title="t('resources.tab.file')">
                                             <a-table
                                                 :columns="fileColumns"
                                                 :data="plugin.files"
