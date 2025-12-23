@@ -313,61 +313,22 @@
             console.warn('未找到匹配的插件:', installedPluginType);
             return [];
         }
-
         return matchedPlugin.children.filter(versionNode => {
             const pluginVersionParsed = parseVersion(versionNode.name);
             if (!pluginVersionParsed) return false;
 
             const [k8sMajor, k8sMinor] = k8sVersionParsed;
-            const [pluginMajor, pluginMinor, pluginPatch] = pluginVersionParsed;
-
-            // 确保是 Calico v3.x
-            if (pluginMajor !== 3) return false;
+            const [, pluginMinor] = pluginVersionParsed;
 
             if (installedPluginType === 'calico') {
-                if (k8sMajor === 1) {
-                    if (k8sMinor >= 25 && k8sMinor <= 27) {
-                        // 1.25-1.27 的 k8s 只能用 3.25 及以下的 Calico
-                        return pluginMinor <= 25;
-                    } else if (k8sMinor >= 28 && k8sMinor <= 30) {
-                        // 1.28-1.30 的 k8s 只能用 3.26 及以上到 3.28.1 的 Calico
-                        if (pluginMinor >= 26 && pluginMinor <= 28) {
-                            if (pluginMinor === 28) {
-                                // 对于 3.28.x 版本，需要检查补丁版本
-                                return pluginPatch <= 1; // 只允许 3.28.0 和 3.28.1
-                            }
-                            return true; // 3.26.x 和 3.27.x 全部可用
-                        }
-                        return false;
-                    } else if (k8sMinor >= 31 && k8sMinor <= 33) {
-                        // 1.31-1.33 的 k8s 只能用 3.28.0-3.30.3 的 Calico
-                        if (pluginMinor >= 28 && pluginMinor <= 30) {
-                            if (pluginMinor === 28) {
-                                // 3.28.0 及以上
-                                return pluginPatch >= 0;
-                            } else if (pluginMinor === 30) {
-                                // 3.30.x 版本，最高到 3.30.3
-                                return pluginPatch <= 3;
-                            }
-                            // 3.29.x 版本全部可用
-                            return true;
-                        }
-                        return false;
-                    } else if (k8sMinor >= 34 && k8sMinor <= 35) {
-                        // 1.34-1.35 的 k8s，假设需要 3.30+ 的 Calico
-                        return pluginMinor >= 30;
-                    } else if (k8sMinor < 25) {
-                        // 对于 1.24 及以下的 k8s 版本
-                        return pluginMinor <= 24;
-                    }
-                } else if (k8sMajor >= 2) {
-                    // 对于 Kubernetes 2.x 版本
-                    return pluginMinor >= 30;
+                if (k8sMajor === 1 && k8sMinor >= 25 && k8sMinor <= 27) {
+                    return pluginMinor <= 25;
+                } else if (k8sMajor === 1 && k8sMinor >= 28 && k8sMinor <= 30) {
+                    return pluginMinor >= 26;
                 }
                 return false;
             }
 
-            // 对于非 Calico 插件，直接返回 true
             return true;
         }).map(versionNode => {
             const imagesNode = versionNode.children?.find(child => child.name === 'images');
@@ -833,6 +794,7 @@
     // 校验当前选择的插件是否与当前 K8s 版本兼容
     watch([() => cluster.version, () => cluster.networkPlugins], ([newVersion, newPlugin]) => {
         if (!newVersion || !newPlugin) return;
+
         const match = formattedPlugins.value.find(
             plugin => `${plugin.name} - ${plugin.version}` === newPlugin
         );
