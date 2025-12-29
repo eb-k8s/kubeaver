@@ -4,6 +4,7 @@
 enable_dual_stack_networks: false
 kubeadm_version: "{{kube_version}}"
 registry_host: "store.e-byte.cn"
+kubeadm_ignore_preflight_errors: ['CreateJob']
 #registry_host_ip: "10.1.69.240"
 #kube_network_plugin: flannel
 # calico_version: "v3.28.1"
