@@ -651,35 +651,74 @@ const { loading, setLoading } = useLoading();
                     if (!k8sVersionParsed || !calicoVersionParsed) return false;
 
                     const [k8sMajor, k8sMinor] = k8sVersionParsed;
-                    const [, calicoMinor] = calicoVersionParsed;
+                    const [calicoMajor, calicoMinor, calicoPatch] = calicoVersionParsed;
+
+                    // 确保是 Calico v3.x 版本
+                    if (calicoMajor !== 3) return false;
 
                     // 根据 Kubernetes 版本范围过滤 Calico 版本
-                    if (k8sMajor === 1 && k8sMinor >= 25 && k8sMinor <= 27) {
-                        return calicoMinor <= 25; // 1.25-1.27 的 k8s 只能用 3.25 及以下的 Calico
-                    } else if (k8sMajor === 1 && k8sMinor >= 28 && k8sMinor <= 30) {
-                        return calicoMinor >= 26; // 1.28-1.30 的 k8s 只能用 3.26 及以上的 Calico
+                    if (k8sMajor === 1) {
+                        if (k8sMinor >= 25 && k8sMinor <= 27) {
+                            // 1.25-1.27 的 k8s 只能用 3.25 及以下的 Calico
+                            return calicoMinor <= 25;
+                        } else if (k8sMinor >= 28 && k8sMinor <= 30) {
+                            // 1.28-1.30 的 k8s 只能用 3.26 及以上到 3.28.1 的 Calico
+                            if (calicoMinor >= 26 && calicoMinor <= 28) {
+                                // 如果是 3.28 版本，检查补丁版本是否 <= 1
+                                if (calicoMinor === 28) {
+                                    return calicoPatch <= 1;
+                                }
+                                return true;
+                            }
+                            return false;
+                        } else if (k8sMinor >= 31 && k8sMinor <= 33) {
+                            // 1.31-1.33 的 k8s 只能用 3.28.0-3.30.3 的 Calico
+                            if (calicoMinor >= 28 && calicoMinor <= 30) {
+                                if (calicoMinor === 28) {
+                                    // 3.28.0 及以上版本（对于 k8s 1.31+，3.28.0 应该可用）
+                                    return calicoPatch >= 0;
+                                } else if (calicoMinor === 30) {
+                                    // 3.30.x 版本，最高到 3.30.3
+                                    return calicoPatch <= 3;
+                                }
+                                return true; // 3.29.x 版本全部可用
+                            }
+                            return false;
+                        } else if (k8sMinor >= 34 && k8sMinor <= 35) {
+                            // 1.34-1.35 的 k8s（假设兼容性要求）
+                            // 可能需要 3.30+ 的 Calico
+                            return calicoMinor >= 30;
+                        } else if (k8sMinor < 25) {
+                            // 对于 1.24 及以下的 k8s 版本
+                            return calicoMinor <= 24;
+                        }
+                    } else if (k8sMajor >= 2) {
+                        // 对于 Kubernetes 2.x 版本
+                        // 这里可以根据实际兼容性表调整
+                        return calicoMinor >= 30;
                     }
+                    
                     return false; // 其他情况不显示
                 }).map(versionNode => {
                     const imagesNode = versionNode.children?.find(child => child.name === 'images');
 
                     return {
                         name: plugin.name,
-                        version: versionNode?.name,
+                        version: versionNode.name,
                         images: imagesNode?.children || [],
                         files: versionNode.children
                             ?.filter(child => child.name !== 'images' && child.type === 'file') || []
                     };
                 });
             }
-
+            
             // 对于非 Calico 插件，直接返回所有版本
             return (plugin.children || []).map(versionNode => {
                 const imagesNode = versionNode.children?.find(child => child.name === 'images');
 
                 return {
                     name: plugin.name,
-                    version: versionNode?.name,
+                    version: versionNode.name,
                     images: imagesNode?.children || [],
                     files: versionNode.children
                         ?.filter(child => child.name !== 'images' && child.type === 'file') || []
@@ -694,6 +733,7 @@ const { loading, setLoading } = useLoading();
         (newVersion) => {
             console.log('Kubernetes 版本切换为:', newVersion);
             if (formattedPlugins.value.length) {
+            console.log(formattedPlugins)
             // 更新默认网络插件为第一个可用的插件
             cluster.networkPlugin = `${formattedPlugins.value[0].name} - ${formattedPlugins.value[0].version}`;
             } else {
