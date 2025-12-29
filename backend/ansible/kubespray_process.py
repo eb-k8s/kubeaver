@@ -285,6 +285,63 @@ def main():
         # 将更改写入文件
         write_yaml_file(f"{kubespray_path}/roles/kubespray_defaults/defaults/main/download.yml", modified_lines)
 
+        # 修改roles/kubernetes/node/tasks/install.yml
+        lines = read_yaml_file(f"{kubespray_path}/roles/kubernetes/node/tasks/install.yml")
+        # 在 copy: src: "{{ downloads.kubelet.dest }}" ... remote_src: true 后新增 when
+        # 也就是在 dest: "{{ bin_dir }}/kubelet" 后两行
+        modified_lines = insert_line_after_pattern(lines, 'dest: "{{ bin_dir }}/kubelet"', "  when: inventory_hostname not in groups['kube_control_plane']", 2)
+
+        # 新增task
+        new_task = """- name: Install | Copy kubelet binary from download dir (control plane)
+  copy:
+    src: "{{ downloads.kubelet.dest }}"
+    dest: "/tmp/kubelet"
+    mode: "0755"
+    remote_src: true
+  when: inventory_hostname in groups['kube_control_plane']
+  tags:
+    - kubelet
+    - upgrade"""
+
+        # 在 notify: Node | restart kubelet 后新增
+        modified_lines = insert_line_after_pattern(modified_lines, "notify: Node | restart kubelet", new_task)
+
+        write_yaml_file(f"{kubespray_path}/roles/kubernetes/node/tasks/install.yml", modified_lines)
+
+                # 修改roles/upgrade/post-upgrade/tasks/main.yml
+        lines = read_yaml_file(f"{kubespray_path}/roles/upgrade/post-upgrade/tasks/main.yml")
+        new_tasks = """- name: Install | Copy kubelet binary from tmp dir (control plane)
+  copy:
+    src: "/tmp/kubelet"
+    dest: "{{ bin_dir }}/kubelet"
+    mode: "0755"
+    remote_src: true
+  when: inventory_hostname in groups['kube_control_plane']
+
+- name: Kubelet | reload systemd
+  systemd_service:
+    daemon_reload: true
+  when: inventory_hostname in groups['kube_control_plane']
+
+- name: Kubelet | restart kubelet
+  service:
+    name: kubelet
+    state: restarted
+  when: inventory_hostname in groups['kube_control_plane']
+
+- name: Control plane | wait for the apiserver to be running
+  uri:
+    url: "{{ kube_apiserver_endpoint }}/healthz"
+    validate_certs: false
+  register: result
+  until: result.status == 200
+  retries: "{{ control_plane_health_retries }}"
+  delay: 1
+  when: inventory_hostname in groups['kube_control_plane']"""
+        
+        modified_lines = insert_line_after_pattern(lines, "---", new_tasks)
+        write_yaml_file(f"{kubespray_path}/roles/upgrade/post-upgrade/tasks/main.yml", modified_lines)
+
     # 在kubespray中新增代码实现高并发部署集群
     # 修改playbooks/scale.yml文件，新增node等待master与certificate_key获取
     lines = read_yaml_file(f"{kubespray_path}/playbooks/scale.yml")
