@@ -1,11 +1,10 @@
-
 ---
 - name: Gather specific system information and save as JSON
   hosts: all
-  gather_facts: no  
+  gather_facts: no
   tasks:
-    - name: Gather CPU information
-      ansible.builtin.shell: "lscpu | grep '^CPU(s):'"
+    - name: Gather CPU count
+      ansible.builtin.command: nproc
       register: cpu_info
       changed_when: false
 
@@ -28,7 +27,7 @@
       copy:
         content: |
           {
-            "cpu": "{{ cpu_info.stdout.split(':')[1].strip() }}",
+            "cpu": "{{ cpu_info.stdout.strip() }}",
             "memory": "{{ (memory_info.stdout.split()[1] | float / 1024) | round(2) }}",
             "hostname": "{{ hostname_info.stdout.strip() }}",
             "os": "{{ os_info.stdout_lines[0].split('=')[1].strip('\"').split()[0] }} {{ os_info.stdout_lines[1].split('=')[1].strip('\"') }}"
