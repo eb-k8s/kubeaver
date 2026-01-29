@@ -41,6 +41,7 @@ jobs:
         cp ${{ github.workspace }}/deploy/docker-compose.yml package/
         cp ${{ github.workspace }}/deploy/start.sh      package/
         cp ${{ github.workspace }}/deploy/stop.sh       package/
+        cp ${{ github.workspace }}/deploy/nginx-proxy.conf    package/
         mv kubeaver-${{ steps.get_version.outputs.version }}.tar package/
 
     - name: Create tarball
