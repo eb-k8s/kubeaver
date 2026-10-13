@@ -59,11 +59,12 @@ with open(store_file_url_filename, 'r', encoding='utf-8') as file:
 # 创建离线包文件夹
 # offline_dir = f"{store_offline_path}/spray-{k8s_yaml['kubespray_version'][1:]}-k8s-{args.k8s_version[1:]}_{args.image_arch}"
 offline_dir = f"{store_offline_path}/base_k8s_{args.k8s_version}"
+flannel_directory_version = 'v' + k8s_yaml['network_plugins'][0]['dependency']['images'][0]['version'].lstrip('v')
 # 创建离线包目录
 if not os.path.exists(offline_dir):
     os.makedirs(f"{offline_dir}/system_app/metric_server/images")
     os.makedirs(f"{offline_dir}/k8s_cache/{args.k8s_version}/images")
-    os.makedirs(f"{offline_dir}/network_plugins/flannel/{k8s_yaml['network_plugins'][0]['dependency']['images'][0]['version']}/images")
+    os.makedirs(f"{offline_dir}/network_plugins/flannel/{flannel_directory_version}/images")
     print(f"离线包目录 '{offline_dir}' 创建成功")
 else:
     print(f"离线包目录 '{offline_dir}' 已经存在")
@@ -163,7 +164,7 @@ for image_item in network_images:
     #
     image_tar_name = f'{args.image_registry}/{image_tag}'.replace("/", "_")
     # 使用save命令保存镜像
-    subprocess.run(['docker', 'save', '-o', f'{offline_dir}/network_plugins/flannel/{k8s_yaml["network_plugins"][0]["dependency"]["images"][0]["version"]}/images/{image_tar_name}_{image_item["version"]}.tar', f'{args.image_registry}/{image_tag}:{image_item["version"]}'], check=True)
+    subprocess.run(['docker', 'save', '-o', f'{offline_dir}/network_plugins/flannel/{flannel_directory_version}/images/{image_tar_name}_{image_item["version"]}.tar', f'{args.image_registry}/{image_tag}:{image_item["version"]}'], check=True)
     print(f'-------------save {image_tar_name}_{image_item["version"]}.tar')
     # 删除镜像  
     # subprocess.run(['docker', 'rmi', f'{image_repo}:{image_version}'], check=True)

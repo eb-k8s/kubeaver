@@ -50,6 +50,11 @@ jobs:
           echo "KUBEAVER_TAG=${{ github.ref_name }}" >> $GITHUB_ENV
           echo "KUBESPRAY_VERSION=v2.26.0" >> $GITHUB_ENV
         fi
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ github.event.inputs.kubespray_version }}" = "v2.32.0" ]; then
+          echo "PYTHON_VERSION=3.11.12" >> $GITHUB_ENV
+        else
+          echo "PYTHON_VERSION=3.10.12" >> $GITHUB_ENV
+        fi
 
     - name: Download and Kubespray
       run: |
@@ -100,3 +105,4 @@ jobs:
         cache-to: type=gha,mode=max
         build-args: |
           KUBESPRAY_VERSION=${{ env.KUBESPRAY_VERSION }}
+          PYTHON_VERSION=${{ env.PYTHON_VERSION }}

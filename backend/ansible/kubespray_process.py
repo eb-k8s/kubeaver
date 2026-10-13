@@ -131,21 +131,23 @@ def process_files(files, insert_content):
         os.replace(temp_file.name, file)
         print(f"Added new content to {file}.")
 def main():
+    parser = argparse.ArgumentParser(description="Process some parameters.")
+    parser.add_argument('--kubespray_version', type=str, default='v2.23.3',
+                        help='The kubespray version.')
+    args = parser.parse_args()
+    kubespray_version = args.kubespray_version[1:]
+    print(f"kubespray version: {kubespray_version}")
+
+    if kubespray_version == "2.32.0":
+        from kubespray_process_v2_32 import process
+        process()
+        return
+
     # 解决python_load.sh问题
     FILES1 = ["kubespray/cluster.yml", "kubespray/scale.yml"]
     FILES2 = ["kubespray/cluster.yml", "kubespray/scale.yml"]
     process_files(FILES1, "pre_playbook: ../pre_playbook.yml")
     process_files(FILES2, "force_reset_playbook: ./reset.yml")
-
-    parser = argparse.ArgumentParser(description="Process some parameters.")
-    parser.add_argument('--kubespray_version', type=str, default='v2.23.3',
-                        help='The kubespray version.')
-
-    args = parser.parse_args()
-
-    # 获取kubespray版本
-    kubespray_version = args.kubespray_version[1:]
-    print(f"kubespray version: {kubespray_version}")
 
     # 开始修改kubespray代码部分
     kubespray_path = "./kubespray"

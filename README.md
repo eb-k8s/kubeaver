@@ -57,23 +57,24 @@ Kubeaver is a tool for quickly deploying high-availability Kubernetes (K8s) clus
 
 The default backend for Kubeaver 1.0.0 is v1.0.0-125, which supports Kubernetes versions 1.25 to 1.27. To extend support to include versions 1.28 through 1.30, you can modify the Docker Compose configuration.
 
-| frontend version | backend version | 1.25.x | 1.26.x | 1.27.x | 1.28.x | 1.29.x | 1.30.x |1.31.x|1.32.x|1.33.x|
-|------------------|----------------|--------|--------|--------|--------|--------|--------|--------|--------|--------|
-| 1.0.0            | v1.0.0-125     |   ✔    |   ✔    |   ✔   |   x    |   x    |   x    |   x    |   x    |   x    |
-| 1.0.0            | v1.0.0-128     |   x    |   x    |    x   |   ✔    |   ✔   |   ✔    |   x    |   x    |   x    |
-| 1.0.1            | v1.0.0-125     |   ✔    |   ✔    |    ✔   |   x    |   x   |   x    |   x    |   x    |   x    |
-| 1.0.1            | v1.0.0-128     |   x    |   x    |    x   |   ✔    |   ✔   |   ✔    |   x    |   x    |   x    |
-| 1.0.1            | v1.0.0-131     |   x    |   x    |    x   |   x    |   x   |   x    |   ✔    |   ✔    |   ✔    |
-
+| frontend version | backend version | supported Kubernetes versions |
+| ---------------- | --------------- | ----------------------------- |
+| 1.0.0            | v1.0.0-125      | 1.25.x–1.27.x                 |
+| 1.0.0            | v1.0.0-128      | 1.28.x–1.30.x                 |
+| 1.0.1            | v1.0.0-125      | 1.25.x–1.27.x                 |
+| 1.0.1            | v1.0.0-128      | 1.28.x–1.30.x                 |
+| 1.0.1            | v1.0.1-131      | 1.31.x–1.33.x                 |
+| 1.0.2            | v1.0.0-125      | 1.25.x–1.27.x                 |
+| 1.0.2            | v1.0.0-128      | 1.28.x–1.30.x                 |
+| 1.0.2            | v1.0.1-131      | 1.31.x–1.33.x                 |
+| 1.0.2            | v1.0.2-134      | 1.34.x–1.36.x                 |
 
 Key:
 * Kubeaver 1.0.0: The frontend version for Kubeaver 1.0.0.
 * Backend v1.0.0-125(default): The backend version for Kubeaver 1.0.0/1.0.1 that supports Kubernetes versions 1.25 to 1.27.
 * Backend v1.0.0-128: The backend version for Kubeaver 1.0.0/1.0.1 that supports Kubernetes versions 1.28 to 1.30.
 * Backend v1.0.1-131: The backend version for Kubeaver 1.0.1 that supports Kubernetes versions 1.31 to 1.33.
-
-* ✔: Compatible: The components are tested and guaranteed to work with this Kubernetes version.
-* x: Incompatible: The components are not guaranteed to support this Kubernetes version, as it falls outside the tested and supported range.
+* Backend v1.0.2-134: The backend version for Kubeaver 1.0.2 that supports Kubernetes versions 1.34 to 1.36.
 
 ## Install & Run kubeaver
 
@@ -158,6 +159,8 @@ Click here to view more detailed offline package download methods: [Offline pack
   - **CentOS** 7
   - **Rocky Linux** 9
   - **openEuler** 22.03
+
+**Note:** Kubernetes 1.34–1.36 only supports Ubuntu 22.04 and Rocky Linux 9.
 
 ## Supported Components
 
