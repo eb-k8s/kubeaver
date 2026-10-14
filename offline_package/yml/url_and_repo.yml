@@ -21,6 +21,7 @@ files:
 
   calicoctl_url: "https://github.com/projectcalico/calico/releases/download/{{ version }}/calicoctl-linux-{{ image_arch }}"
   calico_url: "https://github.com/projectcalico/calico/archive/{{ version }}.tar.gz"
+  calico_crds_url: "https://raw.githubusercontent.com/projectcalico/calico/{{ version }}/manifests/crds.yaml"
 
 images:
   etcd_repo: "quay.io/coreos/etcd"

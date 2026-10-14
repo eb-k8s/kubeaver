@@ -87,11 +87,11 @@ network_plugins:
         - name: calicoctl
           version: v3.31.7
           path: sysapp/network/calico/v3.31.7
-          filename: calicoctl-v3.31.7-{{image_arch}}
-        - name: calico
+          filename: calicoctl-3.31.7-{{image_arch}}
+        - name: calico_crds
           version: v3.31.7
           path: sysapp/network/calico/v3.31.7
-          filename: v3.31.7.tar.gz
+          filename: calico-3.31.7-kdd-crds.yaml
       images:
         - name: node
           version: v3.31.7
