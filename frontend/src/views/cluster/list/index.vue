@@ -314,6 +314,11 @@
             return [];
         }
         return matchedPlugin.children.filter(versionNode => {
+            // Kubernetes 1.34-1.36 不按版本范围过滤，展示全部已导入的插件版本
+            if (k8sVersionParsed[0] === 1 && k8sVersionParsed[1] >= 34 && k8sVersionParsed[1] <= 36) {
+                return true;
+            }
+
             const pluginVersionParsed = parseVersion(versionNode.name);
             if (!pluginVersionParsed) return false;
 
@@ -350,9 +355,6 @@
                             return true;
                         }
                         return false;
-                    } else if (k8sMinor >= 34 && k8sMinor <= 35) {
-                        // 1.34-1.35 的 k8s，假设需要 3.30+ 的 Calico
-                        return pluginMinor >= 30;
                     } else if (k8sMinor < 25) {
                         // 对于 1.24 及以下的 k8s 版本
                         return pluginMinor <= 24;
@@ -829,8 +831,10 @@
     // 校验当前选择的插件是否与当前 K8s 版本兼容
     watch([() => cluster.version, () => cluster.networkPlugins], ([newVersion, newPlugin]) => {
         if (!newVersion || !newPlugin) return;
+        const [pluginName, pluginVersion] = newPlugin.split(' - ');
         const match = formattedPlugins.value.find(
-            plugin => `${plugin.name} - ${plugin.version}` === newPlugin
+            plugin => plugin.name === pluginName &&
+                plugin.version.replace(/^v/, '') === pluginVersion?.replace(/^v/, '')
         );
         console.log(formattedPlugins.value)
         if (!match) {
@@ -853,6 +857,9 @@
         k8sLogos.value['v1.32'] = (await import('@/assets/images/logo/k8s-1.32.png')).default;
         k8sLogos.value['v1.33'] = (await import('@/assets/images/logo/k8s-1.33.png')).default;
         k8sLogos.value['logo'] = (await import('@/assets/images/logo/logo.png')).default;
+        k8sLogos.value['v1.34'] = k8sLogos.value['logo'];
+        k8sLogos.value['v1.35'] = k8sLogos.value['logo'];
+        k8sLogos.value['v1.36'] = k8sLogos.value['logo'];
     });
     
     onMounted(() => {

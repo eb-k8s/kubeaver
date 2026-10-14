@@ -646,6 +646,11 @@ const { loading, setLoading } = useLoading();
             // 仅处理 Calico 插件
             if (plugin.name.toLowerCase() === 'calico') {
                 return (plugin.children || []).filter(versionNode => {
+                    // Kubernetes 1.34-1.36 不按版本范围过滤，展示全部已导入的Calico版本
+                    if (k8sVersionParsed?.[0] === 1 && k8sVersionParsed[1] >= 34 && k8sVersionParsed[1] <= 36) {
+                        return true;
+                    }
+
                     const calicoVersionParsed = parseVersion(versionNode.name); // 解析 Calico 版本
 
                     if (!k8sVersionParsed || !calicoVersionParsed) return false;
@@ -684,10 +689,6 @@ const { loading, setLoading } = useLoading();
                                 return true; // 3.29.x 版本全部可用
                             }
                             return false;
-                        } else if (k8sMinor >= 34 && k8sMinor <= 35) {
-                            // 1.34-1.35 的 k8s（假设兼容性要求）
-                            // 可能需要 3.30+ 的 Calico
-                            return calicoMinor >= 30;
                         } else if (k8sMinor < 25) {
                             // 对于 1.24 及以下的 k8s 版本
                             return calicoMinor <= 24;

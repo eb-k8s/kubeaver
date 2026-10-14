@@ -109,10 +109,8 @@
     };
 
     const extractMajorMinor = (version: string)=> {
-        if(version){
-            const match = version.match(/(v?\d+\.\d+)/);
-            return match ? match[1] : '';
-        }
+        const match = version?.match(/^v?(\d+\.\d+)(?:\.\d+(?:[-+].*)?)?$/);
+        return match ? `v${match[1]}` : '';
     }
 
     const getMappedK8sVersion = (version: string)=> {
@@ -176,7 +174,7 @@
 
             // 获取目标版本号
             const selectedVersion = props.upgradeK8sVersion || version.value;
-            const majorMinorVersion = selectedVersion.match(/^v?\d+\.\d+/)?.[0];
+            const majorMinorVersion = extractMajorMinor(selectedVersion);
 
             if (!majorMinorVersion) {
                 Message.error("无法解析 Kubernetes 主次版本，请检查格式！");
@@ -233,7 +231,7 @@
 
             // 获取目标版本号
             const selectedVersion = props.upgradeK8sVersion || version.value;
-            const majorMinorVersion = selectedVersion.match(/^v?\d+\.\d+/)?.[0];
+            const majorMinorVersion = extractMajorMinor(selectedVersion);
 
             if (!majorMinorVersion) {
                 Message.error("无法解析 Kubernetes 主次版本，请检查格式！");
@@ -290,7 +288,7 @@
 
             // 获取目标版本号
             const selectedVersion = props.upgradeK8sVersion || version.value;
-            const majorMinorVersion = selectedVersion.match(/^v?\d+\.\d+/)?.[0];
+            const majorMinorVersion = extractMajorMinor(selectedVersion);
 
             if (!majorMinorVersion) {
                 Message.error("无法解析 Kubernetes 主次版本，请检查格式！");
@@ -361,7 +359,7 @@
 
     // 获取目标版本号
     const selectedVersion = props.upgradeK8sVersion || nodeVersion.value;
-    const majorMinorVersion = selectedVersion.match(/^v?\d+\.\d+/)?.[0];
+    const majorMinorVersion = extractMajorMinor(selectedVersion);
 
     if (!majorMinorVersion) {
         Message.error("无法解析 Kubernetes 主次版本，请检查格式！");
@@ -446,7 +444,7 @@
 
         // 获取目标版本号
         const selectedVersion = props.upgradeK8sVersion || version.value;
-        const majorMinorVersion = selectedVersion.match(/^v?\d+\.\d+/)?.[0];
+        const majorMinorVersion = extractMajorMinor(selectedVersion);
 
         if (!majorMinorVersion) {
             Message.error("无法解析 Kubernetes 主次版本，请检查格式！");

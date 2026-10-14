@@ -612,6 +612,11 @@ const route = useRoute();
             // 仅处理 Calico 插件
             if (plugin.name.toLowerCase() === 'calico') {
                 return (plugin.children || []).filter(versionNode => {
+                    // Kubernetes 1.34-1.36 不按版本范围过滤，展示全部已导入的Calico版本
+                    if (k8sVersionParsed?.[0] === 1 && k8sVersionParsed[1] >= 34 && k8sVersionParsed[1] <= 36) {
+                        return true;
+                    }
+
                     const calicoVersionParsed = parseVersion(versionNode.name); // 解析 Calico 版本
 
                     if (!k8sVersionParsed || !calicoVersionParsed) return false;

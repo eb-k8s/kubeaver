@@ -3,15 +3,15 @@
 
   <img src="../docs/imgs/logo_with_kubeaver.png" height="150px" style="vertical-align: middle;" />
 
-  <img align="right" alt="conformance-icon" width="75" height="100" src="https://www.cncf.io/wp-content/uploads/2020/07/certified_kubernetes_color-1.png"> 
+  <img align="right" alt="conformance-icon" width="75" height="120" src="https://www.cncf.io/wp-content/uploads/2020/07/certified_kubernetes_color-1.png">
 
 </h1>
 
-> **注意：** Kubeaver已经通过[CNCF一致性测试认证的installer](https://www.cncf.io/training/certification/software-conformance/)。
+> **注意：** Kubeaver 是通过 [CNCF 一致性认证的 Kubernetes 安装工具](https://www.cncf.io/training/certification/software-conformance/)。
 
 [![Static Badge](https://img.shields.io/badge/CNCFStatus-Certified-informational)](https://www.cncf.io/training/certification/software-conformance/)
 [![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/eb-k8s/kubeaver/build_package.yaml)](https://github.com/eb-k8s/kubeaver/actions/workflows/build_package.yaml)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](../LICENSE)
 [![GitHub Release](https://img.shields.io/github/v/release/eb-k8s/kubeaver)](https://github.com/eb-k8s/kubeaver/releases)
 
 Kubeaver 是一个用于快速部署高可用 Kubernetes (K8s) 集群的工具，支持**离线和在线（开发中）**部署方式。项目基于 [kubespray](https://github.com/kubernetes-sigs/kubespray)，利用 Ansible 自动化部署任务，并提供友好的**图形化界面**。更多使用方法请参考 **[文档](https://eb-k8s.github.io/kubeaver/)**。
@@ -56,33 +56,44 @@ English [README](../README.md)
 
 Kubeaver 1.0.0 默认后端版本为 v1.0.0-125，支持 Kubernetes 1.25 到 1.27 版本。若需支持 1.28 到 1.30，可修改 Docker Compose 配置。
 
-| kubeaver 版本 | 后端版本      | 1.25.x | 1.26.x | 1.27.x | 1.28.x | 1.29.x | 1.30.x |
-|--------------|--------------|--------|--------|--------|--------|--------|--------|
-| 1.0.0        | v1.0.0-125   |   ✔    |   ✔    |   ✔    |   x    |   x    |   x    |
-| 1.0.0        | v1.0.0-128   |   x    |   x    |   x    |   ✔    |   ✔    |   ✔    |
+| 前端版本 | 后端版本 | 支持的 Kubernetes 版本 |
+| -------- | -------- | ---------------------- |
+| 1.0.0 | v1.0.0-125 | 1.25.x–1.27.x |
+| 1.0.0 | v1.0.0-128 | 1.28.x–1.30.x |
+| 1.0.1 | v1.0.0-125 | 1.25.x–1.27.x |
+| 1.0.1 | v1.0.0-128 | 1.28.x–1.30.x |
+| 1.0.1 | v1.0.1-131 | 1.31.x–1.33.x |
+| 1.0.2 | v1.0.0-125 | 1.25.x–1.27.x |
+| 1.0.2 | v1.0.0-128 | 1.28.x–1.30.x |
+| 1.0.2 | v1.0.1-131 | 1.31.x–1.33.x |
+| 1.0.2 | v1.0.2-134 | 1.34.x–1.36.x |
 
 说明：
-* ✔：兼容，已通过测试，保证可在该 Kubernetes 版本中正常运行
-* x：不兼容，不能保证支持该 Kubernetes 版本，因其不在测试和支持范围内
+
+* 前端版本：对应 Kubeaver 的前端版本，如 1.0.0、1.0.1 和 1.0.2。
+* 后端 v1.0.0-125（默认）：支持 Kubernetes 1.25 到 1.27。
+* 后端 v1.0.0-128：支持 Kubernetes 1.28 到 1.30。
+* 后端 v1.0.1-131：适用于 Kubeaver 1.0.1 和 1.0.2，支持 Kubernetes 1.31 到 1.33。
+* 后端 v1.0.2-134：适用于 Kubeaver 1.0.2，支持 Kubernetes 1.34 到 1.36。
 
 ## 安装与运行 Kubeaver
 
 **系统要求：**
 
 Linux 主机：
+
 - 软件：
   - docker 20.10.10-ce+
-
 - 硬件：
   - CPU: 2 vCPU
-  - Memory: 4 GB
-  - Disk: 60 GB
+  - 内存：4 GB
+  - 磁盘：60 GB
 
 **下载安装包：**
 
 1. 访问 Kubeaver 发布页面。
 2. 下载所需版本的在线或离线安装包。
-   下载二进制文件请访问 **[Kubeaver release ](https://github.com/eb-k8s/kubeaver/releases)** 并按说明操作。
+   下载安装包请访问 **[Kubeaver 发布页面](https://github.com/eb-k8s/kubeaver/releases)** 并按说明操作。
 3. 使用 tar 解压安装包：
 
 ```shell
@@ -133,17 +144,19 @@ docker rm -f kubeaver_oslib    ##删除容器
 3. 点击**保存**，然后在**集群管理**界面选择新建集群并点击**部署**开始安装。
 4. 可在**任务队列**查看任务状态和进度，或在**任务历史**查看运行/完成的任务。
 
-#### K8s节点要求
+#### K8s 节点要求
 
 - 控制节点
-  - Memory: 2 GB
+  - 内存：2 GB
 - 工作节点
-  - Memory: 2 GB
+  - 内存：2 GB
 - 操作系统
   - **Ubuntu** 22.04
   - **CentOS** 7
   - **Rocky Linux** 9
   - **openEuler** 22.03
+
+**注意：** Kubernetes 1.34–1.36 仅支持 Ubuntu 22.04 和 Rocky Linux 9。
 
 ## 支持的组件
 
