@@ -320,6 +320,7 @@
 import { ref, onMounted, reactive, computed, watch } from 'vue';
     import useLoading from '@/hooks/loading';
     import { getResources } from '@/api/resources';
+    import { isNetworkPluginCompatible } from '@/utils/networkPluginCompatibility';
     import { getAvailableHostList } from '@/api/hosts';
     import { getNodeList } from '@/api/node';
     import { editCluster, getClusterList} from '@/api/cluster';
@@ -597,89 +598,10 @@ const route = useRoute();
     const formattedPlugins = computed(() => {
         if (!networkPlugins.value || !networkPlugins.value.children) return [];
 
-        // 获取当前选择的 Kubernetes 版本
-        const k8sVersion = cluster.version;
-
-        // 解析版本号为数组 [major, minor, patch]
-        const parseVersion = (version: string) => {
-            const match = version.match(/^v?(\d+)\.(\d+)\.(\d+)/);
-            return match ? [parseInt(match[1]), parseInt(match[2]), parseInt(match[3])] : null;
-        };
-
-        const k8sVersionParsed = parseVersion(k8sVersion);
-
         return networkPlugins.value.children.flatMap(plugin => {
-            // 仅处理 Calico 插件
-            if (plugin.name.toLowerCase() === 'calico') {
-                return (plugin.children || []).filter(versionNode => {
-                    // Kubernetes 1.34-1.36 不按版本范围过滤，展示全部已导入的Calico版本
-                    if (k8sVersionParsed?.[0] === 1 && k8sVersionParsed[1] >= 34 && k8sVersionParsed[1] <= 36) {
-                        return true;
-                    }
-
-                    const calicoVersionParsed = parseVersion(versionNode.name); // 解析 Calico 版本
-
-                    if (!k8sVersionParsed || !calicoVersionParsed) return false;
-
-                    const [k8sMajor, k8sMinor] = k8sVersionParsed;
-                    const [calicoMajor, calicoMinor, calicoPatch] = calicoVersionParsed;
-
-                    // 确保是 Calico v3.x
-                    if (calicoMajor !== 3) return false;
-
-                    // 根据 Kubernetes 版本范围过滤 Calico 版本
-                    if (k8sMajor === 1) {
-                        if (k8sMinor >= 25 && k8sMinor <= 27) {
-                            // 1.25-1.27 的 k8s 只能用 3.25 及以下的 Calico
-                            return calicoMinor <= 25;
-                        } else if (k8sMinor >= 28 && k8sMinor <= 30) {
-                            // 1.28-1.30 的 k8s 只能用 3.26 及以上到 3.28.1 的 Calico
-                            if (calicoMinor >= 26 && calicoMinor <= 28) {
-                                // 对于 3.28.x 版本，检查补丁版本是否 <= 1
-                                if (calicoMinor === 28) {
-                                    return calicoPatch <= 1; // 只允许 3.28.0 和 3.28.1
-                                }
-                                return true; // 3.26.x 和 3.27.x 全部可用
-                            }
-                            return false;
-                        } else if (k8sMinor >= 31 && k8sMinor <= 33) {
-                            // 1.31-1.33 的 k8s 只能用 3.28.0-3.30.3 的 Calico
-                            if (calicoMinor >= 28 && calicoMinor <= 30) {
-                                if (calicoMinor === 28) {
-                                    // 3.28.0 及以上版本
-                                    return calicoPatch >= 0;
-                                } else if (calicoMinor === 30) {
-                                    // 3.30.x 版本，最高到 3.30.3
-                                    return calicoPatch <= 3;
-                                }
-                                return true; // 3.29.x 版本全部可用
-                            }
-                            return false;
-                        } else if (k8sMinor < 25) {
-                            // 对于 1.24 及以下的 k8s 版本
-                            return calicoMinor <= 24;
-                        }
-                    } else if (k8sMajor >= 2) {
-                        // 对于 Kubernetes 2.x 版本
-                        return calicoMinor >= 30;
-                    }
-                    
-                    return false; // 其他情况不显示
-                }).map(versionNode => {
-                    const imagesNode = versionNode.children?.find(child => child.name === 'images');
-
-                    return {
-                        name: plugin.name,
-                        version: versionNode?.name,
-                        images: imagesNode?.children || [],
-                        files: versionNode.children
-                            ?.filter(child => child.name !== 'images' && child.type === 'file') || []
-                    };
-                });
-            }
-
-            // 对于非 Calico 插件，直接返回所有版本
-            return (plugin.children || []).map(versionNode => {
+            return (plugin.children || []).filter(versionNode =>
+                isNetworkPluginCompatible(cluster.version, plugin.name, versionNode.name)
+            ).map(versionNode => {
                 const imagesNode = versionNode.children?.find(child => child.name === 'images');
 
                 return {
